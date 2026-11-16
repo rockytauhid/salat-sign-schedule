@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#0D1F17"
+        android:pathData="M0,0h320v180h-320z" />
+    <!-- Crescent Moon Accent -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M160,50 A40,40 0 1,0 190,120 A45,45 0 1,1 160,50 Z" />
+    <!-- Star Accent -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M185,65 L188,72 L196,73 L190,78 L192,86 L185,81 L178,86 L180,78 L174,73 L182,72 Z" />
+</vector>
