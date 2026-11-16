@@ -2,6 +2,7 @@ package com.salatsign.tv.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +19,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mosque
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -40,37 +46,51 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.MosqueFontPreset
+import com.salatsign.tv.data.model.MosqueIconPreset
+import com.salatsign.tv.data.model.MosqueNamePresets
+import com.salatsign.tv.data.model.MosqueSubtitlePresets
+import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.ui.common.MosqueEmblemIcon
+import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
-import com.salatsign.tv.ui.theme.CardBackground
-import com.salatsign.tv.ui.theme.CardFocusedBorder
 import com.salatsign.tv.ui.theme.DarkBackground
-import com.salatsign.tv.ui.theme.SurfaceVariant
-import com.salatsign.tv.ui.theme.TextPrimary
-import com.salatsign.tv.ui.theme.TextSecondary
 import com.salatsign.tv.ui.theme.TvTypography
 
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
     onToggleMosqueMode: (Boolean) -> Unit,
+    onSetThemeMode: (ThemeMode) -> Unit,
+    onSelectCity: (CityPreset) -> Unit,
     onSetHijriOffset: (Int) -> Unit,
     onToggleReminder: (Boolean) -> Unit,
     onSetAdhanAudio: (Prayer, AdhanAudioOption) -> Unit,
+    onSetMosqueName: (String) -> Unit,
+    onSetMosqueSubtitle: (String) -> Unit,
+    onSetMosqueIconPreset: (MosqueIconPreset) -> Unit,
+    onSetMosqueFontPreset: (MosqueFontPreset) -> Unit,
+    onUpdateScheduleDuration: (Int) -> Unit,
     onAddSampleSlide: () -> Unit,
     onClearSlides: () -> Unit,
+    onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
     val initialFocusRequester = remember { FocusRequester() }
-    val scrollState = rememberScrollState()
+    val verticalScrollState = rememberScrollState()
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         initialFocusRequester.requestFocus()
@@ -79,14 +99,14 @@ fun SettingsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground.copy(alpha = 0.96f))
+            .background(colorScheme.background)
             .overscanPadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .verticalScroll(verticalScrollState),
+            verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
             // Header Bar
             Row(
@@ -96,139 +116,232 @@ fun SettingsScreen(
             ) {
                 Column {
                     Text(
-                        text = "Pengaturan Aplikasi",
-                        style = TvTypography.HeaderTitle.copy(fontSize = 36.sp)
+                        text = if (settings.isMosqueMode) "Pengaturan Mode Masjid (Signage)" else "Pengaturan Mode Rumah (Personal)",
+                        style = TvTypography.HeaderTitle.copy(fontSize = 34.sp, color = colorScheme.onBackground)
                     )
                     Text(
-                        text = "Konfigurasi Mode Layar, Adhan, Kalender Hijriyah & Signage",
-                        style = TvTypography.Subtitle.copy(fontSize = 18.sp)
+                        text = if (settings.isMosqueMode)
+                            "Konfigurasi identitas masjid, ikon, font, rotasi slide pengumuman & tema layar"
+                        else
+                            "Konfigurasi tema, lokasi kota, suara adhan, dan pengingat waktu shalat",
+                        style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                     )
                 }
 
-                Surface(
-                    onClick = onClose,
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = CardBackground,
-                        focusedContainerColor = AccentEmerald
-                    ),
-                    modifier = Modifier.tvFocusable()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(
+                        onClick = onRestartSetupWizard,
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = colorScheme.surfaceVariant,
+                            focusedContainerColor = AccentGold
+                        ),
+                        modifier = Modifier.tvFocusable()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Tutup",
-                            tint = TextPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Tutup (Kembali)", style = TvTypography.ButtonText)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Buka Setup Wizard", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant))
+                        }
+                    }
+
+                    Surface(
+                        onClick = onClose,
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = colorScheme.surface,
+                            focusedContainerColor = AccentEmerald
+                        ),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Tutup",
+                                tint = colorScheme.onSurface,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Tutup", style = TvTypography.ButtonText.copy(color = colorScheme.onSurface))
+                        }
                     }
                 }
             }
 
-            // 1. Mode Operasi Selection (Home vs Mosque Mode)
+            // Mode Toggle Switcher Banner
+            Card(
+                onClick = { onToggleMosqueMode(!settings.isMosqueMode) },
+                colors = CardDefaults.colors(
+                    containerColor = colorScheme.surfaceVariant,
+                    focusedContainerColor = colorScheme.surface
+                ),
+                shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(initialFocusRequester)
+                    .tvFocusable()
+            ) {
+                Row(
+                    modifier = Modifier.padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (settings.isMosqueMode) Icons.Default.Mosque else Icons.Default.Home,
+                            contentDescription = null,
+                            tint = AccentEmerald,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = if (settings.isMosqueMode) "Mode Aktif: MODE MASJID (Digital Signage)" else "Mode Aktif: MODE RUMAH (Personal)",
+                                style = TvTypography.CardTitle.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
+                            )
+                            Text(
+                                text = if (settings.isMosqueMode)
+                                    "Klik tombol ini untuk beralih ke Mode Rumah (Personal)"
+                                else
+                                    "Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage)",
+                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(AccentEmerald, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = if (settings.isMosqueMode) "Ganti ke Mode Rumah" else "Ganti ke Mode Masjid",
+                            style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color.White)
+                        )
+                    }
+                }
+            }
+
+            // 1. Theme Selection (Shared in both modes)
             Text(
-                text = "1. Mode Operasi Layar",
+                text = "1. Pilihan Tema Warna Layar TV",
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Home Mode Card
-                Card(
-                    onClick = { onToggleMosqueMode(false) },
-                    colors = CardDefaults.colors(
-                        containerColor = if (!settings.isMosqueMode) SurfaceVariant else CardBackground
-                    ),
-                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(initialFocusRequester)
-                        .tvFocusable()
-                        .then(
-                            if (!settings.isMosqueMode) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
-                            else Modifier
-                        )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                for (mode in ThemeMode.entries) {
+                    val isSelected = (settings.themeMode == mode)
+                    Card(
+                        onClick = { onSetThemeMode(mode) },
+                        colors = CardDefaults.colors(
+                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                        ),
+                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                            .then(
+                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                else Modifier
+                            )
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = null,
-                            tint = if (!settings.isMosqueMode) AccentEmerald else TextSecondary,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text(
-                                text = "Mode Rumah / Personal",
-                                style = TvTypography.CardTitle.copy(fontSize = 20.sp)
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = when (mode) {
+                                    ThemeMode.ALWAYS_DARK -> Icons.Default.DarkMode
+                                    ThemeMode.ALWAYS_LIGHT -> Icons.Default.LightMode
+                                    ThemeMode.AUTO_DAY_NIGHT -> Icons.Default.BrightnessAuto
+                                },
+                                contentDescription = null,
+                                tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(24.dp)
                             )
-                            Text(
-                                text = "Interaktif D-pad, Notifikasi 15m, Suara Adhan otomatis menyala",
-                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp)
-                            )
-                        }
-                    }
-                }
-
-                // Mosque Mode Card
-                Card(
-                    onClick = { onToggleMosqueMode(true) },
-                    colors = CardDefaults.colors(
-                        containerColor = if (settings.isMosqueMode) SurfaceVariant else CardBackground
-                    ),
-                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (settings.isMosqueMode) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
-                            else Modifier
-                        )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = null,
-                            tint = if (settings.isMosqueMode) AccentEmerald else TextSecondary,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column {
-                            Text(
-                                text = "Mode Masjid / Signage",
-                                style = TvTypography.CardTitle.copy(fontSize = 20.sp)
-                            )
-                            Text(
-                                text = "White-label tanpa logo aplikasi, rotasi slide otomatis, hening 100%",
-                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp)
-                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = mode.displayName,
+                                    style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = when (mode) {
+                                        ThemeMode.ALWAYS_DARK -> "Latar hitam OLED ramah mata"
+                                        ThemeMode.ALWAYS_LIGHT -> "Latar cerah elegan ruang terang"
+                                        ThemeMode.AUTO_DAY_NIGHT -> "Siang (Syuruq-Magrib), Malam gelap"
+                                    },
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // 2. Hijriyah Date Offset
+            // 2. City & Location Selection (Shared)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "2. Lokasi & Kota Waktu Shalat (Saat Ini: ${settings.cityName})",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+            }
+
+            val cityScrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(cityScrollState),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                for (city in PopularCityPresets) {
+                    val isSelected = (settings.cityName.startsWith(city.name.split(",")[0]))
+                    Surface(
+                        onClick = { onSelectCity(city) },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                            focusedContainerColor = AccentGold
+                        ),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Text(
+                            text = city.name,
+                            style = TvTypography.ButtonText.copy(
+                                fontSize = 15.sp,
+                                color = if (isSelected) Color.White else colorScheme.onSurface
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            // 3. Hijriyah Date Offset (Shared)
             Text(
-                text = "2. Penyesuaian Kalender Hijriyah (Offset Hari: ${settings.hijriOffsetDays} Hari)",
+                text = "3. Penyesuaian Kalender Hijriyah (Offset: ${settings.hijriOffsetDays} Hari)",
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val offsets = listOf(-2, -1, 0, 1, 2)
                 for (offset in offsets) {
                     val isSelected = (settings.hijriOffsetDays == offset)
@@ -236,7 +349,7 @@ fun SettingsScreen(
                         onClick = { onSetHijriOffset(offset) },
                         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
                         colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else CardBackground,
+                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
                             focusedContainerColor = AccentGold
                         ),
                         modifier = Modifier.tvFocusable()
@@ -245,7 +358,7 @@ fun SettingsScreen(
                             text = if (offset > 0) "+$offset Hari" else "$offset Hari",
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 16.sp,
-                                color = if (isSelected) DarkBackground else TextPrimary
+                                color = if (isSelected) Color.White else colorScheme.onSurface
                             ),
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
@@ -253,134 +366,365 @@ fun SettingsScreen(
                 }
             }
 
-            // 3. Audio & Reminders (Only active in Home Mode)
-            Text(
-                text = "3. Pengingat & Suara Adhan Per-Shalat (Mode Rumah)",
-                style = TvTypography.CardTitle.copy(color = AccentGold)
-            )
+            // ================= STRICT MODE ISOLATION =================
+            if (!settings.isMosqueMode) {
+                // ================= HOME MODE ONLY SETTINGS =================
+                Text(
+                    text = "4. Pengingat 15 Menit & Suara Adhan Otomatis",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
 
-            // Reminder toggle button
-            Surface(
-                onClick = { onToggleReminder(!settings.prePrayerReminderEnabled) },
-                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
-                colors = ClickableSurfaceDefaults.colors(
-                    containerColor = if (settings.prePrayerReminderEnabled) SurfaceVariant else CardBackground
-                ),
-                modifier = Modifier.tvFocusable()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // 15-min Reminder Toggle
+                Surface(
+                    onClick = { onToggleReminder(!settings.prePrayerReminderEnabled) },
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = if (settings.prePrayerReminderEnabled) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    modifier = Modifier.tvFocusable()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.NotificationsActive,
-                        contentDescription = null,
-                        tint = if (settings.prePrayerReminderEnabled) AccentEmerald else TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = if (settings.prePrayerReminderEnabled)
-                            "Pengingat 15 Menit Sebelum Shalat: AKTIF"
-                        else
-                            "Pengingat 15 Menit Sebelum Shalat: NONAKTIF",
-                        style = TvTypography.ButtonText.copy(fontSize = 16.sp)
-                    )
-                }
-            }
-
-            // Per-prayer adhan selector buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                val prayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
-                for (prayer in prayers) {
-                    val currentOption = settings.adhanFor(prayer)
-                    Card(
-                        onClick = {
-                            // Cycle through options: Default -> Silent -> Standard
-                            val nextOption = when (currentOption.type) {
-                                AdhanAudioType.DEFAULT_SUBUH, AdhanAudioType.DEFAULT_STANDARD -> AdhanAudioOption.Silent
-                                AdhanAudioType.SILENT -> if (prayer == Prayer.SUBUH) AdhanAudioOption.DefaultSubuh else AdhanAudioOption.DefaultStandard
-                                AdhanAudioType.CUSTOM_FILE -> AdhanAudioOption.DefaultStandard
-                            }
-                            onSetAdhanAudio(prayer, nextOption)
-                        },
-                        colors = CardDefaults.colors(containerColor = CardBackground),
-                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Icon(
+                            imageVector = Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = if (settings.prePrayerReminderEnabled) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = if (settings.prePrayerReminderEnabled)
+                                    "Pengingat 15 Menit Sebelum Shalat: AKTIF"
+                                else
+                                    "Pengingat 15 Menit Sebelum Shalat: NONAKTIF",
+                                style = TvTypography.ButtonText.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                            )
+                            Text(
+                                text = "Menampilkan notifikasi pop-up TV 15 menit sebelum masuk waktu shalat",
+                                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                            )
+                        }
+                    }
+                }
+
+                // Per-Prayer Adhan Sound Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val prayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
+                    for (prayer in prayers) {
+                        val currentOption = settings.adhanFor(prayer)
+                        Card(
+                            onClick = {
+                                val nextOption = when (currentOption.type) {
+                                    AdhanAudioType.DEFAULT_SUBUH, AdhanAudioType.DEFAULT_STANDARD -> AdhanAudioOption.Silent
+                                    AdhanAudioType.SILENT -> if (prayer == Prayer.SUBUH) AdhanAudioOption.DefaultSubuh else AdhanAudioOption.DefaultStandard
+                                    AdhanAudioType.CUSTOM_FILE -> AdhanAudioOption.DefaultStandard
+                                }
+                                onSetAdhanAudio(prayer, nextOption)
+                            },
+                            colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = prayer.displayName,
+                                    style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = currentOption.displayName,
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (currentOption.type == AdhanAudioType.SILENT) Color(0xFFEF4444) else AccentEmerald
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+            } else {
+                // ================= MOSQUE MODE ONLY SETTINGS =================
+
+                // Mosque Audio Info Note
+                Card(
+                    onClick = {},
+                    colors = CardDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsOff,
+                            contentDescription = null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = "Mode Masjid Beroperasi Hening Total: Suara Adhan audio dan notifikasi pop-up secara otomatis dinonaktifkan demi menjaga ketertiban jamaah.",
+                            style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant)
+                        )
+                    }
+                }
+
+                // 4. Mosque Icon & Emblem Preset Selector
+                Text(
+                    text = "4. Pilihan Ikon / Simbol Masjid",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    for (preset in MosqueIconPreset.entries) {
+                        val isSelected = (settings.mosqueIconPreset == preset)
+                        Card(
+                            onClick = { onSetMosqueIconPreset(preset) },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                    else Modifier
+                                )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                MosqueEmblemIcon(preset = preset, customLogoUri = settings.mosqueLogoUri, size = 48.dp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = preset.displayName,
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 5. Mosque Name & Font Selector
+                Text(
+                    text = "5. Nama Masjid (Pilih Preset Nama):",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                val nameScrollState = rememberScrollState()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(nameScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    for (name in MosqueNamePresets) {
+                        val isSelected = (settings.mosqueName == name)
+                        Surface(
+                            onClick = { onSetMosqueName(name) },
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                                focusedContainerColor = AccentGold
+                            ),
+                            modifier = Modifier.tvFocusable()
                         ) {
                             Text(
-                                text = prayer.displayName,
-                                style = TvTypography.CardTitle.copy(fontSize = 16.sp)
+                                text = name,
+                                style = TvTypography.ButtonText.copy(
+                                    fontSize = 15.sp,
+                                    color = if (isSelected) Color.White else colorScheme.onSurface
+                                ),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = currentOption.displayName,
-                                style = TvTypography.BodyLabel.copy(
-                                    fontSize = 13.sp,
-                                    color = if (currentOption.type == AdhanAudioType.SILENT) Color(0xFFEF4444) else AccentEmerald
+                        }
+                    }
+                }
+
+                Text(
+                    text = "Gaya Font Nama Masjid:",
+                    style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    for (font in MosqueFontPreset.entries) {
+                        val isSelected = (settings.mosqueFontPreset == font)
+                        Card(
+                            onClick = { onSetMosqueFontPreset(font) },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                    else Modifier
                                 )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = settings.mosqueName,
+                                    fontFamily = getMosqueFontFamily(font),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = font.displayName,
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 6. Subtitle / Tagline Selector
+                Text(
+                    text = "6. Subtitle / Pesan Jamaah (Pilih Preset):",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                val subtitleScrollState = rememberScrollState()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(subtitleScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    for (subtitle in MosqueSubtitlePresets) {
+                        val isSelected = (settings.mosqueSubtitle == subtitle)
+                        Surface(
+                            onClick = { onSetMosqueSubtitle(subtitle) },
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                                focusedContainerColor = AccentGold
+                            ),
+                            modifier = Modifier.tvFocusable()
+                        ) {
+                            Text(
+                                text = subtitle,
+                                style = TvTypography.ButtonText.copy(
+                                    fontSize = 14.sp,
+                                    color = if (isSelected) Color.White else colorScheme.onSurface
+                                ),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 7. Slideshow & Signage Poster Timing
+                Text(
+                    text = "7. Pengaturan Durasi Jadwal & Poster Slide Pengumuman",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Durasi Tampilan Jadwal Shalat:",
+                        style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                    )
+
+                    val durations = listOf(30, 60, 90, 120)
+                    for (dur in durations) {
+                        val isSelected = (settings.scheduleDurationSeconds == dur)
+                        Surface(
+                            onClick = { onUpdateScheduleDuration(dur) },
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                                focusedContainerColor = AccentGold
+                            ),
+                            modifier = Modifier.tvFocusable()
+                        ) {
+                            Text(
+                                text = "${dur}s",
+                                style = TvTypography.ButtonText.copy(
+                                    fontSize = 15.sp,
+                                    color = if (isSelected) Color.White else colorScheme.onSurface
+                                ),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(
+                        onClick = onAddSampleSlide,
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = null,
+                                tint = AccentEmerald,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Tambah Contoh Poster Pengumuman", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                        }
+                    }
+
+                    if (settings.announcementSlides.isNotEmpty()) {
+                        Surface(
+                            onClick = onClearSlides,
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
+                            modifier = Modifier.tvFocusable()
+                        ) {
+                            Text(
+                                text = "Hapus Semua Slide (${settings.announcementSlides.size})",
+                                style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color(0xFFEF4444)),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )
                         }
                     }
                 }
             }
 
-            // 4. Mosque White-Label Branding & Slides
-            Text(
-                text = "4. Pengaturan Tampilan Masjid & Slide Pengumuman",
-                style = TvTypography.CardTitle.copy(color = AccentGold)
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Surface(
-                    onClick = onAddSampleSlide,
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                    colors = ClickableSurfaceDefaults.colors(containerColor = CardBackground),
-                    modifier = Modifier.tvFocusable()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AddPhotoAlternate,
-                            contentDescription = null,
-                            tint = AccentEmerald,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Tambah Contoh Poster Slide", style = TvTypography.ButtonText.copy(fontSize = 15.sp))
-                    }
-                }
-
-                if (settings.announcementSlides.isNotEmpty()) {
-                    Surface(
-                        onClick = onClearSlides,
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(containerColor = CardBackground),
-                        modifier = Modifier.tvFocusable()
-                    ) {
-                        Text(
-                            text = "Hapus Semua Slide (${settings.announcementSlides.size})",
-                            style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color(0xFFEF4444)),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

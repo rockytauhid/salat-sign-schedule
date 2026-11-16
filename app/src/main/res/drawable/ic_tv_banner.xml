@@ -1,17 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="320dp"
     android:height="180dp"
     android:viewportWidth="320"
     android:viewportHeight="180">
+
+    <!-- Dark Emerald Background Gradient -->
     <path
-        android:fillColor="#0D1F17"
-        android:pathData="M0,0h320v180h-320z" />
-    <!-- Crescent Moon Accent -->
+        android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="320"
+                android:endY="180"
+                android:type="linear">
+                <item android:color="#0B2519" android:offset="0.0" />
+                <item android:color="#06160E" android:offset="0.7" />
+                <item android:color="#030B07" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle Background Arch Rings -->
+    <path
+        android:strokeColor="#1234D399"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M220,-20 A120,120 0 0,1 340,100" />
+    <path
+        android:strokeColor="#0DFBBF24"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M240,-40 A140,140 0 0,1 380,100" />
+
+    <!-- Left Emblem / Icon Container Frame -->
+    <path
+        android:pathData="M40,46 C40,42.7 42.7,40 46,40 L110,40 C113.3,40 116,42.7 116,46 L116,134 C116,137.3 113.3,140 110,140 L46,140 C42.7,140 40,137.3 40,134 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="40"
+                android:startY="40"
+                android:endX="116"
+                android:endY="140"
+                android:type="linear">
+                <item android:color="#194530" android:offset="0.0" />
+                <item android:color="#0F2E20" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Mihrab Silhouette Inside Emblem -->
+    <path
+        android:pathData="M78,56 C69,64 61,74 61,86 L61,124 L95,124 L95,86 C95,74 87,64 78,56 Z"
+        android:fillColor="#081A12" />
+
+    <!-- Glowing Crescent Moon in Banner Emblem -->
+    <path
+        android:pathData="M75,72 C68,76 65,83 67,89 C69,95 76,98 82,96 C78,97 73,94 71,90 C69,86 70,81 73,77 C74,75 75,74 75,72 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="65"
+                android:startY="72"
+                android:endX="82"
+                android:endY="98"
+                android:type="linear">
+                <item android:color="#6EE7B7" android:offset="0.0" />
+                <item android:color="#10B981" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Golden Star in Banner Emblem -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M83,75 L84.5,77 L87,77 L85,79 L86,81.5 L83.5,80 L81,81.5 L82,79 L80,77 L82.5,77 Z" />
+
+    <!-- Clock Arc Accent in Emblem -->
+    <path
+        android:strokeColor="#34D399"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M57,98 A21,21 0 0,1 99,98" />
+
+    <!-- Stylized Title "SalatSign" using Clean Vector Glyphs -->
+    <!-- S -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:pathData="M142,65 C140,63 137,62 133,62 C129,62 126,64 126,67 C126,71 130,73 136,75 C144,77 148,80 148,86 C148,93 141,96 133,96 C127,96 122,94 119,91 L122,86 C125,89 129,91 133,91 C138,91 142,89 142,85 C142,81 137,79 131,77 C124,75 120,72 120,66 C120,60 126,57 134,57 C139,57 143,59 146,61 Z" />
+
+    <!-- A -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:pathData="M158,58 L163,58 L172,95 L166,95 L164,86 L153,86 L151,95 L145,95 Z M158,68 L154,81 L162,81 Z" />
+
+    <!-- L -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:pathData="M176,58 L182,58 L182,90 L195,90 L195,95 L176,95 Z" />
+
+    <!-- A -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:pathData="M204,58 L209,58 L218,95 L212,95 L210,86 L199,86 L197,95 L191,95 Z M204,68 L200,81 L208,81 Z" />
+
+    <!-- T -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:pathData="M221,63 L221,58 L238,58 L238,63 L232,63 L232,95 L226,95 L226,63 Z" />
+
+    <!-- Accent Emerald Dot between Salat and Sign -->
     <path
         android:fillColor="#10B981"
-        android:pathData="M160,50 A40,40 0 1,0 190,120 A45,45 0 1,1 160,50 Z" />
-    <!-- Star Accent -->
+        android:pathData="M242,91 A3,3 0 1,0 242,97 A3,3 0 1,0 242,91 Z" />
+
+    <!-- SIGN in Gold -->
+    <!-- S -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M256,66 C254,64 252,63 249,63 C246,63 244,64 244,67 C244,70 247,72 251,74 C257,76 260,79 260,84 C260,90 255,93 249,93 C244,93 241,91 238,89 L241,85 C243,87 246,89 249,89 C253,89 255,87 255,84 C255,81 252,80 247,78 C242,76 239,73 239,68 C239,63 243,60 249,60 C253,60 256,62 259,64 Z" />
+
+    <!-- I -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M264,60 L269,60 L269,92 L264,92 Z" />
+
+    <!-- G -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M285,67 L282,71 C280,68 277,65 274,65 C269,65 266,69 266,76 C266,83 269,87 274,87 C278,87 280,85 282,83 L282,79 L276,79 L276,75 L287,75 L287,87 C284,91 279,93 274,93 C265,93 260,86 260,76 C260,66 266,59 275,59 C279,59 283,62 285,67 Z" />
+
+    <!-- N -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M292,60 L297,60 L306,82 L306,60 L311,60 L311,92 L306,92 L297,70 L297,92 L292,92 Z" />
+
+    <!-- Tagline Bar: "ISLAMIC PRAYER TIMES & MOSQUE SIGNAGE" -->
     <path
         android:fillColor="#34D399"
-        android:pathData="M185,65 L188,72 L196,73 L190,78 L192,86 L185,81 L178,86 L180,78 L174,73 L182,72 Z" />
+        android:pathData="M120,108 L126,108 L126,110 L120,110 Z M128,108 L138,108 L138,110 L128,110 Z M140,108 L260,108 L260,110 L140,110 Z" />
+
 </vector>

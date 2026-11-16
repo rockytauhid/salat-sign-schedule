@@ -15,11 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -39,30 +36,25 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
+import com.salatsign.tv.ui.common.getMosqueTitleStyle
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.home.PrayerCardsRow
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
-import com.salatsign.tv.ui.theme.CardBackground
-import com.salatsign.tv.ui.theme.DarkBackground
 import com.salatsign.tv.ui.theme.EmeraldLight
-import com.salatsign.tv.ui.theme.SurfaceVariant
-import com.salatsign.tv.ui.theme.TextPrimary
-import com.salatsign.tv.ui.theme.TextSecondary
 import com.salatsign.tv.ui.theme.TvTypography
-import kotlinx.coroutines.delay
 
 @Composable
 fun MosqueSignageScreen(
@@ -71,6 +63,7 @@ fun MosqueSignageScreen(
 ) {
     val screenFocusRequester = remember { FocusRequester() }
     var centerPressStartTime by remember { mutableLongStateOf(0L) }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         screenFocusRequester.requestFocus()
@@ -79,7 +72,7 @@ fun MosqueSignageScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colorScheme.background)
             .focusRequester(screenFocusRequester)
             .focusable()
             // Hidden Admin Access: Key.Menu or 3-second long-press on Key.DirectionCenter
@@ -132,22 +125,19 @@ fun MosqueScheduleView(
     uiState: MosqueSignageUiState
 ) {
     val prayerTimes = uiState.prayerTimesDay
+    val colorScheme = MaterialTheme.colorScheme
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(DarkBackground, Color(0xFF040A07))
-                )
-            )
+            .background(colorScheme.background)
             .overscanPadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // White-Label Header
+            // White-Label Header with Custom Mosque Icon & Font Presets
             LiveClockHeader(
                 isMosqueMode = true,
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
@@ -156,6 +146,8 @@ fun MosqueScheduleView(
                 mosqueName = uiState.settings.mosqueName,
                 mosqueSubtitle = uiState.settings.mosqueSubtitle,
                 mosqueLogoUri = uiState.settings.mosqueLogoUri,
+                mosqueIconPreset = uiState.settings.mosqueIconPreset,
+                mosqueFontPreset = uiState.settings.mosqueFontPreset,
                 isViewingToday = true
             )
 
@@ -199,9 +191,11 @@ fun MosqueActiveStrikeBanner(
     prayer: PrayerTimeItem,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         onClick = {},
-        colors = CardDefaults.colors(containerColor = SurfaceVariant),
+        colors = CardDefaults.colors(containerColor = colorScheme.surfaceVariant),
         shape = CardDefaults.shape(RoundedCornerShape(20.dp)),
         modifier = modifier
             .pulsingGlow(shape = RoundedCornerShape(20.dp), glowColor = AccentEmerald)
@@ -230,7 +224,7 @@ fun MosqueActiveStrikeBanner(
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = DarkBackground
+                                color = Color.White
                             )
                         )
                     }
@@ -245,7 +239,11 @@ fun MosqueActiveStrikeBanner(
 
                 Text(
                     text = "Shalat ${prayer.prayer.displayName}",
-                    style = TvTypography.HeaderTitle.copy(fontSize = 54.sp, fontWeight = FontWeight.ExtraBold)
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 54.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurfaceVariant
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -270,9 +268,11 @@ fun MosqueNextPrayerBanner(
     countdown: String,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         onClick = {},
-        colors = CardDefaults.colors(containerColor = CardBackground),
+        colors = CardDefaults.colors(containerColor = colorScheme.surface),
         shape = CardDefaults.shape(RoundedCornerShape(20.dp)),
         modifier = modifier
             .border(width = 1.5.dp, color = AccentEmerald.copy(alpha = 0.35f), shape = RoundedCornerShape(20.dp))
@@ -316,7 +316,11 @@ fun MosqueNextPrayerBanner(
 
                 Text(
                     text = nextPrayer.prayer.displayName,
-                    style = TvTypography.HeaderTitle.copy(fontSize = 50.sp, fontWeight = FontWeight.ExtraBold)
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 50.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurface
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -344,7 +348,7 @@ fun MosqueNextPrayerBanner(
             ) {
                 Text(
                     text = nextPrayer.formattedTime,
-                    style = TvTypography.ActivePrayerTime.copy(fontSize = 80.sp)
+                    style = TvTypography.ActivePrayerTime.copy(fontSize = 80.sp, color = colorScheme.onSurface)
                 )
             }
         }
@@ -391,12 +395,12 @@ fun MosqueAnnouncementView(
                     if (slide.title.isNotBlank()) {
                         Text(
                             text = slide.title,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp)
+                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp, color = Color.White)
                         )
                     } else if (uiState.settings.mosqueName.isNotBlank()) {
                         Text(
                             text = uiState.settings.mosqueName,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp)
+                            style = getMosqueTitleStyle(uiState.settings.mosqueFontPreset, Color.White).copy(fontSize = 28.sp)
                         )
                     }
                     if (uiState.settings.mosqueSubtitle.isNotBlank()) {
@@ -422,7 +426,7 @@ fun MosqueAnnouncementView(
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 14.sp,
                                         fontWeight = if (p.isNext) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (p.isNext) AccentGold else TextSecondary
+                                        color = if (p.isNext) AccentGold else Color(0xFFD1D5DB)
                                     )
                                 )
                                 Text(
@@ -430,7 +434,7 @@ fun MosqueAnnouncementView(
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (p.isNext) AccentEmerald else TextPrimary
+                                        color = if (p.isNext) AccentEmerald else Color.White
                                     )
                                 )
                             }
@@ -450,7 +454,7 @@ fun MosqueAnnouncementView(
                     )
                     Text(
                         text = prayerTimes?.gregorianDate ?: "",
-                        style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = TextPrimary)
+                        style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = Color.White)
                     )
                 }
             }

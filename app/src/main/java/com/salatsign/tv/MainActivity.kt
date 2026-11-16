@@ -7,23 +7,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.ui.home.HomeScreen
 import com.salatsign.tv.ui.home.HomeViewModel
 import com.salatsign.tv.ui.mosque.MosqueSignageScreen
 import com.salatsign.tv.ui.mosque.MosqueSlideshowViewModel
 import com.salatsign.tv.ui.settings.SettingsScreen
 import com.salatsign.tv.ui.settings.SettingsViewModel
+import com.salatsign.tv.ui.setup.SetupWizardScreen
 import com.salatsign.tv.ui.theme.SalatSignTheme
+import java.time.LocalTime
 
 class MainActivity : ComponentActivity() {
 
@@ -38,7 +39,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            SalatSignTheme {
+            val settings by settingsViewModel.settings.collectAsState()
+            val homeUiState by homeViewModel.uiState.collectAsState()
+
+            // Resolve Dark / Light Theme
+            val isDark = remember(settings.themeMode, homeUiState.prayerTimesDay) {
+                when (settings.themeMode) {
+                    ThemeMode.ALWAYS_DARK -> true
+                    ThemeMode.ALWAYS_LIGHT -> false
+                    ThemeMode.AUTO_DAY_NIGHT -> {
+                        // Daytime: between Sunrise and Magrib (Sunset)
+                        val now = LocalTime.now()
+                        val prayerTimes = homeUiState.prayerTimesDay
+                        if (prayerTimes != null) {
+                            val sunrise = prayerTimes.sunrise
+                            val magrib = prayerTimes.prayers.firstOrNull { it.prayer == Prayer.MAGRIB }?.time
+                                ?: LocalTime.of(18, 0)
+                            // If currently daytime, use Light Theme; otherwise Dark Theme
+                            !(now.isAfter(sunrise) && now.isBefore(magrib))
+                        } else {
+                            // Default to dark
+                            now.hour < 6 || now.hour >= 18
+                        }
+                    }
+                }
+            }
+
+            SalatSignTheme(isDark = isDark) {
                 MainContent(
                     homeViewModel = homeViewModel,
                     mosqueViewModel = mosqueViewModel,
@@ -115,23 +142,47 @@ fun MainContent(
         }
     }
 
-    if (isSettingsOpen) {
+    // 1. Initial Setup Wizard (Shown on first run or when restarted from Settings)
+    if (!settings.isSetupCompleted) {
+        SetupWizardScreen(
+            settings = settings,
+            onSelectMode = { settingsViewModel.toggleMosqueMode(it) },
+            onSelectCity = { settingsViewModel.selectCity(it) },
+            onSelectMosqueName = { settingsViewModel.setMosqueName(it) },
+            onSelectMosqueIcon = { settingsViewModel.setMosqueIconPreset(it) },
+            onCompleteSetup = { settingsViewModel.completeSetup() }
+        )
+    } else if (isSettingsOpen) {
+        // 2. Settings Screen (Strict separation between Home Mode and Mosque Mode)
         SettingsScreen(
             settings = settings,
             onToggleMosqueMode = { settingsViewModel.toggleMosqueMode(it) },
+            onSetThemeMode = { settingsViewModel.setThemeMode(it) },
+            onSelectCity = { settingsViewModel.selectCity(it) },
             onSetHijriOffset = { settingsViewModel.setHijriOffset(it) },
             onToggleReminder = { settingsViewModel.togglePrePrayerReminder(it) },
             onSetAdhanAudio = { prayer, option -> settingsViewModel.setAdhanAudio(prayer, option) },
+            onSetMosqueName = { settingsViewModel.setMosqueName(it) },
+            onSetMosqueSubtitle = { settingsViewModel.setMosqueSubtitle(it) },
+            onSetMosqueIconPreset = { settingsViewModel.setMosqueIconPreset(it) },
+            onSetMosqueFontPreset = { settingsViewModel.setMosqueFontPreset(it) },
+            onUpdateScheduleDuration = { settingsViewModel.updateScheduleDuration(it) },
             onAddSampleSlide = { settingsViewModel.addSampleAnnouncementSlide() },
             onClearSlides = { settingsViewModel.clearSlides() },
+            onRestartSetupWizard = {
+                onCloseSettings()
+                settingsViewModel.restartSetupWizard()
+            },
             onClose = onCloseSettings
         )
     } else if (settings.isMosqueMode) {
+        // 3. Mosque White-Label Signage Screen
         MosqueSignageScreen(
             uiState = mosqueUiState,
             onOpenSettings = onOpenSettings
         )
     } else {
+        // 4. Home Mode Screen
         HomeScreen(
             uiState = homeUiState,
             onPreviousDay = { homeViewModel.previousDay() },

@@ -17,9 +17,35 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = project.findProperty("RELEASE_STORE_FILE")?.toString()
+                ?: System.getenv("RELEASE_STORE_FILE")
+            if (storeFilePath != null && file(storeFilePath).exists()) {
+                storeFile = file(storeFilePath)
+                storePassword = project.findProperty("RELEASE_STORE_PASSWORD")?.toString()
+                    ?: System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = project.findProperty("RELEASE_KEY_ALIAS")?.toString()
+                    ?: System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = project.findProperty("RELEASE_KEY_PASSWORD")?.toString()
+                    ?: System.getenv("RELEASE_KEY_PASSWORD")
+            } else {
+                // Fallback to debug keystore for local testing
+                val debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
+                if (debugKeystore.exists()) {
+                    storeFile = debugKeystore
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

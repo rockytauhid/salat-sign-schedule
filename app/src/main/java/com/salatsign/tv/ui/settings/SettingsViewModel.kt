@@ -5,10 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.AdhanAudioOption
-import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.MosqueFontPreset
+import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -29,8 +32,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleMosqueMode(enable: Boolean) {
         viewModelScope.launch {
             repository.setMosqueMode(enable)
-            // Refresh alarms: if mosque mode enabled, scheduler will cancel all alarms!
             val updated = settings.value.copy(isMosqueMode = enable)
+            scheduler.scheduleAlarmsForToday(updated)
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            repository.setThemeMode(mode)
+        }
+    }
+
+    fun selectCity(city: CityPreset) {
+        viewModelScope.launch {
+            repository.selectCity(city)
+            val updated = settings.value.copy(
+                latitude = city.latitude,
+                longitude = city.longitude,
+                cityName = city.name,
+                calculationMethodName = city.calculationMethod
+            )
             scheduler.scheduleAlarmsForToday(updated)
         }
     }
@@ -64,9 +85,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun updateMosqueBranding(name: String, subtitle: String, logoUri: String?) {
+    fun setMosqueName(name: String) {
         viewModelScope.launch {
-            repository.updateMosqueBranding(name, subtitle, logoUri)
+            repository.updateMosqueBranding(name, settings.value.mosqueSubtitle, settings.value.mosqueLogoUri)
+        }
+    }
+
+    fun setMosqueSubtitle(subtitle: String) {
+        viewModelScope.launch {
+            repository.updateMosqueBranding(settings.value.mosqueName, subtitle, settings.value.mosqueLogoUri)
+        }
+    }
+
+    fun setMosqueIconPreset(preset: MosqueIconPreset) {
+        viewModelScope.launch {
+            repository.setMosqueIconPreset(preset)
+        }
+    }
+
+    fun setMosqueFontPreset(preset: MosqueFontPreset) {
+        viewModelScope.launch {
+            repository.setMosqueFontPreset(preset)
         }
     }
 
@@ -93,6 +132,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun clearSlides() {
         viewModelScope.launch {
             repository.updateSlides(emptyList())
+        }
+    }
+
+    fun completeSetup() {
+        viewModelScope.launch {
+            repository.setSetupCompleted(true)
+            scheduler.scheduleAlarmsForToday(settings.value)
+        }
+    }
+
+    fun restartSetupWizard() {
+        viewModelScope.launch {
+            repository.setSetupCompleted(false)
         }
     }
 }

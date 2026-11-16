@@ -14,7 +14,11 @@ import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.MosqueFontPreset
+import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -25,7 +29,9 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "sa
 class SettingsRepository(private val context: Context) {
 
     private object PreferencesKeys {
+        val IS_SETUP_COMPLETED = booleanPreferencesKey("is_setup_completed")
         val IS_MOSQUE_MODE = booleanPreferencesKey("is_mosque_mode")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
         val LATITUDE = doublePreferencesKey("latitude")
         val LONGITUDE = doublePreferencesKey("longitude")
         val CITY_NAME = stringPreferencesKey("city_name")
@@ -42,6 +48,8 @@ class SettingsRepository(private val context: Context) {
         val MOSQUE_NAME = stringPreferencesKey("mosque_name")
         val MOSQUE_SUBTITLE = stringPreferencesKey("mosque_subtitle")
         val MOSQUE_LOGO_URI = stringPreferencesKey("mosque_logo_uri")
+        val MOSQUE_ICON_PRESET = stringPreferencesKey("mosque_icon_preset")
+        val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
         val SLIDES_RAW = stringPreferencesKey("slides_raw")
     }
@@ -55,7 +63,11 @@ class SettingsRepository(private val context: Context) {
             }
         }
         .map { preferences ->
+            val isSetupCompleted = preferences[PreferencesKeys.IS_SETUP_COMPLETED] ?: false
             val isMosqueMode = preferences[PreferencesKeys.IS_MOSQUE_MODE] ?: false
+            val themeModeStr = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.ALWAYS_DARK.name
+            val themeMode = runCatching { ThemeMode.valueOf(themeModeStr) }.getOrDefault(ThemeMode.ALWAYS_DARK)
+
             val latitude = preferences[PreferencesKeys.LATITUDE] ?: -6.2088
             val longitude = preferences[PreferencesKeys.LONGITUDE] ?: 106.8456
             val cityName = preferences[PreferencesKeys.CITY_NAME] ?: "Jakarta"
@@ -72,13 +84,21 @@ class SettingsRepository(private val context: Context) {
             val mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: "Masjid Raya"
             val mosqueSubtitle = preferences[PreferencesKeys.MOSQUE_SUBTITLE] ?: "Luruskan dan Rapatkan Shaf"
             val mosqueLogoUri = preferences[PreferencesKeys.MOSQUE_LOGO_URI]
+            val iconPresetStr = preferences[PreferencesKeys.MOSQUE_ICON_PRESET] ?: MosqueIconPreset.DOME_CRESCENT.name
+            val mosqueIconPreset = runCatching { MosqueIconPreset.valueOf(iconPresetStr) }.getOrDefault(MosqueIconPreset.DOME_CRESCENT)
+
+            val fontPresetStr = preferences[PreferencesKeys.MOSQUE_FONT_PRESET] ?: MosqueFontPreset.MODERN_SANS.name
+            val mosqueFontPreset = runCatching { MosqueFontPreset.valueOf(fontPresetStr) }.getOrDefault(MosqueFontPreset.MODERN_SANS)
+
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
 
             val slidesRaw = preferences[PreferencesKeys.SLIDES_RAW] ?: ""
             val slides = deserializeSlides(slidesRaw)
 
             AppSettings(
+                isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
+                themeMode = themeMode,
                 latitude = latitude,
                 longitude = longitude,
                 cityName = cityName,
@@ -93,6 +113,8 @@ class SettingsRepository(private val context: Context) {
                 mosqueName = mosqueName,
                 mosqueSubtitle = mosqueSubtitle,
                 mosqueLogoUri = mosqueLogoUri,
+                mosqueIconPreset = mosqueIconPreset,
+                mosqueFontPreset = mosqueFontPreset,
                 scheduleDurationSeconds = scheduleDuration,
                 announcementSlides = slides
             )
@@ -110,17 +132,41 @@ class SettingsRepository(private val context: Context) {
         return AdhanAudioOption(type = type, displayName = name, customUri = uri)
     }
 
+    suspend fun setSetupCompleted(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.IS_SETUP_COMPLETED] = completed
+        }
+    }
+
     suspend fun setMosqueMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_MOSQUE_MODE] = enabled
         }
     }
 
-    suspend fun updateLocation(latitude: Double, longitude: Double, cityName: String) {
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun selectCity(city: CityPreset) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LATITUDE] = city.latitude
+            prefs[PreferencesKeys.LONGITUDE] = city.longitude
+            prefs[PreferencesKeys.CITY_NAME] = city.name
+            prefs[PreferencesKeys.CALCULATION_METHOD] = city.calculationMethod
+        }
+    }
+
+    suspend fun updateLocation(latitude: Double, longitude: Double, cityName: String, method: String? = null) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.LATITUDE] = latitude
             prefs[PreferencesKeys.LONGITUDE] = longitude
             prefs[PreferencesKeys.CITY_NAME] = cityName
+            if (method != null) {
+                prefs[PreferencesKeys.CALCULATION_METHOD] = method
+            }
         }
     }
 
@@ -158,6 +204,18 @@ class SettingsRepository(private val context: Context) {
             } else {
                 prefs.remove(PreferencesKeys.MOSQUE_LOGO_URI)
             }
+        }
+    }
+
+    suspend fun setMosqueIconPreset(preset: MosqueIconPreset) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MOSQUE_ICON_PRESET] = preset.name
+        }
+    }
+
+    suspend fun setMosqueFontPreset(preset: MosqueFontPreset) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MOSQUE_FONT_PRESET] = preset.name
         }
     }
 

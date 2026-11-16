@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
@@ -25,10 +24,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,23 +33,17 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.PrayerTimeItem
-import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.ui.common.LiveClockHeader
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
-import com.salatsign.tv.ui.theme.CardBackground
-import com.salatsign.tv.ui.theme.CardFocusedBorder
-import com.salatsign.tv.ui.theme.DarkBackground
 import com.salatsign.tv.ui.theme.EmeraldLight
-import com.salatsign.tv.ui.theme.SurfaceVariant
-import com.salatsign.tv.ui.theme.TextPrimary
-import com.salatsign.tv.ui.theme.TextSecondary
 import com.salatsign.tv.ui.theme.TvTypography
 
 @Composable
@@ -64,6 +55,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit
 ) {
     val initialFocusRequester = remember { FocusRequester() }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         initialFocusRequester.requestFocus()
@@ -72,11 +64,7 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(DarkBackground, Color(0xFF060D09))
-                )
-            )
+            .background(colorScheme.background)
             .overscanPadding()
     ) {
         val prayerTimes = uiState.prayerTimesDay
@@ -147,11 +135,13 @@ fun NextPrayerSpotlightCard(
     adhanType: AdhanAudioType,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         onClick = {},
         colors = CardDefaults.colors(
-            containerColor = SurfaceVariant,
-            focusedContainerColor = CardBackground
+            containerColor = colorScheme.surfaceVariant,
+            focusedContainerColor = colorScheme.surface
         ),
         shape = CardDefaults.shape(RoundedCornerShape(20.dp)),
         modifier = modifier
@@ -198,7 +188,11 @@ fun NextPrayerSpotlightCard(
 
                 Text(
                     text = nextPrayer.prayer.displayName,
-                    style = TvTypography.HeaderTitle.copy(fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurfaceVariant
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -227,7 +221,7 @@ fun NextPrayerSpotlightCard(
             ) {
                 Text(
                     text = nextPrayer.formattedTime,
-                    style = TvTypography.ActivePrayerTime.copy(color = TextPrimary)
+                    style = TvTypography.ActivePrayerTime.copy(color = colorScheme.onSurfaceVariant)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -239,7 +233,7 @@ fun NextPrayerSpotlightCard(
                     // Sunrise info badge
                     Row(
                         modifier = Modifier
-                            .background(CardBackground, RoundedCornerShape(8.dp))
+                            .background(colorScheme.surface, RoundedCornerShape(8.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -252,27 +246,27 @@ fun NextPrayerSpotlightCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Syuruq: $sunrise",
-                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp)
+                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                         )
                     }
 
                     // Reminder Badge
                     Row(
                         modifier = Modifier
-                            .background(CardBackground, RoundedCornerShape(8.dp))
+                            .background(colorScheme.surface, RoundedCornerShape(8.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = if (isReminderEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                             contentDescription = null,
-                            tint = if (isReminderEnabled) AccentEmerald else TextSecondary,
+                            tint = if (isReminderEnabled) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (isReminderEnabled) "Pengingat 15m Aktif" else "Pengingat Nonaktif",
-                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp)
+                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                         )
                     }
                 }
@@ -287,9 +281,11 @@ fun NonTodaySummaryCard(
     sunrise: String,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         onClick = {},
-        colors = CardDefaults.colors(containerColor = CardBackground),
+        colors = CardDefaults.colors(containerColor = colorScheme.surface),
         shape = CardDefaults.shape(RoundedCornerShape(16.dp)),
         modifier = modifier.tvFocusable(shape = RoundedCornerShape(16.dp))
     ) {
@@ -307,12 +303,12 @@ fun NonTodaySummaryCard(
                 )
                 Text(
                     text = dateFormatted,
-                    style = TvTypography.HeaderTitle.copy(fontSize = 32.sp)
+                    style = TvTypography.HeaderTitle.copy(fontSize = 32.sp, color = colorScheme.onSurface)
                 )
             }
             Row(
                 modifier = Modifier
-                    .background(SurfaceVariant, RoundedCornerShape(8.dp))
+                    .background(colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -325,7 +321,7 @@ fun NonTodaySummaryCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "Syuruq: $sunrise",
-                    style = TvTypography.BodyLabel.copy(fontSize = 16.sp)
+                    style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurfaceVariant)
                 )
             }
         }
@@ -357,6 +353,8 @@ fun PrayerCard(
     item: PrayerTimeItem,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     val cardModifier = if (item.isActive) {
         modifier
             .pulsingGlow(shape = RoundedCornerShape(16.dp), glowColor = AccentEmerald)
@@ -368,8 +366,8 @@ fun PrayerCard(
     Card(
         onClick = {},
         colors = CardDefaults.colors(
-            containerColor = if (item.isNext) SurfaceVariant else CardBackground,
-            focusedContainerColor = CardBackground
+            containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface,
+            focusedContainerColor = colorScheme.surface
         ),
         shape = CardDefaults.shape(RoundedCornerShape(16.dp)),
         modifier = cardModifier
@@ -386,7 +384,7 @@ fun PrayerCard(
                 text = item.prayer.arabicName,
                 style = TvTypography.ArabicTitle.copy(
                     fontSize = 20.sp,
-                    color = if (item.isNext) AccentGold else TextSecondary
+                    color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             )
 
@@ -394,7 +392,8 @@ fun PrayerCard(
             Text(
                 text = item.prayer.displayName,
                 style = TvTypography.CardTitle.copy(
-                    fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium
+                    fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
+                    color = colorScheme.onSurface
                 )
             )
 
@@ -408,7 +407,7 @@ fun PrayerCard(
                         color = AccentEmerald
                     )
                 } else {
-                    TvTypography.InactivePrayerTime
+                    TvTypography.InactivePrayerTime.copy(color = colorScheme.onSurface)
                 }
             )
 
@@ -424,7 +423,7 @@ fun PrayerCard(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = DarkBackground
+                            color = Color.White
                         )
                     )
                 }

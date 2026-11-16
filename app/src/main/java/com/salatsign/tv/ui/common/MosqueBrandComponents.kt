@@ -1,0 +1,156 @@
+package com.salatsign.tv.ui.common
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.DoorFront
+import androidx.compose.material.icons.filled.Mosque
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
+import coil3.compose.AsyncImage
+import com.salatsign.tv.data.model.MosqueFontPreset
+import com.salatsign.tv.data.model.MosqueIconPreset
+import com.salatsign.tv.ui.theme.AccentEmerald
+import com.salatsign.tv.ui.theme.AccentGold
+
+@Composable
+fun MosqueEmblemIcon(
+    preset: MosqueIconPreset,
+    customLogoUri: String?,
+    size: Dp = 64.dp,
+    modifier: Modifier = Modifier
+) {
+    if (preset == MosqueIconPreset.CUSTOM && !customLogoUri.isNullOrBlank()) {
+        AsyncImage(
+            model = customLogoUri,
+            contentDescription = "Logo Masjid Kustom",
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center
+        ) {
+            val iconSize = (size.value * 0.58f).dp
+            when (preset) {
+                MosqueIconPreset.DOME_CRESCENT -> {
+                    Icon(
+                        imageVector = Icons.Default.Mosque,
+                        contentDescription = "Kubah Masjid",
+                        tint = AccentEmerald,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                MosqueIconPreset.MINARET -> {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalance,
+                        contentDescription = "Menara Masjid",
+                        tint = AccentEmerald,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                MosqueIconPreset.GEOMETRIC_STAR -> {
+                    Icon(
+                        imageVector = Icons.Default.Stars,
+                        contentDescription = "Bintang 8",
+                        tint = AccentGold,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                MosqueIconPreset.MIHRAB -> {
+                    Icon(
+                        imageVector = Icons.Default.DoorFront,
+                        contentDescription = "Mihrab",
+                        tint = AccentEmerald,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                MosqueIconPreset.CUSTOM -> {
+                    if (!customLogoUri.isNullOrBlank()) {
+                        AsyncImage(
+                            model = customLogoUri,
+                            contentDescription = "Logo",
+                            modifier = Modifier
+                                .size(size)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Simbol Masjid",
+                            tint = AccentGold,
+                            modifier = Modifier.size(iconSize)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun getMosqueFontFamily(preset: MosqueFontPreset): FontFamily {
+    return when (preset) {
+        MosqueFontPreset.MODERN_SANS -> FontFamily.SansSerif
+        MosqueFontPreset.TRADITIONAL_SERIF -> FontFamily.Serif
+        MosqueFontPreset.ELEGANT_DISPLAY -> FontFamily.Serif
+        MosqueFontPreset.CLEAN_TECH -> FontFamily.Monospace
+    }
+}
+
+fun getMosqueTitleStyle(preset: MosqueFontPreset, color: Color): TextStyle {
+    return when (preset) {
+        MosqueFontPreset.MODERN_SANS -> TextStyle(
+            fontFamily = FontFamily.SansSerif,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 36.sp,
+            letterSpacing = 0.sp,
+            color = color
+        )
+        MosqueFontPreset.TRADITIONAL_SERIF -> TextStyle(
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Bold,
+            fontSize = 38.sp,
+            letterSpacing = 0.5.sp,
+            color = color
+        )
+        MosqueFontPreset.ELEGANT_DISPLAY -> TextStyle(
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Medium,
+            fontSize = 36.sp,
+            letterSpacing = 1.sp,
+            color = color
+        )
+        MosqueFontPreset.CLEAN_TECH -> TextStyle(
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            fontSize = 34.sp,
+            letterSpacing = 0.25.sp,
+            color = color
+        )
+    }
+}
