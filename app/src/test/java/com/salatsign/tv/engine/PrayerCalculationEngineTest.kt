@@ -1,6 +1,7 @@
 package com.salatsign.tv.engine
 
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -43,12 +44,19 @@ class PrayerCalculationEngineTest {
         val magrib = result.prayers.first { it.prayer == Prayer.MAGRIB }.time
         val isya = result.prayers.first { it.prayer == Prayer.ISYA }.time
 
+        assertNotNull(subuh)
+        assertNotNull(result.sunrise)
+        assertNotNull(zuhur)
+        assertNotNull(ashr)
+        assertNotNull(magrib)
+        assertNotNull(isya)
+
         // Verify sequential chronological order
-        assertTrue("Subuh ($subuh) must be before Sunrise (${result.sunrise})", subuh.isBefore(result.sunrise))
-        assertTrue("Sunrise (${result.sunrise}) must be before Zuhur ($zuhur)", result.sunrise.isBefore(zuhur))
-        assertTrue("Zuhur ($zuhur) must be before Ashr ($ashr)", zuhur.isBefore(ashr))
-        assertTrue("Ashr ($ashr) must be before Magrib ($magrib)", ashr.isBefore(magrib))
-        assertTrue("Magrib ($magrib) must be before Isya ($isya)", magrib.isBefore(isya))
+        assertTrue("Subuh ($subuh) must be before Sunrise (${result.sunrise})", subuh!!.isBefore(result.sunrise!!))
+        assertTrue("Sunrise (${result.sunrise}) must be before Zuhur ($zuhur)", result.sunrise!!.isBefore(zuhur!!))
+        assertTrue("Zuhur ($zuhur) must be before Ashr ($ashr)", zuhur.isBefore(ashr!!))
+        assertTrue("Ashr ($ashr) must be before Magrib ($magrib)", ashr.isBefore(magrib!!))
+        assertTrue("Magrib ($magrib) must be before Isya ($isya)", magrib.isBefore(isya!!))
     }
 
     @Test
@@ -138,7 +146,7 @@ class PrayerCalculationEngineTest {
             zoneId = zoneId
         )
 
-        val magribTime = result.prayers.first { it.prayer == Prayer.MAGRIB }.time
+        val magribTime = result.prayers.first { it.prayer == Prayer.MAGRIB }.time!!
 
         // 1. Exact strike at 0 seconds
         val strikeExact = PrayerCalculationEngine.getPrayerAtExactTimeStrike(result, magribTime, 5)
@@ -167,7 +175,8 @@ class PrayerCalculationEngineTest {
             calculationMethodName = calculationMethod
         )
 
-        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertNotNull(nextEvent)
+        assertEquals(Prayer.SUBUH, nextEvent!!.prayer)
         assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
         assertTrue(nextEvent.at.isAfter(lateNight))
     }
@@ -190,8 +199,10 @@ class PrayerCalculationEngineTest {
             calculationMethodName = calculationMethod
         )
 
-        assertEquals(Prayer.SUBUH, eventBefore.prayer)
-        assertEquals(Prayer.SUBUH, eventAfter.prayer)
+        assertNotNull(eventBefore)
+        assertNotNull(eventAfter)
+        assertEquals(Prayer.SUBUH, eventBefore!!.prayer)
+        assertEquals(Prayer.SUBUH, eventAfter!!.prayer)
         assertEquals(testDate.plusDays(1), eventBefore.at.toLocalDate())
         assertEquals(testDate.plusDays(1), eventAfter.at.toLocalDate())
         assertEquals("Both times must resolve to the identical Subuh instant", eventBefore.at, eventAfter.at)
@@ -211,7 +222,8 @@ class PrayerCalculationEngineTest {
             calculationMethodName = "MUSLIM_WORLD_LEAGUE"
         )
 
-        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertNotNull(nextEvent)
+        assertEquals(Prayer.SUBUH, nextEvent!!.prayer)
         assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
         assertEquals(brisbaneZone, nextEvent.at.zone)
     }
@@ -230,7 +242,8 @@ class PrayerCalculationEngineTest {
             longitude = sydneyLng,
             calculationMethodName = "MUSLIM_WORLD_LEAGUE"
         )
-        assertEquals(Prayer.SUBUH, nextEventApril.prayer)
+        assertNotNull(nextEventApril)
+        assertEquals(Prayer.SUBUH, nextEventApril!!.prayer)
         assertEquals(LocalDate.of(2026, 4, 5), nextEventApril.at.toLocalDate())
 
         // 2. October DST Start transition (2026-10-04 clocks change from AEST to AEDT)
@@ -241,7 +254,8 @@ class PrayerCalculationEngineTest {
             longitude = sydneyLng,
             calculationMethodName = "MUSLIM_WORLD_LEAGUE"
         )
-        assertEquals(Prayer.SUBUH, nextEventOct.prayer)
+        assertNotNull(nextEventOct)
+        assertEquals(Prayer.SUBUH, nextEventOct!!.prayer)
         assertEquals(LocalDate.of(2026, 10, 4), nextEventOct.at.toLocalDate())
     }
 
@@ -259,7 +273,8 @@ class PrayerCalculationEngineTest {
             calculationMethodName = "MUSLIM_WORLD_LEAGUE"
         )
 
-        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertNotNull(nextEvent)
+        assertEquals(Prayer.SUBUH, nextEvent!!.prayer)
         assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
         assertEquals(adelaideZone, nextEvent.at.zone)
     }
@@ -274,7 +289,8 @@ class PrayerCalculationEngineTest {
             calculationMethodName = calculationMethod
         )
 
-        assertEquals(Prayer.ZUHUR, reminderEvent.prayer)
+        assertNotNull(reminderEvent)
+        assertEquals(Prayer.ZUHUR, reminderEvent!!.prayer)
         assertEquals(reminderEvent.prayerAt.minusMinutes(15), reminderEvent.reminderAt)
         assertTrue(reminderEvent.reminderAt.isAfter(midMorning))
     }
@@ -299,5 +315,185 @@ class PrayerCalculationEngineTest {
 
         // Invalid scheduledAt (0)
         assertFalse(PrayerCalculationEngine.isAlarmStale(0L, now))
+    }
+
+    @Test
+    fun prayerCalculation_offsetsShiftPrayerTimes() {
+        val baseConfig = PrayerConfig(
+            latitude = latitude,
+            longitude = longitude,
+            zoneId = zoneId,
+            methodName = calculationMethod
+        )
+        val baseline = PrayerCalculationEngine.calculatePrayerTimesDay(testDate, baseConfig)
+        val baseSubuh = baseline.prayers.first { it.prayer == Prayer.SUBUH }.time!!
+        val baseMagrib = baseline.prayers.first { it.prayer == Prayer.MAGRIB }.time!!
+
+        val adjustedConfig = baseConfig.copy(
+            offsetsMinutes = mapOf(Prayer.SUBUH to 5, Prayer.MAGRIB to -3)
+        )
+        val adjusted = PrayerCalculationEngine.calculatePrayerTimesDay(testDate, adjustedConfig)
+        val adjSubuh = adjusted.prayers.first { it.prayer == Prayer.SUBUH }.time!!
+        val adjMagrib = adjusted.prayers.first { it.prayer == Prayer.MAGRIB }.time!!
+
+        assertEquals(baseSubuh.plusMinutes(5), adjSubuh)
+        assertEquals(baseMagrib.minusMinutes(3), adjMagrib)
+    }
+
+    @Test
+    fun prayerCalculation_madhabChangesAsrTime() {
+        val shafiConfig = PrayerConfig(
+            latitude = latitude,
+            longitude = longitude,
+            zoneId = zoneId,
+            methodName = calculationMethod,
+            madhab = "SHAFI"
+        )
+        val hanafiConfig = shafiConfig.copy(madhab = "HANAFI")
+
+        val shafiTimes = PrayerCalculationEngine.calculatePrayerTimesDay(testDate, shafiConfig)
+        val hanafiTimes = PrayerCalculationEngine.calculatePrayerTimesDay(testDate, hanafiConfig)
+
+        val shafiAsr = shafiTimes.prayers.first { it.prayer == Prayer.ASHR }.time!!
+        val hanafiAsr = hanafiTimes.prayers.first { it.prayer == Prayer.ASHR }.time!!
+
+        assertTrue("Hanafi Asr ($hanafiAsr) must be after Shafi Asr ($shafiAsr)", hanafiAsr.isAfter(shafiAsr))
+        val diffMinutes = java.time.Duration.between(shafiAsr, hanafiAsr).toMinutes()
+        assertTrue("Hanafi Asr should be 40-70 minutes later than Shafi (got: $diffMinutes min)", diffMinutes in 40..70)
+    }
+
+    @Test
+    fun prayerCalculation_twentyFourHourActivePrayerSemantics() {
+        val config = PrayerConfig(
+            latitude = latitude,
+            longitude = longitude,
+            zoneId = zoneId,
+            methodName = calculationMethod
+        )
+
+        // 1. At 01:00 AM (midnight / early morning before Subuh): Isya from yesterday is active!
+        val earlyMorningZoned = ZonedDateTime.of(testDate, LocalTime.of(1, 0), zoneId)
+        val timesEarly = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = earlyMorningZoned
+        )
+        val isyaEarly = timesEarly.prayers.first { it.prayer == Prayer.ISYA }
+        assertTrue("At 01:00 AM before Subuh, Isya must be active (24h continuous semantics)", isyaEarly.isActive)
+        assertEquals(Prayer.SUBUH, timesEarly.nextPrayer?.prayer)
+
+        // 2. At 08:00 AM (between Subuh and Zuhur): Subuh is active
+        val midMorningZoned = ZonedDateTime.of(testDate, LocalTime.of(8, 0), zoneId)
+        val timesMidMorning = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = midMorningZoned
+        )
+        val subuhMid = timesMidMorning.prayers.first { it.prayer == Prayer.SUBUH }
+        assertTrue("At 08:00 AM, Subuh must be active", subuhMid.isActive)
+        assertEquals(Prayer.ZUHUR, timesMidMorning.nextPrayer?.prayer)
+
+        // 3. At 13:00 PM (between Zuhur and Ashr): Zuhur is active
+        val afternoonZoned = ZonedDateTime.of(testDate, LocalTime.of(13, 0), zoneId)
+        val timesAfternoon = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = afternoonZoned
+        )
+        val zuhurAft = timesAfternoon.prayers.first { it.prayer == Prayer.ZUHUR }
+        assertTrue("At 13:00 PM, Zuhur must be active", zuhurAft.isActive)
+        assertEquals(Prayer.ASHR, timesAfternoon.nextPrayer?.prayer)
+
+        // 4. At 22:00 PM (after Isya): Isya is active
+        val nightZoned = ZonedDateTime.of(testDate, LocalTime.of(22, 0), zoneId)
+        val timesNight = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = nightZoned
+        )
+        val isyaNight = timesNight.prayers.first { it.prayer == Prayer.ISYA }
+        assertTrue("At 22:00 PM, Isya must be active", isyaNight.isActive)
+        assertEquals(Prayer.SUBUH, timesNight.nextPrayer?.prayer)
+    }
+
+    @Test
+    fun prayerCalculation_fridayJumuahLabeling() {
+        val config = PrayerConfig(
+            latitude = latitude,
+            longitude = longitude,
+            zoneId = zoneId,
+            methodName = calculationMethod
+        )
+
+        // 2026-11-20 is Friday
+        val fridayDate = LocalDate.of(2026, 11, 20)
+        assertEquals(java.time.DayOfWeek.FRIDAY, fridayDate.dayOfWeek)
+        val fridayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(fridayDate, config)
+        val fridayZuhur = fridayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
+        assertEquals("Jum'at", fridayZuhur.displayLabel)
+
+        // 2026-11-17 is Tuesday
+        val tuesdayDate = LocalDate.of(2026, 11, 17)
+        val tuesdayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(tuesdayDate, config)
+        val tuesdayZuhur = tuesdayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
+        assertEquals("Zuhur", tuesdayZuhur.displayLabel)
+    }
+
+    @Test
+    fun prayerCalculation_iqamahOffsets() {
+        val config = PrayerConfig(
+            latitude = latitude,
+            longitude = longitude,
+            zoneId = zoneId,
+            methodName = calculationMethod
+        )
+        val iqamahMap = mapOf(
+            Prayer.SUBUH to 15,
+            Prayer.MAGRIB to 10
+        )
+        val times = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            iqamahOffsets = iqamahMap
+        )
+
+        val subuh = times.prayers.first { it.prayer == Prayer.SUBUH }
+        val magrib = times.prayers.first { it.prayer == Prayer.MAGRIB }
+        val zuhur = times.prayers.first { it.prayer == Prayer.ZUHUR }
+
+        assertEquals(subuh.time?.plusMinutes(15), subuh.iqamahTime)
+        assertNotNull(subuh.formattedIqamahTime)
+
+        assertEquals(magrib.time?.plusMinutes(10), magrib.iqamahTime)
+        assertNotNull(magrib.formattedIqamahTime)
+
+        assertNull("Zuhur has no iqamah configured", zuhur.iqamahTime)
+        assertNull(zuhur.formattedIqamahTime)
+    }
+
+    @Test
+    fun prayerCalculation_highLatitudeNullableTimes_andRules() {
+        // Direct model verification of null time fallback to "--:--"
+        val nullItem = com.salatsign.tv.data.model.PrayerTimeItem(prayer = Prayer.SUBUH, time = null)
+        assertEquals("--:--", nullItem.formattedTime)
+
+        // Tromsø, Norway (69.6492 N) during June solstice (midnight sun) produces null astronomical times
+        val polarSummerDate = LocalDate.of(2026, 6, 21)
+        val polarConfig = PrayerConfig(
+            latitude = 69.6492,
+            longitude = 18.9553,
+            zoneId = ZoneId.of("Europe/Oslo"),
+            methodName = "MUSLIM_WORLD_LEAGUE",
+            highLatitudeRule = "MIDDLE_OF_THE_NIGHT"
+        )
+
+        val polarResult = PrayerCalculationEngine.calculatePrayerTimesDay(polarSummerDate, polarConfig)
+        // Verify hasNullTimes is detected and null prayers format to "--:--" without crashing
+        assertTrue("Polar midnight sun must flag hasNullTimes", polarResult.hasNullTimes)
+        for (p in polarResult.prayers) {
+            if (p.time == null) {
+                assertEquals("--:--", p.formattedTime)
+            }
+        }
     }
 }

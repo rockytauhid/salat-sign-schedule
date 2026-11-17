@@ -133,6 +133,7 @@ fun MosqueScheduleView(
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
                 hijriDate = prayerTimes?.hijriDate ?: "",
                 cityName = uiState.settings.cityName,
+                zoneId = uiState.settings.zoneId,
                 mosqueName = uiState.settings.mosqueName,
                 mosqueSubtitle = uiState.settings.mosqueSubtitle,
                 mosqueLogoUri = uiState.settings.mosqueLogoUri,
@@ -228,7 +229,7 @@ fun MosqueActiveStrikeBanner(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Shalat ${prayer.prayer.displayName}",
+                    text = "Shalat ${prayer.displayLabel}",
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -237,6 +238,14 @@ fun MosqueActiveStrikeBanner(
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
+
+                if (prayer.formattedIqamahTime != null) {
+                    Text(
+                        text = "Iqamah: ${prayer.formattedIqamahTime}",
+                        style = TvTypography.Subtitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
 
                 Text(
                     text = "Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.",
@@ -305,7 +314,7 @@ fun MosqueNextPrayerBanner(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = nextPrayer.prayer.displayName,
+                    text = nextPrayer.displayLabel,
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 50.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -317,18 +326,40 @@ fun MosqueNextPrayerBanner(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        text = "Iqamah / Adhan: $countdown",
-                        style = TvTypography.CountdownText.copy(fontSize = 46.sp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = "Menuju Waktu Shalat: $countdown",
+                            style = TvTypography.CountdownText.copy(fontSize = 46.sp)
+                        )
+                    }
+
+                    if (nextPrayer.formattedIqamahTime != null) {
+                        Box(
+                            modifier = Modifier
+                                .background(AccentEmerald.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Iqamah ${nextPrayer.formattedIqamahTime}",
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AccentEmerald
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
@@ -430,7 +461,7 @@ fun MosqueAnnouncementView(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = p.prayer.displayName,
+                                    text = p.displayLabel,
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 14.sp,
                                         fontWeight = if (p.isNext) FontWeight.Bold else FontWeight.Normal,

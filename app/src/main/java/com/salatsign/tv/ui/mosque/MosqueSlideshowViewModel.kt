@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 sealed interface SlideState {
     data class PrayerSchedule(val durationSeconds: Int) : SlideState
@@ -79,21 +80,26 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             while (isActive) {
                 // Get current settings
                 val settings = settingsState.value
-                val today = LocalDate.now()
-                val now = LocalTime.now()
+                val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                val nowZoned = ZonedDateTime.now(zone)
+                val today = nowZoned.toLocalDate()
+                val now = nowZoned.toLocalTime()
+                val config = settings.prayerConfig()
+
                 val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
                     date = today,
-                    latitude = settings.latitude,
-                    longitude = settings.longitude,
-                    calculationMethodName = settings.calculationMethodName,
+                    config = config,
+                    referenceZoned = nowZoned,
                     hijriOffsetDays = settings.hijriOffsetDays,
-                    referenceTime = now,
-                    referenceDate = today,
-                    zoneId = ZoneId.systemDefault()
+                    hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
+                    iqamahOffsets = settings.iqamahOffsets()
                 )
 
                 // Check if currently within exact prayer strike window (5 minutes)
-                val strikingPrayer = PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5)
+                val strikingPrayer = if (settings.showStrikeHighlight) {
+                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5)
+                } else null
+
                 if (strikingPrayer != null) {
                     _interruptedActivePrayer.value = strikingPrayer
                     // Stay on Prayer Schedule silently pulsing during exact strike
@@ -111,8 +117,11 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 // Wait for scheduleDuration with 1-second interval checks for exact prayer strike
                 for (sec in 0 until scheduleDuration) {
                     delay(1000)
-                    val currentNow = LocalTime.now()
-                    val strike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, currentNow, 5)
+                    val currentNow = ZonedDateTime.now(zone).toLocalTime()
+                    val strike = if (settings.showStrikeHighlight) {
+                        PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, currentNow, 5)
+                    } else null
+
                     if (strike != null) {
                         _interruptedActivePrayer.value = strike
                         break
@@ -125,28 +134,34 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
                 // Step 2: Transition through Announcement Slides
                 val currentSettings = settingsState.value
-                val filterToday = LocalDate.now()
+                val currentZone = runCatching { ZoneId.of(currentSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                val filterToday = ZonedDateTime.now(currentZone).toLocalDate()
                 val allSlides = contentRepository.slidesFlow.value.slides
                 val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
                 if (activeSlides.isNotEmpty()) {
                     for ((index, slide) in activeSlides.withIndex()) {
                         // Recompute today and prayerTimes at the start of every slide
                         val slideSettings = settingsState.value
-                        val slideToday = LocalDate.now()
-                        val slideNow = LocalTime.now()
+                        val slideZone = runCatching { ZoneId.of(slideSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                        val slideNowZoned = ZonedDateTime.now(slideZone)
+                        val slideToday = slideNowZoned.toLocalDate()
+                        val slideNow = slideNowZoned.toLocalTime()
+                        val slideConfig = slideSettings.prayerConfig()
+
                         val slidePrayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
                             date = slideToday,
-                            latitude = slideSettings.latitude,
-                            longitude = slideSettings.longitude,
-                            calculationMethodName = slideSettings.calculationMethodName,
+                            config = slideConfig,
+                            referenceZoned = slideNowZoned,
                             hijriOffsetDays = slideSettings.hijriOffsetDays,
-                            referenceTime = slideNow,
-                            referenceDate = slideToday,
-                            zoneId = ZoneId.systemDefault()
+                            hijriChangeAtMidnight = slideSettings.hijriChangeAtMidnight,
+                            iqamahOffsets = slideSettings.iqamahOffsets()
                         )
 
                         // Check strike at the start of this slide
-                        val startStrike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5)
+                        val startStrike = if (slideSettings.showStrikeHighlight) {
+                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5)
+                        } else null
+
                         if (startStrike != null) {
                             _interruptedActivePrayer.value = startStrike
                             _slideState.value = SlideState.PrayerSchedule(slideSettings.scheduleDurationSeconds.coerceAtLeast(10))
@@ -164,8 +179,11 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         var interrupted = false
                         for (sec in 0 until slideDuration) {
                             delay(1000)
-                            val currentNow = LocalTime.now()
-                            val strike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, currentNow, 5)
+                            val currentNow = ZonedDateTime.now(slideZone).toLocalTime()
+                            val strike = if (slideSettings.showStrikeHighlight) {
+                                PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, currentNow, 5)
+                            } else null
+
                             if (strike != null) {
                                 // Silent Exact-Time Interruption: Cancel slide immediately and return to schedule
                                 _interruptedActivePrayer.value = strike
@@ -189,17 +207,19 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
         settingsState,
         _tickerTime,
         _interruptedActivePrayer
-    ) { currentSlide, settings, currentTime, activePrayer ->
-        val today = LocalDate.now()
+    ) { currentSlide, settings, _, activePrayer ->
+        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+        val nowZoned = ZonedDateTime.now(zone)
+        val today = nowZoned.toLocalDate()
+        val config = settings.prayerConfig()
+
         val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = today,
-            latitude = settings.latitude,
-            longitude = settings.longitude,
-            calculationMethodName = settings.calculationMethodName,
+            config = config,
+            referenceZoned = nowZoned,
             hijriOffsetDays = settings.hijriOffsetDays,
-            referenceTime = currentTime,
-            referenceDate = today,
-            zoneId = ZoneId.systemDefault()
+            hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
+            iqamahOffsets = settings.iqamahOffsets()
         )
 
         // If interrupted active prayer is present, override isActive flag
