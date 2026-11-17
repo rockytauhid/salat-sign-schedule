@@ -12,11 +12,11 @@ Always consult `PRODUCT_SPEC.md` for feature requirements and the specialized sk
 - **Minimum SDK:** API 26 (Android 8.0) | **Target SDK:** API 35 (Android 15)
 - **UI Framework:** Jetpack Compose for TV (`androidx.tv:tv-foundation`, `androidx.tv:tv-material`)
 - **Architecture:** MVVM + Clean Architecture with Unidirectional Data Flow (`StateFlow`)
-- **Prayer Time Calculation:** `com.batoulapps.adhan:adhan2` (offline astronomical calculations)
+- **Prayer Time Calculation:** `com.batoulapps.adhan:adhan` (offline astronomical calculations)
 - **Hijri Calendar:** `java.time.chrono.HijrahDate` (with configurable day offset `-2` to `+2`)
 - **Local Storage:** `androidx.datastore:datastore-preferences`
 - **Image Loading:** `io.coil-kt.coil3:coil-compose` (for Mosque logos and signage slides)
-- **Audio Playback:** Android `MediaPlayer` or `androidx.media3:media3-exoplayer` with `AudioAttributes.USAGE_ALARM`
+- **Audio Playback:** Android `MediaPlayer` with `AudioAttributes.USAGE_ALARM`
 - **Background Scheduling:** `AlarmManager` (`setAlarmClock`) + `BroadcastReceiver` + `ForegroundService` + `WorkManager`
 
 ---
@@ -37,4 +37,4 @@ Always consult `PRODUCT_SPEC.md` for feature requirements and the specialized sk
 4. **Manifest Requirements:**
    - Declare `<uses-feature android:name="android.software.leanback" android:required="true" />`
    - Declare `<uses-feature android:name="android.hardware.touchscreen" android:required="false" />`
-   - Declare permissions: `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`.
+   - Declare permissions: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `READ_EXTERNAL_STORAGE` (maxSdkVersion 32), `INTERNET`. (Note: `AlarmManager.setAlarmClock` does not require `SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`).

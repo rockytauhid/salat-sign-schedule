@@ -1,5 +1,10 @@
 package com.salatsign.tv.ui.setup
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -36,9 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -80,6 +87,29 @@ fun SetupWizardScreen(
     val colorScheme = MaterialTheme.colorScheme
 
     val maxSteps = if (settings.isMosqueMode) 5 else 4
+    val context = LocalContext.current
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        onCompleteSetup()
+    }
+
+    val handleCompleteSetup: () -> Unit = {
+        if (!settings.isMosqueMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                onCompleteSetup()
+            }
+        } else {
+            onCompleteSetup()
+        }
+    }
 
     LaunchedEffect(currentStep) {
         initialFocusRequester.requestFocus()
@@ -114,7 +144,7 @@ fun SetupWizardScreen(
 
                 // Quick Skip Button
                 Surface(
-                    onClick = onCompleteSetup,
+                    onClick = handleCompleteSetup,
                     shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
                     colors = ClickableSurfaceDefaults.colors(
                         containerColor = colorScheme.surfaceVariant,
@@ -620,7 +650,7 @@ fun SetupWizardScreen(
                         if (currentStep < maxSteps) {
                             currentStep++
                         } else {
-                            onCompleteSetup()
+                            handleCompleteSetup()
                         }
                     },
                     shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
