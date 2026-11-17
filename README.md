@@ -69,8 +69,9 @@ SalatSign adheres strictly to Android TV design principles:
 - **Hijri Engine:** `java.time.chrono.HijrahDate`
 - **Preferences:** `androidx.datastore:datastore-preferences`
 - **Image Loading:** `io.coil-kt.coil3:coil-compose`
-- **Audio Engine:** Android `MediaPlayer` / `androidx.media3` configured with `USAGE_ALARM`
-- **Background Scheduling:** `AlarmManager` (`setAlarmClock`) + `ForegroundService` + `WorkManager` (recurring daily 00:05 AM scheduler)
+- **Audio Engine:** Android `MediaPlayer` configured with `AudioAttributes.USAGE_ALARM`
+- **Background Scheduling:** `AlarmManager` (`setAlarmClock`) + `ForegroundService` + `WorkManager` (recurring daily 00:05 AM scheduler). Uses `setAlarmClock()` without requiring `SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`.
+- **Offline First & Network:** Core prayer calculations, Hijri calendar, Adhan audio, and Mosque digital signage work 100% offline; network access (`INTERNET`) is retained exclusively for optional local remote control.
 
 ---
 

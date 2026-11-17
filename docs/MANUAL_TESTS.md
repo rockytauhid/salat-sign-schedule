@@ -147,3 +147,29 @@ This document tracks test cases that require real Android TV hardware or emulato
 1. While on Mosque digital signage (Settings closed), press `KEYCODE_BACK` (or `adb shell input keyevent 4`).
 2. **Verify:** The back key is intercepted and consumed. The application **does not** minimize or exit to Android TV Launcher.
 3. Open Settings -> press `KEYCODE_BACK` -> **Verify:** Back key closes Settings and returns to Mosque digital signage.
+
+---
+
+## MT-5.1: Baseline Hardware Verification — Android 8.0 (API 26)
+
+**Baseline Device:** Sony Bravia KD-55X9300D (Runs Android 8.0.0 Oreo, API 26).
+**Reference Emulator:** Android Studio AVD — `Android TV (1080p)`, System Image: `Android 8.0 ("Oreo") | armeabi-v7a or x86 | API Level 26`.
+
+### API 26 Platform Constraints & Behavioral Invariants:
+1. **Zero Headroom for minSdk:** `minSdk = 26` must be strictly maintained. Every API call must exist on API 26 or be guarded with `if (Build.VERSION.SDK_INT >= Build.VERSION_CODES...)`. Lint enforces `NewApi` as an error.
+2. **Background Execution Limits (Android 8.0 Oreo):**
+   - Manifest-declared receivers do not fire for most implicit broadcasts.
+   - `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET`, and `TIMEZONE_CHANGED` are officially on Android's implicit broadcast exemption list and invoke `BootAndTimeReceiver`.
+   - Resilience redundancy: P1.2 chained alarms and daily `DailyScheduleWorker` (WorkManager) provide automatic fallback recovery if the device time changes.
+3. **Foreground Service 5-Second Grace Window:**
+   - On API 26+, `ContextCompat.startForegroundService()` must be followed by `Service.startForeground()` within ~5 seconds.
+   - `AdhanPlaybackService.onStartCommand()` immediately calls `createNotificationChannel()` and `startForeground()` prior to preparing `MediaPlayer`.
+4. **Mandatory Notification Channels:**
+   - In Home Mode, `channel_adhan_playback` and `channel_prayer_reminder` are created before posting alerts or notifications.
+   - In Mosque Mode (silent default), notification channels are not created and no notifications are dispatched.
+5. **Direct External Storage Access (No Scoped Storage on API 26):**
+   - Direct file paths under `/storage/...` (e.g., USB drive mounts) work directly with `READ_EXTERNAL_STORAGE` (`android:maxSdkVersion="32"`). No Scoped Storage restrictions exist on Android 8.0.
+6. **2016 Hardware Resource Constraints:**
+   - SoC memory and CPU on 2016 TV hardware are constrained.
+   - Slide images imported from USB must be downscaled to 1080p before caching.
+   - Coil image cache and memory footprint must remain lightweight.

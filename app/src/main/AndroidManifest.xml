@@ -13,26 +13,26 @@
         android:name="android.hardware.microphone"
         android:required="false" />
 
-    <!-- Exact Alarm & Background Scheduling Permissions -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Background Scheduling & Audio Services -->
+    <!-- Note: AlarmManager.setAlarmClock() does not require SCHEDULE_EXACT_ALARM or USE_EXACT_ALARM -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <!-- Storage & Audio Permissions for Custom Adhan / Mosque Assets -->
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Storage Permission for Direct USB / File Access on Android <= 12 (API <= 32) -->
+    <!-- Android 13+ (API 33+) uses Storage Access Framework (SAF) without requiring broad media permissions -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+
+    <!-- Retained for optional local-network controller discovery/pairing; core prayer/signage features are 100% offline -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".SalatSignApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
