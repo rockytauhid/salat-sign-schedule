@@ -1,7 +1,7 @@
 package com.salatsign.tv.engine
 
 import java.time.LocalDate
-import java.time.chrono.HijrahChronology
+import java.time.ZonedDateTime
 import java.time.chrono.HijrahDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoField
@@ -9,7 +9,7 @@ import java.util.Locale
 
 object HijriCalendarEngine {
 
-    private val HijriMonthNames = listOf(
+    val HijriMonthNames = listOf(
         "Muharram",
         "Safar",
         "Rabi' al-Awwal",
@@ -29,12 +29,18 @@ object HijriCalendarEngine {
 
     /**
      * Converts a LocalDate into a formatted Hijriyah date string taking into account
-     * the user-configured offset (-2 to +2 days).
+     * the user-configured offset (-2 to +2 days) and Maghrib rollover (D8).
      */
-    fun formatHijriDate(date: LocalDate, offsetDays: Int): String {
+    fun formatHijriDate(
+        date: LocalDate,
+        offsetDays: Int = 0,
+        now: ZonedDateTime? = null,
+        maghribTime: ZonedDateTime? = null,
+        changeAtMidnight: Boolean = false
+    ): String {
         return try {
-            val adjustedDate = date.plusDays(offsetDays.toLong())
-            val hijrahDate = HijrahDate.from(adjustedDate)
+            val effectiveDate = calculateEffectiveDate(date, offsetDays, now, maghribTime, changeAtMidnight)
+            val hijrahDate = HijrahDate.from(effectiveDate)
             val day = hijrahDate.get(ChronoField.DAY_OF_MONTH)
             val monthIndex = hijrahDate.get(ChronoField.MONTH_OF_YEAR) - 1
             val year = hijrahDate.get(ChronoField.YEAR)
@@ -46,11 +52,39 @@ object HijriCalendarEngine {
             }
 
             "$day $monthName $year H"
-        } catch (e: Exception) {
-            // Fallback in case of system chronology variance
-            val fallbackDate = date.plusDays(offsetDays.toLong())
+        } catch (_: Exception) {
+            val fallbackDate = calculateEffectiveDate(date, offsetDays, now, maghribTime, changeAtMidnight)
             "${fallbackDate.dayOfMonth} Hijriyah"
         }
+    }
+
+    fun getHijrahDate(
+        date: LocalDate,
+        offsetDays: Int = 0,
+        now: ZonedDateTime? = null,
+        maghribTime: ZonedDateTime? = null,
+        changeAtMidnight: Boolean = false
+    ): HijrahDate {
+        val effectiveDate = calculateEffectiveDate(date, offsetDays, now, maghribTime, changeAtMidnight)
+        return HijrahDate.from(effectiveDate)
+    }
+
+    private fun calculateEffectiveDate(
+        date: LocalDate,
+        offsetDays: Int,
+        now: ZonedDateTime?,
+        maghribTime: ZonedDateTime?,
+        changeAtMidnight: Boolean
+    ): LocalDate {
+        var baseDate = date.plusDays(offsetDays.toLong())
+        // Maghrib rollover (D8): By default, Islamic calendar advances at sunset (Maghrib).
+        // If changeAtMidnight is false and now >= maghribTime, advance date by 1.
+        if (!changeAtMidnight && now != null && maghribTime != null) {
+            if (!now.isBefore(maghribTime)) {
+                baseDate = baseDate.plusDays(1)
+            }
+        }
+        return baseDate
     }
 
     /**
@@ -60,7 +94,7 @@ object HijriCalendarEngine {
         return try {
             val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)
             date.format(formatter)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             date.format(GregorianFormatterEn)
         }
     }

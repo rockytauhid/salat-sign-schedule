@@ -13,7 +13,7 @@
 
 ### 1. Offline Astronomical Prayer Engine & Dual Calendar
 - **Astronomical Precision:** Calculates exact daily prayer times using Jean Meeus algorithms (`com.batoulapps.adhan`) without requiring an active internet connection.
-- **Dual Date Display:** Simultaneous Gregorian (*e.g., Tuesday, 17 November 2026*) and Hijriyah date (*e.g., 7 Jumada al-Ula 1448 H*).
+- **Dual Date Display:** Simultaneous Gregorian (*e.g., Tuesday, 17 November 2026*) and Hijriyah date (*e.g., 7 Jumada al-Akhirah 1448 H*).
 - **Configurable Hijri Offset:** Easily adjust Hijri dates by `-2`, `-1`, `0`, `+1`, or `+2` days to match local moonsighting declarations (Rukyatul Hilal).
 - **Overnight Countdown:** Accurate live countdown (`HH:MM:SS`) to the next prayer, seamlessly handling transitions across midnight to the next morning's Subuh.
 
