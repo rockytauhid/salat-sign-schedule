@@ -17,8 +17,10 @@ import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class PrayerAlarmReceiver : BroadcastReceiver() {
 
@@ -41,45 +43,54 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val repository = SettingsRepository(context)
         val scheduler = PrayerAlarmScheduler(context)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val settings = repository.appSettingsFlow.first()
-            if (settings.isMosqueMode) {
-                Log.d(TAG, "Mosque Mode is active: Aborting alarm event execution.")
-                return@launch
-            }
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            try {
+                withTimeout(8_000) {
+                    val settings = repository.appSettingsFlow.first()
+                    if (settings.isMosqueMode) {
+                        Log.d(TAG, "Mosque Mode is active: Aborting alarm event execution.")
+                        return@withTimeout
+                    }
 
-            // Check if alarm fired more than 5 minutes late (device was off/asleep)
-            val isStale = PrayerCalculationEngine.isAlarmStale(scheduledAt)
-            if (isStale) {
-                Log.w(TAG, "Alarm for $prayerDisplayName fired >5 min late. Skipping playback/notification.")
-            } else {
-                when (action) {
-                    PrayerAlarmScheduler.ACTION_PLAY_ADHAN -> {
-                        // Only play adhan if prayer option is not SILENT
-                        if (adhanType != AdhanAudioType.SILENT.name) {
-                            val serviceIntent = Intent(context, AdhanPlaybackService::class.java).apply {
-                                putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayerName)
-                                putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_DISPLAY_NAME, prayerDisplayName)
-                                putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE, adhanType)
-                                putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI, adhanUri)
+                    // Check if alarm fired more than 5 minutes late (device was off/asleep)
+                    val isStale = PrayerCalculationEngine.isAlarmStale(scheduledAt)
+                    if (isStale) {
+                        Log.w(TAG, "Alarm for $prayerDisplayName fired >5 min late. Skipping playback/notification.")
+                    } else {
+                        when (action) {
+                            PrayerAlarmScheduler.ACTION_PLAY_ADHAN -> {
+                                // Only play adhan if prayer option is not SILENT
+                                if (adhanType != AdhanAudioType.SILENT.name) {
+                                    val serviceIntent = Intent(context, AdhanPlaybackService::class.java).apply {
+                                        putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayerName)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_DISPLAY_NAME, prayerDisplayName)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE, adhanType)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI, adhanUri)
+                                    }
+                                    ContextCompat.startForegroundService(context, serviceIntent)
+                                } else {
+                                    Log.d(TAG, "Adhan for $prayerDisplayName is SILENT. Skipping audio playback.")
+                                }
                             }
-                            ContextCompat.startForegroundService(context, serviceIntent)
-                        } else {
-                            Log.d(TAG, "Adhan for $prayerDisplayName is SILENT. Skipping audio playback.")
+
+                            PrayerAlarmScheduler.ACTION_PRE_PRAYER_REMINDER -> {
+                                if (settings.prePrayerReminderEnabled) {
+                                    showReminderNotification(context, prayerDisplayName)
+                                }
+                            }
                         }
                     }
 
-                    PrayerAlarmScheduler.ACTION_PRE_PRAYER_REMINDER -> {
-                        if (settings.prePrayerReminderEnabled) {
-                            showReminderNotification(context, prayerDisplayName)
-                        }
-                    }
+                    // ALWAYS advance the alarm chain to the next prayer
+                    scheduler.scheduleNext(settings)
+                    Log.d(TAG, "Successfully advanced alarm chain after $action for $prayerDisplayName")
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in PrayerAlarmReceiver", e)
+            } finally {
+                pending.finish()
             }
-
-            // ALWAYS advance the alarm chain to the next prayer
-            scheduler.scheduleNext(settings)
-            Log.d(TAG, "Successfully advanced alarm chain after $action for $prayerDisplayName")
         }
     }
 
