@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
@@ -30,12 +31,17 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.Warning
+import java.time.Instant
+import java.time.ZoneId
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -115,6 +121,16 @@ fun SettingsScreen(
     onResetPin: () -> Unit = {},
     onToggleHomePin: (Boolean) -> Unit = {},
     onDismissDefaultPinPrompt: () -> Unit = {},
+    onSetCalculationMethod: (String) -> Unit = {},
+    onSetMadhab: (String) -> Unit = {},
+    onSetHighLatitudeRule: (String?) -> Unit = {},
+    onSetPrayerOffset: (Prayer, Int) -> Unit = { _, _ -> },
+    onSetSunriseOffset: (Int) -> Unit = {},
+    onSetIqamahOffset: (Prayer, Int) -> Unit = { _, _ -> },
+    onSetHijriChangeAtMidnight: (Boolean) -> Unit = {},
+    onSetMosqueModeAdhan: (Boolean) -> Unit = {},
+    onSetMosqueModeReminders: (Boolean) -> Unit = {},
+    onSetShowStrikeHighlight: (Boolean) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -446,13 +462,352 @@ fun SettingsScreen(
                 }
             }
 
-            // 3. Hijriyah Date Offset (Shared)
+            // Timezone Mismatch Warning (if TV clock zone differs from configured location zone)
+            val currentZone = remember(settings.zoneId) {
+                runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+            }
+            val systemZone = remember { ZoneId.systemDefault() }
+            val isTimezoneMismatch = remember(currentZone, systemZone) {
+                val now = Instant.now()
+                currentZone.rules.getOffset(now) != systemZone.rules.getOffset(now)
+            }
+
+            if (isTimezoneMismatch) {
+                Card(
+                    onClick = {},
+                    colors = CardDefaults.colors(containerColor = Color(0xFF1E3A8A).copy(alpha = 0.4f)),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = Color(0xFF60A5FA),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Perhatian: Zona waktu TV (${systemZone.id}) berbeda dengan zona lokasi terpilih (${currentZone.id}). Seluruh jadwal shalat dan jam TV tetap akurat mengikuti zona masjid/lokasi (${currentZone.id}).",
+                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = Color.White)
+                        )
+                    }
+                }
+            }
+
+            // 3. Calculation Method
             Text(
-                text = "3. Penyesuaian Kalender Hijriyah (Offset: ${settings.hijriOffsetDays} Hari)",
+                text = "3. Metode Perhitungan Waktu Shalat (Saat Ini: ${settings.calculationMethodName})",
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val methodScrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(methodScrollState),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                val methods = listOf(
+                    "SINGAPORE" to "Singapura / MABIMS (Kemenag RI, JAKIM, MUIS)",
+                    "MUSLIM_WORLD_LEAGUE" to "Muslim World League (MWL - Global)",
+                    "UMM_AL_QURA" to "Umm al-Qura (Makkah al-Mukarramah)",
+                    "EGYPTIAN" to "Egyptian General Authority of Survey",
+                    "KARACHI" to "Univ. of Islamic Sciences, Karachi",
+                    "NORTH_AMERICA" to "ISNA (Islamic Society of North America)",
+                    "DUBAI" to "Dubai (UAE Islamic Affairs)",
+                    "MOON_SIGHTING_COMMITTEE" to "Moonsighting Committee Worldwide"
+                )
+                for ((methodKey, methodTitle) in methods) {
+                    val isSelected = settings.calculationMethodName.equals(methodKey, ignoreCase = true)
+                    Surface(
+                        onClick = { onSetCalculationMethod(methodKey) },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                            focusedContainerColor = AccentGold
+                        ),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Text(
+                            text = methodTitle,
+                            style = TvTypography.ButtonText.copy(
+                                fontSize = 14.sp,
+                                color = if (isSelected) Color.White else colorScheme.onSurface
+                            ),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            // 4. Madhab Selection (Shafi'i/Standard vs Hanafi)
+            Text(
+                text = "4. Pilihan Mazhab untuk Waktu Ashr",
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                val isHanafi = settings.madhab.equals("HANAFI", ignoreCase = true)
+                Card(
+                    onClick = { onSetMadhab("SHAFI") },
+                    colors = CardDefaults.colors(
+                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                        .then(
+                            if (!isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
+                        )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Standar (Syafi'i, Maliki, Hanbali)",
+                            style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Waktu Ashr dimulai ketika panjang bayangan suatu benda sama dengan panjang aslinya (1x). Dianut mayoritas Muslim Indonesia, Malaysia, dan Asia Tenggara.",
+                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.75f))
+                        )
+                    }
+                }
+
+                Card(
+                    onClick = { onSetMadhab("HANAFI") },
+                    colors = CardDefaults.colors(
+                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                        .then(
+                            if (isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
+                        )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Hanafi",
+                            style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Waktu Ashr dimulai ketika panjang bayangan benda menjadi dua kali panjang aslinya (2x) — biasanya 45–60 menit lebih lambat dari standar.",
+                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.75f))
+                        )
+                    }
+                }
+            }
+
+            // 5. High-Latitude Rule (Polar / High Latitude Regions)
+            Text(
+                text = "5. Aturan Garis Lintang Tinggi (High-Latitude Rule)",
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                val rules = listOf(
+                    null to "Otomatis / Standar",
+                    "MIDDLE_OF_THE_NIGHT" to "Middle of Night",
+                    "SEVENTH_OF_THE_NIGHT" to "1/7 of Night",
+                    "TWILIGHT_ANGLE" to "Twilight Angle"
+                )
+                for ((ruleKey, ruleTitle) in rules) {
+                    val isSelected = (settings.highLatitudeRule?.uppercase() == ruleKey)
+                    Surface(
+                        onClick = { onSetHighLatitudeRule(ruleKey) },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                            focusedContainerColor = AccentGold
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                    ) {
+                        Text(
+                            text = ruleTitle,
+                            style = TvTypography.ButtonText.copy(
+                                fontSize = 13.sp,
+                                color = if (isSelected) Color.White else colorScheme.onSurface
+                            ),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            // 6. Per-Prayer Time Offsets (−30m to +30m)
+            Text(
+                text = "6. Koreksi Menit Waktu Shalat (Per-Prayer Offsets)",
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                val prayerList = listOf(
+                    Prayer.SUBUH to settings.offsetSubuh,
+                    Prayer.ZUHUR to settings.offsetZuhur,
+                    Prayer.ASHR to settings.offsetAshr,
+                    Prayer.MAGRIB to settings.offsetMagrib,
+                    Prayer.ISYA to settings.offsetIsya
+                )
+                for ((prayer, currentOffset) in prayerList) {
+                    Card(
+                        onClick = {},
+                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = prayer.displayName,
+                                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                            )
+                            Text(
+                                text = if (currentOffset > 0) "+$currentOffset m" else "$currentOffset m",
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (currentOffset != 0) AccentGold else AccentEmerald
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Surface(
+                                    onClick = { onSetPrayerOffset(prayer, (currentOffset - 1).coerceAtLeast(-30)) },
+                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                    modifier = Modifier.tvFocusable()
+                                ) {
+                                    Text("-1", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                                Surface(
+                                    onClick = { onSetPrayerOffset(prayer, 0) },
+                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                    modifier = Modifier.tvFocusable()
+                                ) {
+                                    Text("0", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                                Surface(
+                                    onClick = { onSetPrayerOffset(prayer, (currentOffset + 1).coerceAtMost(30)) },
+                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                    modifier = Modifier.tvFocusable()
+                                ) {
+                                    Text("+1", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7. Per-Prayer Iqamah Offsets (Minutes After Adhan)
+            Text(
+                text = "7. Jeda Waktu Iqamah Setelah Adhan",
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                val iqamahList = listOf(
+                    Prayer.SUBUH to settings.iqamahSubuh,
+                    Prayer.ZUHUR to settings.iqamahZuhur,
+                    Prayer.ASHR to settings.iqamahAshr,
+                    Prayer.MAGRIB to settings.iqamahMagrib,
+                    Prayer.ISYA to settings.iqamahIsya
+                )
+                for ((prayer, currentIqamah) in iqamahList) {
+                    Card(
+                        onClick = {},
+                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = prayer.displayName,
+                                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                            )
+                            Text(
+                                text = if (currentIqamah == 0) "Nonaktif" else "$currentIqamah m",
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (currentIqamah > 0) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                val steps = listOf(0, 5, 10, 15)
+                                for (step in steps) {
+                                    val isStepSelected = (currentIqamah == step)
+                                    Surface(
+                                        onClick = { onSetIqamahOffset(prayer, step) },
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            containerColor = if (isStepSelected) AccentEmerald else colorScheme.surfaceVariant
+                                        ),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Text(
+                                            text = "$step",
+                                            style = TvTypography.ButtonText.copy(
+                                                fontSize = 11.sp,
+                                                color = if (isStepSelected) Color.White else colorScheme.onSurface
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 8. Hijriyah Date Adjustments & Rollover
+            Text(
+                text = "8. Penyesuaian Kalender Hijriyah & Waktu Pergantian Hari",
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            // Day offset (-2..+2)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Koreksi Hilal (Saat ini: ${settings.hijriOffsetDays} Hari):",
+                    style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                )
                 val offsets = listOf(-2, -1, 0, 1, 2)
                 for (offset in offsets) {
                     val isSelected = (settings.hijriOffsetDays == offset)
@@ -468,10 +823,68 @@ fun SettingsScreen(
                         Text(
                             text = if (offset > 0) "+$offset Hari" else "$offset Hari",
                             style = TvTypography.ButtonText.copy(
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 color = if (isSelected) Color.White else colorScheme.onSurface
                             ),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            // Maghrib vs Midnight Rollover
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Card(
+                    onClick = { onSetHijriChangeAtMidnight(false) },
+                    colors = CardDefaults.colors(
+                        containerColor = if (!settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                        .then(
+                            if (!settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
+                        )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Ganti Hari Saat Magrib (Sunset)",
+                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Bawaan Syariat Islam: Hari baru kalender Hijriyah dimulai begitu matahari terbenam (waktu Magrib).",
+                            style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                        )
+                    }
+                }
+
+                Card(
+                    onClick = { onSetHijriChangeAtMidnight(true) },
+                    colors = CardDefaults.colors(
+                        containerColor = if (settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                        .then(
+                            if (settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
+                        )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Ganti Hari Saat Tengah Malam (00:00)",
+                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tanggal Hijriyah berganti bersamaan dengan tanggal Masehi tepat pukul 00:00 malam.",
+                            style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                         )
                     }
                 }
@@ -696,7 +1109,7 @@ fun SettingsScreen(
             } else {
                 // ================= MOSQUE MODE ONLY SETTINGS =================
 
-                // Mosque Audio Info Note
+                // Mosque Audio Warning Note
                 Card(
                     onClick = {},
                     colors = CardDefaults.colors(containerColor = colorScheme.surfaceVariant),
@@ -708,16 +1121,130 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.NotificationsOff,
+                            imageVector = Icons.Default.Warning,
                             contentDescription = null,
                             tint = AccentGold,
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(14.dp))
                         Text(
-                            text = "Mode Masjid Beroperasi Hening Total: Suara Adhan audio dan notifikasi pop-up secara otomatis dinonaktifkan demi menjaga ketertiban jamaah.",
+                            text = "Perhatian: Mengaktifkan suara di mode masjid dapat mengganggu jamaah jika TV terhubung ke amplifier/sound system masjid.",
                             style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant)
                         )
+                    }
+                }
+
+                // Quiet Mosque Mode Toggles
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Adhan audio toggle
+                    Card(
+                        onClick = { onSetMosqueModeAdhan(!settings.mosqueModeAdhanEnabled) },
+                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                            .then(
+                                if (settings.mosqueModeAdhanEnabled) Modifier.border(1.5.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (settings.mosqueModeAdhanEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                contentDescription = null,
+                                tint = if (settings.mosqueModeAdhanEnabled) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (settings.mosqueModeAdhanEnabled) "Suara Adhan: AKTIF" else "Suara Adhan: HENING",
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = "Bawaan hening total",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                                )
+                            }
+                        }
+                    }
+
+                    // Reminder toggle
+                    Card(
+                        onClick = { onSetMosqueModeReminders(!settings.mosqueModeRemindersEnabled) },
+                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                            .then(
+                                if (settings.mosqueModeRemindersEnabled) Modifier.border(1.5.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (settings.mosqueModeRemindersEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                                contentDescription = null,
+                                tint = if (settings.mosqueModeRemindersEnabled) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (settings.mosqueModeRemindersEnabled) "Pengingat 15m: AKTIF" else "Pengingat 15m: NONAKTIF",
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = "Notifikasi 15m sebelum shalat",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                                )
+                            }
+                        }
+                    }
+
+                    // Visual Strike Highlight toggle
+                    Card(
+                        onClick = { onSetShowStrikeHighlight(!settings.showStrikeHighlight) },
+                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                            .then(
+                                if (settings.showStrikeHighlight) Modifier.border(1.5.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = if (settings.showStrikeHighlight) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (settings.showStrikeHighlight) "Denyut Visual: AKTIF" else "Denyut Visual: NONAKTIF",
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = "Denyut hening 5m saat adhan",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                                )
+                            }
+                        }
                     }
                 }
 

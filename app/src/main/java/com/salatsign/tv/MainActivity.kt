@@ -233,6 +233,8 @@ fun MainContent(
             settings = settings,
             onSelectMode = { settingsViewModel.toggleMosqueMode(it) },
             onSelectCity = { settingsViewModel.selectCity(it) },
+            onSelectMethod = { settingsViewModel.setCalculationMethod(it) },
+            onSelectMadhab = { settingsViewModel.setMadhab(it) },
             onSelectMosqueName = { settingsViewModel.setMosqueName(it) },
             onSelectMosqueIcon = { settingsViewModel.setMosqueIconPreset(it) },
             onSetAdminPin = { settingsViewModel.setCustomPin(it) },
@@ -265,6 +267,16 @@ fun MainContent(
             onResetPin = { settingsViewModel.resetToDefaultPin() },
             onToggleHomePin = { settingsViewModel.toggleHomeModePinRequired(it) },
             onDismissDefaultPinPrompt = { settingsViewModel.dismissDefaultPinPrompt() },
+            onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
+            onSetMadhab = { settingsViewModel.setMadhab(it) },
+            onSetHighLatitudeRule = { settingsViewModel.setHighLatitudeRule(it) },
+            onSetPrayerOffset = { prayer, mins -> settingsViewModel.setPrayerOffset(prayer, mins) },
+            onSetSunriseOffset = { settingsViewModel.setSunriseOffset(it) },
+            onSetIqamahOffset = { prayer, mins -> settingsViewModel.setIqamahOffset(prayer, mins) },
+            onSetHijriChangeAtMidnight = { settingsViewModel.setHijriChangeAtMidnight(it) },
+            onSetMosqueModeAdhan = { settingsViewModel.setMosqueModeAdhan(it) },
+            onSetMosqueModeReminders = { settingsViewModel.setMosqueModeReminders(it) },
+            onSetShowStrikeHighlight = { settingsViewModel.setShowStrikeHighlight(it) },
             onRestartSetupWizard = {
                 onCloseSettings()
                 settingsViewModel.restartSetupWizard()

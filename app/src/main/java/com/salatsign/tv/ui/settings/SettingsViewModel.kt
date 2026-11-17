@@ -246,4 +246,91 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.dismissDefaultPinPrompt()
         }
     }
+
+    fun setCalculationMethod(methodName: String) {
+        viewModelScope.launch {
+            repository.setCalculationMethod(methodName)
+            val updated = settings.value.copy(calculationMethodName = methodName)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setMadhab(madhab: String) {
+        viewModelScope.launch {
+            repository.setMadhab(madhab)
+            val updated = settings.value.copy(madhab = madhab)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setHighLatitudeRule(rule: String?) {
+        viewModelScope.launch {
+            repository.setHighLatitudeRule(rule)
+            val updated = settings.value.copy(highLatitudeRule = rule)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setPrayerOffset(prayer: Prayer, minutes: Int) {
+        viewModelScope.launch {
+            repository.setPrayerOffset(prayer, minutes)
+            val current = settings.value
+            val updated = when (prayer) {
+                Prayer.SUBUH -> current.copy(offsetSubuh = minutes)
+                Prayer.ZUHUR -> current.copy(offsetZuhur = minutes)
+                Prayer.ASHR -> current.copy(offsetAshr = minutes)
+                Prayer.MAGRIB -> current.copy(offsetMagrib = minutes)
+                Prayer.ISYA -> current.copy(offsetIsya = minutes)
+            }
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setSunriseOffset(minutes: Int) {
+        viewModelScope.launch {
+            repository.setSunriseOffset(minutes)
+        }
+    }
+
+    fun setIqamahOffset(prayer: Prayer, minutes: Int) {
+        viewModelScope.launch {
+            repository.setIqamahOffset(prayer, minutes)
+        }
+    }
+
+    fun setHijriChangeAtMidnight(changeAtMidnight: Boolean) {
+        viewModelScope.launch {
+            repository.setHijriChangeAtMidnight(changeAtMidnight)
+        }
+    }
+
+    fun setMosqueModeAdhan(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setMosqueModeAdhan(enabled)
+            val updated = settings.value.copy(mosqueModeAdhanEnabled = enabled)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setMosqueModeReminders(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setMosqueModeReminders(enabled)
+            val updated = settings.value.copy(mosqueModeRemindersEnabled = enabled)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setShowStrikeHighlight(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setShowStrikeHighlight(enabled)
+        }
+    }
+
+    fun setZoneId(zoneId: String) {
+        viewModelScope.launch {
+            repository.setZoneId(zoneId)
+            val updated = settings.value.copy(zoneId = zoneId)
+            scheduler.scheduleNext(updated)
+        }
+    }
 }

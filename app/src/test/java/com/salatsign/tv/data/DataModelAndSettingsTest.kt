@@ -50,7 +50,16 @@ class DataModelAndSettingsTest {
         assertEquals(MosqueFontPreset.MODERN_SANS, settings.mosqueFontPreset)
         assertTrue("15-min reminder must be enabled by default", settings.prePrayerReminderEnabled)
         assertEquals(0, settings.hijriOffsetDays)
-        assertEquals("Jakarta", settings.cityName)
+        assertEquals("Canberra, ACT, Australia", settings.cityName)
+        assertEquals("Australia/Sydney", settings.zoneId)
+        assertEquals("SHAFI", settings.madhab)
+        org.junit.Assert.assertNull(settings.highLatitudeRule)
+        assertEquals(0, settings.offsetSubuh)
+        assertEquals(0, settings.iqamahSubuh)
+        assertFalse(settings.hijriChangeAtMidnight)
+        assertFalse("Mosque Mode Adhan must be false by default (quiet)", settings.mosqueModeAdhanEnabled)
+        assertFalse("Mosque Mode Reminders must be false by default (quiet)", settings.mosqueModeRemindersEnabled)
+        assertTrue("Visual strike highlight should be true by default", settings.showStrikeHighlight)
 
         assertFalse(settings.homeModePinRequired)
         assertFalse(settings.hasCustomPin)
@@ -68,9 +77,18 @@ class DataModelAndSettingsTest {
     }
 
     @Test
-    fun popularCityPresets_containMajorCities() {
+    fun popularCityPresets_containAustralianAndMajorCities() {
         assertTrue(PopularCityPresets.isNotEmpty())
+        val firstCity = PopularCityPresets.first()
+        assertTrue("Australian presets should come first (Canberra)", firstCity.name.contains("Canberra"))
+        assertEquals("Australia/Sydney", firstCity.zoneId)
+
         val cityNames = PopularCityPresets.map { it.name }
+        assertTrue(cityNames.any { it.contains("Sydney") })
+        assertTrue(cityNames.any { it.contains("Melbourne") })
+        assertTrue(cityNames.any { it.contains("Brisbane") })
+        assertTrue(cityNames.any { it.contains("Adelaide") })
+        assertTrue(cityNames.any { it.contains("Perth") })
         assertTrue(cityNames.any { it.contains("Jakarta") })
         assertTrue(cityNames.any { it.contains("Surabaya") })
         assertTrue(cityNames.any { it.contains("Singapore") })
