@@ -249,4 +249,8 @@
     <string name="wizard_pin_custom_title">تعيين رمز PIN جديد (4 إلى 8 أرقام)</string>
     <string name="wizard_pin_custom_desc">يوصى بشدة للشاشات العامة لمنع التعديل على الإعدادات بسهولة.</string>
     <string name="wizard_pin_custom_active">الرمز المخصص مفعل (محفوظ)</string>
+
+    <!-- About & Credit -->
+    <string name="about_credit">SalatSign بواسطة Rocky Adam Tauhid</string>
+    <string name="about_license">مفتوح المصدر بموجب رخصة GPL-3.0-or-later</string>
 </resources>

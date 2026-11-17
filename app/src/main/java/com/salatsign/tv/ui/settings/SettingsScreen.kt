@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.settings
 
 import androidx.compose.foundation.background
@@ -1822,6 +1825,11 @@ fun SettingsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = stringResource(R.string.about_credit),
+                        style = TvTypography.BodyLabel.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                    )
 
                     Text(
                         text = stringResource(R.string.settings_about_license),

@@ -249,4 +249,8 @@
     <string name="wizard_pin_custom_title">Set New Custom PIN (4–8 Digits)</string>
     <string name="wizard_pin_custom_desc">Highly recommended for TV displays so PIN cannot be easily guessed.</string>
     <string name="wizard_pin_custom_active">Custom PIN Active (Saved)</string>
+
+    <!-- About & Credit -->
+    <string name="about_credit">SalatSign by Rocky Adam Tauhid</string>
+    <string name="about_license">Open source under GPL-3.0-or-later</string>
 </resources>

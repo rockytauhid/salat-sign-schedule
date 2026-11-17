@@ -249,4 +249,8 @@
     <string name="wizard_pin_custom_title">Atur PIN Kustom Baru (4-8 Digit)</string>
     <string name="wizard_pin_custom_desc">Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.</string>
     <string name="wizard_pin_custom_active">PIN Kustom Aktif (Tersimpan)</string>
+
+    <!-- About & Credit -->
+    <string name="about_credit">SalatSign oleh Rocky Adam Tauhid</string>
+    <string name="about_license">Sumber terbuka di bawah GPL-3.0-or-later</string>
 </resources>

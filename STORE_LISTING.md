@@ -9,10 +9,12 @@ This document contains all metadata, store listings, graphic asset guidelines, p
 ### App Title (Max 30 characters)
 - **English:** `SalatSign: Prayer Times & TV`
 - **Indonesian:** `SalatSign: Jadwal Shalat TV`
+- **Arabic:** `SalatSign: أوقات الصلاة للتلفاز`
 
 ### Short Description (Max 80 characters)
 - **English:** `Offline Islamic prayer times, Hijri calendar, Adhan audio & mosque TV signage.`
 - **Indonesian:** `Jadwal shalat offline, kalender Hijriyah, Adhan & digital signage Android TV.`
+- **Arabic:** `أوقات الصلاة دون إنترنت، التقويم الهجري، الأذان وشاشات المساجد للتلفاز.`
 
 ### Full Description (Max 4,000 characters)
 
@@ -70,6 +72,32 @@ Menampilkan tanggal Masehi dan Hijriyah secara bersamaan. Dilengkapi pengaturan 
 • Interupsi Hening Tepat Waktu: Begitu waktu shalat tiba saat slide pengumuman aktif, tampilan langsung kembali ke jadwal shalat dengan animasi berkedip selama 5 menit tanpa suara.
 • Layar Tetap Menyala: Mencegah TV masuk mode standby/sleep secara otomatis.
 • Akses Admin Tersembunyi: Tekan tombol Menu remote atau tahan tombol Tengah selama 3 detik untuk masuk ke pengaturan.
+• Keamanan Admin PIN: Pengaturan dilindungi PIN dengan proteksi lockout terhadap upaya salah berulang.
+```
+
+#### Arabic Listing:
+```text
+SalatSign هو تطبيق حديث لشاشات أندرويد تي في (Android TV) يعمل بالكامل دون الحاجة إلى اتصال بالإنترنت، مصمم خصيصاً للمنازل والمكاتب والمساجد.
+
+الميزات الرئيسية:
+
+1. محرك فلكي لمواقيت الصلاة يعمل 100% دون إنترنت
+حساب دقيق لمواقيت الصلوات الخمس (الفجر، الظهر، العصر، المغرب، العشاء) بناءً على الإحداثيات الجغرافية المحددة بدون الحاجة إلى اتصال بالإنترنت.
+
+2. تقويم مزدوج (ميلادي وهجري)
+عرض متزامن للتاريخ الميلادي والهجري مع إمكانية تعديل اليوم الهجري (-2 إلى +2) ليتوافق مع الرؤية المحلية للهلال.
+
+3. الوضع المنزلي / الشخصي
+• العد التنازلي الحي: بطاقة بارزة للصلاة القادمة مع عد تنازلي مباشر (HH:MM:SS).
+• تنبيه مسبق: إشعار على الشاشة قبل 15 دقيقة من دخول الوقت.
+• أذان في الوقت المحدد: تشغيل صوت الأذان عبر خدمة في المقدمة فوق التطبيقات الأخرى.
+• تخصيص الصوت: اختيار أذان الفجر، أو الأذان العادي، أو الوضع الصامت، أو ملفات صوتية من الذاكرة المحلية أو USB.
+
+4. وضع المسجد (لوحات الإعلانات الرقمية)
+• شاشة بيضاء مخصصة: إخفاء هوية التطبيق وعرض اسم المسجد وشعاره وبياناته بالكامل.
+• عرض شرائح تلقائي: تدوير سلس بين جدول الصلاة وإعلانات المسجد وصور الفعاليات.
+• صامت بالكامل: عودة هادئة تلقائية لجدول الصلاة عند حلول الوقت مع وميض بصري للصف النشط لمدة 5 دقائق دون إصدار أي صوت.
+• قفل الإعدادات برمز PIN مع حماية من المحاولات الخاطئة لمنع العبث.
 ```
 
 ---
@@ -100,7 +128,7 @@ Menampilkan tanggal Masehi dan Hijriyah secara bersamaan. Dilengkapi pengaturan 
 > SalatSign does not integrate any third-party advertising SDKs, tracking tools, or external analytics services.
 > 
 > **3. Contact:**
-> For questions or inquiries, please contact: `support@salatsign.com`
+> For questions or inquiries, please contact: `rockytauhid@gmail.com`
 
 ---
 
