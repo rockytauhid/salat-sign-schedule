@@ -26,7 +26,7 @@ class BootAndTimeReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val settings = repository.appSettingsFlow.first()
-                scheduler.scheduleAlarmsForToday(settings)
+                scheduler.scheduleNext(settings)
                 Log.d(TAG, "Successfully recalculated and rescheduled alarms after $action")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to reschedule alarms after $action", e)

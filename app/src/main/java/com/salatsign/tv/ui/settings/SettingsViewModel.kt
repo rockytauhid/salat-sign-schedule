@@ -33,7 +33,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.setMosqueMode(enable)
             val updated = settings.value.copy(isMosqueMode = enable)
-            scheduler.scheduleAlarmsForToday(updated)
+            scheduler.scheduleNext(updated)
         }
     }
 
@@ -52,7 +52,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 cityName = city.name,
                 calculationMethodName = city.calculationMethod
             )
-            scheduler.scheduleAlarmsForToday(updated)
+            scheduler.scheduleNext(updated)
         }
     }
 
@@ -66,7 +66,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             repository.setPrePrayerReminder(enable)
             val updated = settings.value.copy(prePrayerReminderEnabled = enable)
-            scheduler.scheduleAlarmsForToday(updated)
+            scheduler.scheduleNext(updated)
         }
     }
 
@@ -81,7 +81,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 Prayer.MAGRIB -> current.copy(adhanMagrib = option)
                 Prayer.ISYA -> current.copy(adhanIsya = option)
             }
-            scheduler.scheduleAlarmsForToday(updated)
+            scheduler.scheduleNext(updated)
         }
     }
 
@@ -138,7 +138,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun completeSetup() {
         viewModelScope.launch {
             repository.setSetupCompleted(true)
-            scheduler.scheduleAlarmsForToday(settings.value)
+            scheduler.scheduleNext(settings.value)
         }
     }
 

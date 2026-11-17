@@ -28,7 +28,7 @@ class SalatSignApp : Application() {
         // Initial schedule check on startup
         CoroutineScope(Dispatchers.IO).launch {
             val settings = settingsRepository.appSettingsFlow.first()
-            alarmScheduler.scheduleAlarmsForToday(settings)
+            alarmScheduler.scheduleNext(settings)
         }
     }
 }

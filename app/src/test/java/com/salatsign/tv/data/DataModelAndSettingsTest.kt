@@ -9,24 +9,21 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.service.PrayerAlarmScheduler
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DataModelAndSettingsTest {
 
     @Test
-    fun prayerEnum_hasUniqueRequestCodes() {
-        val adhanCodes = Prayer.entries.map { it.defaultRequestCodeAdhan }
-        val reminderCodes = Prayer.entries.map { it.defaultRequestCodeReminder }
-
-        assertEquals("All adhan request codes must be unique", adhanCodes.size, adhanCodes.toSet().size)
-        assertEquals("All reminder request codes must be unique", reminderCodes.size, reminderCodes.toSet().size)
-
-        // Ensure adhan codes and reminder codes never collide
-        val overlap = adhanCodes.toSet().intersect(reminderCodes.toSet())
-        assertTrue("Adhan and Reminder codes must not overlap", overlap.isEmpty())
+    fun prayerAlarm_requestCodesAreUnique() {
+        assertNotEquals(PrayerAlarmScheduler.REQUEST_CODE_ADHAN, PrayerAlarmScheduler.REQUEST_CODE_REMINDER)
+        assertEquals(100, PrayerAlarmScheduler.REQUEST_CODE_ADHAN)
+        assertEquals(200, PrayerAlarmScheduler.REQUEST_CODE_REMINDER)
+        assertEquals(5, Prayer.entries.size)
     }
 
     @Test

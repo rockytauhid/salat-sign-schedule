@@ -2,6 +2,7 @@ package com.salatsign.tv.engine
 
 import com.salatsign.tv.data.model.Prayer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -9,6 +10,7 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class PrayerCalculationEngineTest {
 
@@ -153,5 +155,149 @@ class PrayerCalculationEngineTest {
         // 4. Before prayer time -> null
         val strikeBefore = PrayerCalculationEngine.getPrayerAtExactTimeStrike(result, magribTime.minusMinutes(1), 5)
         assertNull(strikeBefore)
+    }
+
+    @Test
+    fun nextPrayerEvent_afterIsya_returnsTomorrowSubuh() {
+        val lateNight = ZonedDateTime.of(testDate, LocalTime.of(23, 0), zoneId)
+        val nextEvent = PrayerCalculationEngine.nextPrayerEvent(
+            now = lateNight,
+            latitude = latitude,
+            longitude = longitude,
+            calculationMethodName = calculationMethod
+        )
+
+        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
+        assertTrue(nextEvent.at.isAfter(lateNight))
+    }
+
+    @Test
+    fun nextPrayerEvent_aroundMidnight_resolvesConsistently() {
+        val justBeforeMidnight = ZonedDateTime.of(testDate, LocalTime.of(23, 59, 30), zoneId)
+        val justAfterMidnight = ZonedDateTime.of(testDate.plusDays(1), LocalTime.of(0, 0, 30), zoneId)
+
+        val eventBefore = PrayerCalculationEngine.nextPrayerEvent(
+            now = justBeforeMidnight,
+            latitude = latitude,
+            longitude = longitude,
+            calculationMethodName = calculationMethod
+        )
+        val eventAfter = PrayerCalculationEngine.nextPrayerEvent(
+            now = justAfterMidnight,
+            latitude = latitude,
+            longitude = longitude,
+            calculationMethodName = calculationMethod
+        )
+
+        assertEquals(Prayer.SUBUH, eventBefore.prayer)
+        assertEquals(Prayer.SUBUH, eventAfter.prayer)
+        assertEquals(testDate.plusDays(1), eventBefore.at.toLocalDate())
+        assertEquals(testDate.plusDays(1), eventAfter.at.toLocalDate())
+        assertEquals("Both times must resolve to the identical Subuh instant", eventBefore.at, eventAfter.at)
+    }
+
+    @Test
+    fun nextPrayerEvent_worksForAustraliaBrisbane_noDst() {
+        val brisbaneZone = ZoneId.of("Australia/Brisbane")
+        val brisbaneLat = -27.4698
+        val brisbaneLng = 153.0251
+        val lateEvening = ZonedDateTime.of(testDate, LocalTime.of(22, 0), brisbaneZone)
+
+        val nextEvent = PrayerCalculationEngine.nextPrayerEvent(
+            now = lateEvening,
+            latitude = brisbaneLat,
+            longitude = brisbaneLng,
+            calculationMethodName = "MUSLIM_WORLD_LEAGUE"
+        )
+
+        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
+        assertEquals(brisbaneZone, nextEvent.at.zone)
+    }
+
+    @Test
+    fun nextPrayerEvent_worksForAustraliaSydney_acrossDstTransitions() {
+        val sydneyZone = ZoneId.of("Australia/Sydney")
+        val sydneyLat = -33.8688
+        val sydneyLng = 151.2093
+
+        // 1. April DST End transition (2026-04-05 clocks change from AEDT to AEST)
+        val nightBeforeDstEnd = ZonedDateTime.of(LocalDate.of(2026, 4, 4), LocalTime.of(23, 30), sydneyZone)
+        val nextEventApril = PrayerCalculationEngine.nextPrayerEvent(
+            now = nightBeforeDstEnd,
+            latitude = sydneyLat,
+            longitude = sydneyLng,
+            calculationMethodName = "MUSLIM_WORLD_LEAGUE"
+        )
+        assertEquals(Prayer.SUBUH, nextEventApril.prayer)
+        assertEquals(LocalDate.of(2026, 4, 5), nextEventApril.at.toLocalDate())
+
+        // 2. October DST Start transition (2026-10-04 clocks change from AEST to AEDT)
+        val nightBeforeDstStart = ZonedDateTime.of(LocalDate.of(2026, 10, 3), LocalTime.of(23, 30), sydneyZone)
+        val nextEventOct = PrayerCalculationEngine.nextPrayerEvent(
+            now = nightBeforeDstStart,
+            latitude = sydneyLat,
+            longitude = sydneyLng,
+            calculationMethodName = "MUSLIM_WORLD_LEAGUE"
+        )
+        assertEquals(Prayer.SUBUH, nextEventOct.prayer)
+        assertEquals(LocalDate.of(2026, 10, 4), nextEventOct.at.toLocalDate())
+    }
+
+    @Test
+    fun nextPrayerEvent_worksForAustraliaAdelaide_halfHourOffset() {
+        val adelaideZone = ZoneId.of("Australia/Adelaide")
+        val adelaideLat = -34.9285
+        val adelaideLng = 138.6007
+        val lateEvening = ZonedDateTime.of(testDate, LocalTime.of(22, 30), adelaideZone)
+
+        val nextEvent = PrayerCalculationEngine.nextPrayerEvent(
+            now = lateEvening,
+            latitude = adelaideLat,
+            longitude = adelaideLng,
+            calculationMethodName = "MUSLIM_WORLD_LEAGUE"
+        )
+
+        assertEquals(Prayer.SUBUH, nextEvent.prayer)
+        assertEquals(testDate.plusDays(1), nextEvent.at.toLocalDate())
+        assertEquals(adelaideZone, nextEvent.at.zone)
+    }
+
+    @Test
+    fun nextReminderEvent_schedulesFifteenMinutesBeforePrayer() {
+        val midMorning = ZonedDateTime.of(testDate, LocalTime.of(8, 0), zoneId)
+        val reminderEvent = PrayerCalculationEngine.nextReminderEvent(
+            now = midMorning,
+            latitude = latitude,
+            longitude = longitude,
+            calculationMethodName = calculationMethod
+        )
+
+        assertEquals(Prayer.ZUHUR, reminderEvent.prayer)
+        assertEquals(reminderEvent.prayerAt.minusMinutes(15), reminderEvent.reminderAt)
+        assertTrue(reminderEvent.reminderAt.isAfter(midMorning))
+    }
+
+    @Test
+    fun isAlarmStale_detectsStaleAlarmsAccurately() {
+        val now = 1_000_000_000_000L
+
+        // Fired 2 minutes late -> not stale (< 5 mins)
+        val twoMinAgo = now - (2 * 60 * 1000L)
+        assertFalse(PrayerCalculationEngine.isAlarmStale(twoMinAgo, now))
+
+        // Fired 6 minutes late -> stale (> 5 mins)
+        val sixMinAgo = now - (6 * 60 * 1000L)
+        assertTrue(PrayerCalculationEngine.isAlarmStale(sixMinAgo, now))
+
+        // Fired right on time
+        assertFalse(PrayerCalculationEngine.isAlarmStale(now, now))
+
+        // Scheduled in the future (early)
+        assertFalse(PrayerCalculationEngine.isAlarmStale(now + 10000L, now))
+
+        // Invalid scheduledAt (0)
+        assertFalse(PrayerCalculationEngine.isAlarmStale(0L, now))
     }
 }

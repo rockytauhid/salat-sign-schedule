@@ -6,7 +6,10 @@ import com.batoulapps.adhan.Coordinates
 import com.batoulapps.adhan.Madhab
 import com.batoulapps.adhan.PrayerTimes
 import com.batoulapps.adhan.data.DateComponents
+import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerEvent
+import com.salatsign.tv.data.model.PrayerReminderEvent
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.data.model.PrayerTimesDay
 import java.time.Instant
@@ -142,6 +145,121 @@ object PrayerCalculationEngine {
             }
         }
         return null
+    }
+
+    /**
+     * Calculates all 5 prayer events for a given calendar date as ZonedDateTime instances.
+     */
+    fun getDayPrayerEvents(
+        date: LocalDate,
+        latitude: Double,
+        longitude: Double,
+        calculationMethodName: String = "SINGAPORE",
+        zoneId: ZoneId = ZoneId.systemDefault()
+    ): List<PrayerEvent> {
+        val coordinates = Coordinates(latitude, longitude)
+        val dateComponents = DateComponents(date.year, date.monthValue, date.dayOfMonth)
+        val parameters = getCalculationParameters(calculationMethodName)
+
+        val prayerTimes = PrayerTimes(coordinates, dateComponents, parameters)
+
+        return listOf(
+            PrayerEvent(Prayer.SUBUH, dateToZonedDateTime(prayerTimes.fajr, date, zoneId)),
+            PrayerEvent(Prayer.ZUHUR, dateToZonedDateTime(prayerTimes.dhuhr, date, zoneId)),
+            PrayerEvent(Prayer.ASHR, dateToZonedDateTime(prayerTimes.asr, date, zoneId)),
+            PrayerEvent(Prayer.MAGRIB, dateToZonedDateTime(prayerTimes.maghrib, date, zoneId)),
+            PrayerEvent(Prayer.ISYA, dateToZonedDateTime(prayerTimes.isha, date, zoneId))
+        )
+    }
+
+    /**
+     * Determines the earliest prayer event strictly after [now], evaluating both today's
+     * and tomorrow's prayer times so transitions across midnight/after Isya are seamless.
+     */
+    fun nextPrayerEvent(
+        now: ZonedDateTime,
+        latitude: Double,
+        longitude: Double,
+        calculationMethodName: String = "SINGAPORE"
+    ): PrayerEvent {
+        val zoneId = now.zone
+        val today = now.toLocalDate()
+        val tomorrow = today.plusDays(1)
+
+        val todayEvents = getDayPrayerEvents(today, latitude, longitude, calculationMethodName, zoneId)
+        val tomorrowEvents = getDayPrayerEvents(tomorrow, latitude, longitude, calculationMethodName, zoneId)
+
+        val allEvents = todayEvents + tomorrowEvents
+        return allEvents.firstOrNull { it.at.isAfter(now) }
+            ?: tomorrowEvents.first()
+    }
+
+    fun nextPrayerEvent(
+        now: ZonedDateTime,
+        settings: AppSettings
+    ): PrayerEvent = nextPrayerEvent(
+        now = now,
+        latitude = settings.latitude,
+        longitude = settings.longitude,
+        calculationMethodName = settings.calculationMethodName
+    )
+
+    /**
+     * Determines the earliest 15-minute pre-prayer reminder strictly after [now].
+     */
+    fun nextReminderEvent(
+        now: ZonedDateTime,
+        latitude: Double,
+        longitude: Double,
+        calculationMethodName: String = "SINGAPORE"
+    ): PrayerReminderEvent {
+        val zoneId = now.zone
+        val today = now.toLocalDate()
+        val tomorrow = today.plusDays(1)
+
+        val todayEvents = getDayPrayerEvents(today, latitude, longitude, calculationMethodName, zoneId)
+        val tomorrowEvents = getDayPrayerEvents(tomorrow, latitude, longitude, calculationMethodName, zoneId)
+
+        val allReminders = (todayEvents + tomorrowEvents).map {
+            PrayerReminderEvent(
+                prayer = it.prayer,
+                prayerAt = it.at,
+                reminderAt = it.at.minusMinutes(15)
+            )
+        }
+
+        return allReminders.firstOrNull { it.reminderAt.isAfter(now) }
+            ?: allReminders.first().copy(
+                prayerAt = allReminders.first().prayerAt.plusDays(1),
+                reminderAt = allReminders.first().reminderAt.plusDays(1)
+            )
+    }
+
+    fun nextReminderEvent(
+        now: ZonedDateTime,
+        settings: AppSettings
+    ): PrayerReminderEvent = nextReminderEvent(
+        now = now,
+        latitude = settings.latitude,
+        longitude = settings.longitude,
+        calculationMethodName = settings.calculationMethodName
+    )
+
+    /**
+     * Checks if an alarm event fired more than [thresholdMillis] (default: 5 minutes) late.
+     */
+    fun isAlarmStale(
+        scheduledAtEpochMillis: Long,
+        nowEpochMillis: Long = System.currentTimeMillis(),
+        thresholdMillis: Long = 5 * 60 * 1000L
+    ): Boolean {
+        if (scheduledAtEpochMillis <= 0L) return false
+        return (nowEpochMillis - scheduledAtEpochMillis) > thresholdMillis
+    }
+
+    private fun dateToZonedDateTime(date: Date?, targetDate: LocalDate, zoneId: ZoneId): ZonedDateTime {
+        val time = dateToLocalTime(date, zoneId)
+        return ZonedDateTime.of(targetDate, time, zoneId)
     }
 
     private fun dateToLocalTime(date: Date?, zoneId: ZoneId): LocalTime {
