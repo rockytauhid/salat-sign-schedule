@@ -52,6 +52,14 @@ class DataModelAndSettingsTest {
         assertEquals(0, settings.hijriOffsetDays)
         assertEquals("Jakarta", settings.cityName)
 
+        assertFalse(settings.homeModePinRequired)
+        assertFalse(settings.hasCustomPin)
+        assertEquals("", settings.pinSaltHex)
+        assertEquals("", settings.pinHashHex)
+        assertEquals(0, settings.pinFailedAttempts)
+        assertEquals(0L, settings.pinLockedUntilEpochMillis)
+        assertFalse(settings.defaultPinPromptDismissed)
+
         assertEquals(AdhanAudioType.DEFAULT_SUBUH, settings.adhanFor(Prayer.SUBUH).type)
         assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ZUHUR).type)
         assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ASHR).type)

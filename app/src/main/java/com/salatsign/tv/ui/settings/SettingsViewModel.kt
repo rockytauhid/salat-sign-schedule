@@ -210,4 +210,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.setSetupCompleted(false)
         }
     }
+
+    fun setCustomPin(pin: String) {
+        viewModelScope.launch {
+            repository.setCustomPin(pin)
+        }
+    }
+
+    fun resetToDefaultPin() {
+        viewModelScope.launch {
+            repository.resetToDefaultPin()
+        }
+    }
+
+    fun toggleHomeModePinRequired(required: Boolean) {
+        viewModelScope.launch {
+            repository.setHomeModePinRequired(required)
+        }
+    }
+
+    fun recordPinSuccess() {
+        viewModelScope.launch {
+            repository.recordPinSuccess()
+        }
+    }
+
+    fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
+        viewModelScope.launch {
+            repository.recordPinFailure(newFailedAttempts, lockedUntilEpochMillis)
+        }
+    }
+
+    fun dismissDefaultPinPrompt() {
+        viewModelScope.launch {
+            repository.dismissDefaultPinPrompt()
+        }
+    }
 }

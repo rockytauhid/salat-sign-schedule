@@ -39,7 +39,10 @@
 - **Complete White-Labeling:** Strips all SalatSign logos and titles, displaying only your custom **Mosque Name**, **Mosque Logo** (loaded via Coil), and **Tagline/Address**.
 - **Automated Slideshow Loop:** Displays the full Prayer Schedule for $T_{\text{schedule}}$ seconds (default: 60s), then smoothly transitions (`Crossfade` 800ms) through announcement posters, donation QR codes, and event flyers.
 - **Silent Exact-Time Interruption:** If prayer time strikes during an announcement slide, the timer is immediately interrupted, the view returns to the prayer schedule, and the active prayer row pulses with a glowing border for 5 minutes with **zero sound**.
-- **Hidden Admin Access:** No on-screen settings icons. Press `KEYCODE_MENU` or long-press `DPAD_CENTER` for 3 seconds to access administrative configuration.
+- **Hidden Admin Access & Security:** No on-screen settings icons. Press `KEYCODE_MENU` or hold `DPAD_CENTER` for 3 seconds to access administrative configuration.
+- **Admin PIN & Lockout Protection:** Settings in Mosque Mode is gated behind a PBKDF2-hashed PIN (default `0000`). Brute-force protection locks the keypad for 30s after 5 wrong attempts (doubling up to 15 min), persisted across reboots. Settings automatically auto-closes after 2 minutes of inactivity.
+- **Kiosk Mode Protection:** In Mosque digital signage mode, the remote's `Back` key is intercepted to prevent accidental exit to the TV launcher.
+- **PIN Recovery Policy:** There is deliberately no network backdoor or cloud recovery. If the admin PIN is forgotten, reset it by clearing app data via TV settings: `Android TV Settings -> Apps -> SalatSign -> Clear data`, which restores the default PIN (`0000`).
 
 ---
 

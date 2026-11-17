@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.salatsign.tv.data.model.AdhanAudioOption
@@ -18,6 +19,7 @@ import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.security.PinHasher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -50,6 +52,15 @@ class SettingsRepository(private val context: Context) {
         val MOSQUE_ICON_PRESET = stringPreferencesKey("mosque_icon_preset")
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
+
+        // Security / Admin PIN keys
+        val HOME_MODE_PIN_REQUIRED = booleanPreferencesKey("home_mode_pin_required")
+        val HAS_CUSTOM_PIN = booleanPreferencesKey("has_custom_pin")
+        val PIN_SALT_HEX = stringPreferencesKey("pin_salt_hex")
+        val PIN_HASH_HEX = stringPreferencesKey("pin_hash_hex")
+        val PIN_FAILED_ATTEMPTS = intPreferencesKey("pin_failed_attempts")
+        val PIN_LOCKED_UNTIL_EPOCH_MILLIS = longPreferencesKey("pin_locked_until_epoch_millis")
+        val DEFAULT_PIN_PROMPT_DISMISSED = booleanPreferencesKey("default_pin_prompt_dismissed")
     }
 
     val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -90,6 +101,14 @@ class SettingsRepository(private val context: Context) {
 
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
 
+            val homeModePinRequired = preferences[PreferencesKeys.HOME_MODE_PIN_REQUIRED] ?: false
+            val hasCustomPin = preferences[PreferencesKeys.HAS_CUSTOM_PIN] ?: false
+            val pinSaltHex = preferences[PreferencesKeys.PIN_SALT_HEX] ?: ""
+            val pinHashHex = preferences[PreferencesKeys.PIN_HASH_HEX] ?: ""
+            val pinFailedAttempts = preferences[PreferencesKeys.PIN_FAILED_ATTEMPTS] ?: 0
+            val pinLockedUntil = preferences[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] ?: 0L
+            val defaultPinPromptDismissed = preferences[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] ?: false
+
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
@@ -110,7 +129,14 @@ class SettingsRepository(private val context: Context) {
                 mosqueLogoUri = mosqueLogoUri,
                 mosqueIconPreset = mosqueIconPreset,
                 mosqueFontPreset = mosqueFontPreset,
-                scheduleDurationSeconds = scheduleDuration
+                scheduleDurationSeconds = scheduleDuration,
+                homeModePinRequired = homeModePinRequired,
+                hasCustomPin = hasCustomPin,
+                pinSaltHex = pinSaltHex,
+                pinHashHex = pinHashHex,
+                pinFailedAttempts = pinFailedAttempts,
+                pinLockedUntilEpochMillis = pinLockedUntil,
+                defaultPinPromptDismissed = defaultPinPromptDismissed
             )
         }
 
@@ -216,6 +242,55 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateScheduleDuration(seconds: Int) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SCHEDULE_DURATION_SECONDS] = seconds.coerceAtLeast(10)
+        }
+    }
+
+    suspend fun setCustomPin(pin: String) {
+        val hashed = PinHasher.createHashedPin(pin)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAS_CUSTOM_PIN] = true
+            prefs[PreferencesKeys.PIN_SALT_HEX] = hashed.saltHex
+            prefs[PreferencesKeys.PIN_HASH_HEX] = hashed.hashHex
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
+        }
+    }
+
+    suspend fun resetToDefaultPin() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAS_CUSTOM_PIN] = false
+            prefs.remove(PreferencesKeys.PIN_SALT_HEX)
+            prefs.remove(PreferencesKeys.PIN_HASH_HEX)
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = false
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
+        }
+    }
+
+    suspend fun setHomeModePinRequired(required: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HOME_MODE_PIN_REQUIRED] = required
+        }
+    }
+
+    suspend fun recordPinSuccess() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
+        }
+    }
+
+    suspend fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = newFailedAttempts
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = lockedUntilEpochMillis
+        }
+    }
+
+    suspend fun dismissDefaultPinPrompt() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
         }
     }
 }

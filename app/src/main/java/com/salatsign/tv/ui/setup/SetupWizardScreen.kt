@@ -21,11 +21,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +53,8 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.MosqueNamePresets
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
+import com.salatsign.tv.ui.common.PinDialog
+import com.salatsign.tv.ui.common.PinDialogMode
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
@@ -63,11 +68,16 @@ fun SetupWizardScreen(
     onSelectCity: (CityPreset) -> Unit,
     onSelectMosqueName: (String) -> Unit,
     onSelectMosqueIcon: (MosqueIconPreset) -> Unit,
+    onSetAdminPin: (String) -> Unit = {},
     onCompleteSetup: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
+    var showPinDialog by remember { mutableStateOf(false) }
+    var customPinSetSuccess by remember { mutableStateOf(settings.hasCustomPin) }
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
+
+    val maxSteps = if (settings.isMosqueMode) 4 else 2
 
     LaunchedEffect(currentStep) {
         initialFocusRequester.requestFocus()
@@ -95,7 +105,7 @@ fun SetupWizardScreen(
                         style = TvTypography.HeaderTitle.copy(fontSize = 36.sp, color = colorScheme.onBackground)
                     )
                     Text(
-                        text = "Panduan Konfigurasi Awal Android TV (Langkah $currentStep dari ${if (settings.isMosqueMode) 3 else 2})",
+                        text = "Panduan Konfigurasi Awal Android TV (Langkah $currentStep dari $maxSteps)",
                         style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                     )
                 }
@@ -360,6 +370,106 @@ fun SetupWizardScreen(
                             }
                         }
                     }
+
+                    4 -> {
+                        // Step 4: Admin PIN (Mosque Mode)
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = "Langkah 4: Atur Keamanan PIN Admin Layar Masjid",
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                            )
+
+                            Text(
+                                text = "PIN Admin diperlukan untuk membuka menu Pengaturan dari layar signage masjid agar konfigurasi tidak diubah oleh pengunjung umum.",
+                                style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                // Default PIN Card
+                                Card(
+                                    onClick = {
+                                        customPinSetSuccess = false
+                                    },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (!customPinSetSuccess) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .focusRequester(initialFocusRequester)
+                                        .tvFocusable()
+                                        .then(
+                                            if (!customPinSetSuccess) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(20.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = null,
+                                                tint = if (!customPinSetSuccess) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Gunakan PIN Bawaan (0000)",
+                                                style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
+                                    }
+                                }
+
+                                // Set Custom PIN Card
+                                Card(
+                                    onClick = {
+                                        showPinDialog = true
+                                    },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (customPinSetSuccess) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (customPinSetSuccess) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(20.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Key,
+                                                contentDescription = null,
+                                                tint = if (customPinSetSuccess) AccentEmerald else AccentGold,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = if (customPinSetSuccess) "PIN Kustom Aktif (Tersimpan)" else "Atur PIN Kustom Baru (4-8 Digit)",
+                                                style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = if (customPinSetSuccess) "PIN kustom telah berhasil disetel. Klik kartu ini jika ingin mengubahnya lagi."
+                                            else "Sangat direkomendasikan untuk layar masjid publik agar PIN tidak mudah ditebak.",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -388,7 +498,6 @@ fun SetupWizardScreen(
 
                 Surface(
                     onClick = {
-                        val maxSteps = if (settings.isMosqueMode) 3 else 2
                         if (currentStep < maxSteps) {
                             currentStep++
                         } else {
@@ -406,7 +515,6 @@ fun SetupWizardScreen(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val maxSteps = if (settings.isMosqueMode) 3 else 2
                         val isFinalStep = (currentStep == maxSteps)
 
                         Text(
@@ -423,6 +531,19 @@ fun SetupWizardScreen(
                     }
                 }
             }
+        }
+
+        if (showPinDialog) {
+            PinDialog(
+                mode = PinDialogMode.SET_NEW,
+                settings = settings,
+                onPinChanged = { pin ->
+                    onSetAdminPin(pin)
+                    customPinSetSuccess = true
+                    showPinDialog = false
+                },
+                onDismiss = { showPinDialog = false }
+            )
         }
     }
 }

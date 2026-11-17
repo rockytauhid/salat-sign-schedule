@@ -86,7 +86,14 @@ data class AppSettings(
     val mosqueLogoUri: String? = null,
     val mosqueIconPreset: MosqueIconPreset = MosqueIconPreset.DOME_CRESCENT,
     val mosqueFontPreset: MosqueFontPreset = MosqueFontPreset.MODERN_SANS,
-    val scheduleDurationSeconds: Int = 60
+    val scheduleDurationSeconds: Int = 60,
+    val homeModePinRequired: Boolean = false,
+    val hasCustomPin: Boolean = false,
+    val pinSaltHex: String = "",
+    val pinHashHex: String = "",
+    val pinFailedAttempts: Int = 0,
+    val pinLockedUntilEpochMillis: Long = 0L,
+    val defaultPinPromptDismissed: Boolean = false
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

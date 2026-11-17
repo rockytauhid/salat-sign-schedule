@@ -24,9 +24,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.filled.Usb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +59,7 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.salatsign.tv.BuildConfig
 import com.salatsign.tv.data.importing.ImportKind
@@ -72,6 +77,8 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
+import com.salatsign.tv.ui.common.PinDialog
+import com.salatsign.tv.ui.common.PinDialogMode
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
@@ -80,6 +87,7 @@ import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.DarkBackground
 import com.salatsign.tv.ui.theme.TvTypography
+import kotlinx.coroutines.delay
 
 @Composable
 fun SettingsScreen(
@@ -103,6 +111,10 @@ fun SettingsScreen(
     onAddImageSlide: (String, String, Int) -> Unit = { _, _, _ -> },
     onAddTextSlide: (String, String, Int) -> Unit = { _, _, _ -> },
     onDeleteSlide: (String) -> Unit = {},
+    onSetCustomPin: (String) -> Unit = {},
+    onResetPin: () -> Unit = {},
+    onToggleHomePin: (Boolean) -> Unit = {},
+    onDismissDefaultPinPrompt: () -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -112,6 +124,18 @@ fun SettingsScreen(
 
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
+    var showChangePinDialog by remember { mutableStateOf(false) }
+    var showDefaultPinPromptDialog by remember {
+        mutableStateOf(!settings.hasCustomPin && !settings.defaultPinPromptDismissed)
+    }
+
+    var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    // Auto-close Settings after 2 minutes of inactivity and return to signage/home
+    LaunchedEffect(lastInteractionTime) {
+        delay(120_000L)
+        onClose()
+    }
 
     LaunchedEffect(Unit) {
         initialFocusRequester.requestFocus()
@@ -122,6 +146,10 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(colorScheme.background)
             .overscanPadding()
+            .onPreviewKeyEvent {
+                lastInteractionTime = System.currentTimeMillis()
+                false
+            }
     ) {
         Column(
             modifier = Modifier
@@ -195,6 +223,68 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Tutup", style = TvTypography.ButtonText.copy(color = colorScheme.onSurface))
+                        }
+                    }
+                }
+            }
+
+            // Security Warning Banner for Default PIN
+            if (!settings.hasCustomPin) {
+                Card(
+                    onClick = { showChangePinDialog = true },
+                    colors = CardDefaults.colors(
+                        containerColor = Color(0xFF7F1D1D).copy(alpha = 0.35f),
+                        focusedContainerColor = Color(0xFF991B1B)
+                    ),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .tvFocusable()
+                        .border(1.5.dp, Color(0xFFEF4444).copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text(
+                                    text = "Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan",
+                                    style = TvTypography.CardTitle.copy(
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                )
+                                Text(
+                                    text = "Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.",
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 13.sp,
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFFEF4444), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "Ubah PIN",
+                                style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color.White)
+                            )
                         }
                     }
                 }
@@ -513,6 +603,91 @@ fun SettingsScreen(
                                     text = "USB / File",
                                     style = TvTypography.BodyLabel.copy(fontSize = 11.sp, color = colorScheme.onSurface)
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // 5. Security & Admin PIN (Home Mode)
+                Text(
+                    text = "5. Keamanan & Kunci Pengaturan PIN",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                Surface(
+                    onClick = { onToggleHomePin(!settings.homeModePinRequired) },
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = if (settings.homeModePinRequired) colorScheme.surfaceVariant else colorScheme.surface
+                    ),
+                    modifier = Modifier.tvFocusable()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (settings.homeModePinRequired) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = if (settings.homeModePinRequired)
+                                        "Kunci Pengaturan dengan PIN: AKTIF"
+                                    else
+                                        "Kunci Pengaturan dengan PIN: NONAKTIF",
+                                    style = TvTypography.ButtonText.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = if (settings.homeModePinRequired)
+                                        "Membuka menu Pengaturan memerlukan PIN (${if (settings.hasCustomPin) "PIN Kustom" else "PIN Bawaan 0000"})"
+                                    else
+                                        "Aktifkan agar anak-anak atau anggota keluarga tidak sengaja mengubah jadwal",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                )
+                            }
+                        }
+
+                        if (settings.homeModePinRequired) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Surface(
+                                    onClick = { showChangePinDialog = true },
+                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                    colors = ClickableSurfaceDefaults.colors(
+                                        containerColor = AccentEmerald,
+                                        focusedContainerColor = AccentGold
+                                    ),
+                                    modifier = Modifier.tvFocusable()
+                                ) {
+                                    Text(
+                                        text = "Ubah PIN",
+                                        style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color.White),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+
+                                if (settings.hasCustomPin) {
+                                    Surface(
+                                        onClick = onResetPin,
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            containerColor = colorScheme.surfaceVariant,
+                                            focusedContainerColor = Color(0xFFEF4444)
+                                        ),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Text(
+                                            text = "Reset ke 0000",
+                                            style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = colorScheme.onSurface),
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -926,6 +1101,87 @@ fun SettingsScreen(
                         }
                     }
                 }
+
+                // 8. Mosque Admin PIN Security
+                Text(
+                    text = "8. Keamanan & PIN Admin Layar Signage",
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
+                Card(
+                    onClick = {},
+                    colors = CardDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (settings.hasCustomPin) AccentEmerald else AccentGold,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text(
+                                    text = if (settings.hasCustomPin) "Status: PIN Kustom Aktif (Aman)" else "Status: PIN Bawaan (0000)",
+                                    style = TvTypography.CardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
+                                )
+                                Text(
+                                    text = if (settings.hasCustomPin)
+                                        "PIN disimpan dalam bentuk salted hash (PBKDF2). Reset data aplikasi akan mengembalikan PIN ke 0000."
+                                    else
+                                        "PIN 0000 mudah ditebak. Sangat disarankan mengganti PIN agar layar masjid aman dari akses tidak berizin.",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                                )
+                            }
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Surface(
+                                onClick = { showChangePinDialog = true },
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = AccentEmerald,
+                                    focusedContainerColor = AccentGold
+                                ),
+                                modifier = Modifier.tvFocusable()
+                            ) {
+                                Text(
+                                    text = "Ubah PIN Admin",
+                                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color.White),
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                )
+                            }
+
+                            if (settings.hasCustomPin) {
+                                Surface(
+                                    onClick = onResetPin,
+                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                    colors = ClickableSurfaceDefaults.colors(
+                                        containerColor = colorScheme.surface,
+                                        focusedContainerColor = Color(0xFFEF4444)
+                                    ),
+                                    modifier = Modifier.tvFocusable()
+                                ) {
+                                    Text(
+                                        text = "Reset ke 0000",
+                                        style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -963,6 +1219,106 @@ fun SettingsScreen(
                     pickerTargetPrayer = null
                 }
             )
+        }
+
+        // Overlay: Change PIN Dialog
+        if (showChangePinDialog) {
+            PinDialog(
+                mode = PinDialogMode.SET_NEW,
+                settings = settings,
+                onPinChanged = { newPin ->
+                    onSetCustomPin(newPin)
+                    showChangePinDialog = false
+                },
+                onDismiss = { showChangePinDialog = false }
+            )
+        }
+
+        // Overlay: One-time prompt for default PIN 0000
+        if (showDefaultPinPromptDialog) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.85f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = SurfaceDefaults.colors(containerColor = colorScheme.surface),
+                    modifier = Modifier
+                        .width(460.dp)
+                        .padding(20.dp)
+                        .border(1.5.dp, Color(0xFFEF4444).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Ganti PIN Bawaan (0000)?",
+                            style = TvTypography.CardTitle.copy(
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colorScheme.onSurface
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Anda saat ini masih menggunakan PIN bawaan 0000. Demi keamanan layar publik masjid, apakah Anda ingin menggantinya sekarang?",
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 14.sp,
+                                color = colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Surface(
+                                onClick = {
+                                    showDefaultPinPromptDialog = false
+                                    onDismissDefaultPinPrompt()
+                                },
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = colorScheme.surfaceVariant
+                                ),
+                                modifier = Modifier.tvFocusable()
+                            ) {
+                                Text(
+                                    text = "Nanti Saja",
+                                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            Surface(
+                                onClick = {
+                                    showDefaultPinPromptDialog = false
+                                    onDismissDefaultPinPrompt()
+                                    showChangePinDialog = true
+                                },
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(
+                                    containerColor = AccentEmerald,
+                                    focusedContainerColor = AccentGold
+                                ),
+                                modifier = Modifier.tvFocusable()
+                            ) {
+                                Text(
+                                    text = "Ganti PIN Sekarang",
+                                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color.White),
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
