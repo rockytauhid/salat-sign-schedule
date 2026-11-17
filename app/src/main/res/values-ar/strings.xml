@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Application -->
+    <string name="app_name" translatable="false">SalatSign</string>
+
+    <!-- Prayer Names (Appendix A) -->
+    <string name="prayer_subuh">الفجر</string>
+    <string name="prayer_zuhur">الظهر</string>
+    <string name="prayer_ashr">العصر</string>
+    <string name="prayer_magrib">المغرب</string>
+    <string name="prayer_isya">العشاء</string>
+    <string name="prayer_jumuah">الجمعة</string>
+    <string name="prayer_sunrise">الشروق</string>
+    <string name="prayer_iqamah">الإقامة</string>
+
+    <!-- Hijri Formatting -->
+    <string name="hijri_date_format">%1$d %2$s %3$d %4$s</string>
+    <string name="hijri_year_suffix">هـ</string>
+
+    <!-- Languages -->
+    <string name="lang_system">افتراضي النظام</string>
+    <string name="lang_en">English (Australia)</string>
+    <string name="lang_id">Bahasa Indonesia</string>
+    <string name="lang_ar">العربية</string>
+
+    <!-- Theme Modes -->
+    <string name="theme_always_dark">الوضع الداكن (ليلي / شاشات أوليد)</string>
+    <string name="theme_always_light">الوضع الفاتح (نهاري)</string>
+    <string name="theme_auto_day_night">تلقائي (نهاري فاتح / ليلي داكن)</string>
+
+    <!-- Mosque Icon Presets -->
+    <string name="mosque_icon_dome_crescent">قبة وهلال</string>
+    <string name="mosque_icon_minaret">مئذنة المسجد</string>
+    <string name="mosque_icon_geometric_star">نجمة ثمانية (ربع الحزب)</string>
+    <string name="mosque_icon_mihrab">محراب إسلامي</string>
+    <string name="mosque_icon_custom">شعار مخصص / ذاكرة USB</string>
+
+    <!-- Mosque Font Presets -->
+    <string name="mosque_font_modern_sans">خط حديث عريض</string>
+    <string name="mosque_font_traditional_serif">نسخي تقليدي</string>
+    <string name="mosque_font_elegant_display">خط كوفي أنيق</string>
+    <string name="mosque_font_clean_tech">بسيط وعصري</string>
+
+    <!-- Adhan Audio Options -->
+    <string name="adhan_standard">أذان قياسي</string>
+    <string name="adhan_subuh_special">أذان الفجر (خاص)</string>
+    <string name="adhan_custom_file">ملف صوتي مخصص / USB</string>
+    <string name="adhan_silent">صامت / معطل</string>
+
+    <!-- Buttons & Actions -->
+    <string name="btn_close">إغلاق</string>
+    <string name="btn_cancel">إلغاء</string>
+    <string name="btn_save">حفظ</string>
+    <string name="btn_delete">حذف</string>
+    <string name="btn_done">تم</string>
+    <string name="btn_back">رجوع</string>
+    <string name="btn_next">التالي</string>
+    <string name="btn_finish">إنهاء وتشغيل التطبيق</string>
+    <string name="btn_skip">تخطي الإعدادات</string>
+    <string name="btn_change_pin">تغيير رمز PIN</string>
+    <string name="btn_change_pin_now">تغيير الرمز الآن</string>
+    <string name="btn_keep_default_pin">استخدام الافتراضي</string>
+    <string name="btn_reset_pin">إعادة التعيين إلى الرمز الافتراضي (0000)</string>
+
+    <!-- LiveClockHeader & Date Navigation -->
+    <string name="header_nav_prev_day">اليوم السابق</string>
+    <string name="header_nav_prev_day_short">السابق</string>
+    <string name="header_nav_today">اليوم</string>
+    <string name="header_nav_next_day">اليوم التالي</string>
+    <string name="header_nav_next_day_short">التالي</string>
+    <string name="header_settings">الإعدادات</string>
+
+    <!-- Home Screen -->
+    <string name="home_badge_next_prayer">الصلاة القادمة</string>
+    <string name="home_countdown_to_adhan">الوقت المتبقي للأذان: %1$s</string>
+    <string name="home_sunrise">الشروق: %1$s</string>
+    <string name="home_reminder_active">تنبيه 15 دقيقة مفعل</string>
+    <string name="home_reminder_inactive">التنبيه معطل</string>
+    <string name="home_archive_future_schedule">أوقات الصلاة السابقة والمستقبلية</string>
+    <string name="home_iqamah_time">الإقامة: %1$s</string>
+    <string name="home_badge_active_prayer">وقت الصلاة</string>
+    <string name="home_badge_next">التالي</string>
+
+    <!-- Mosque Signage Display -->
+    <string name="mosque_strike_title">حان الآن موعد الصلاة</string>
+    <string name="mosque_strike_prayer_name">صلاة %1$s</string>
+    <string name="mosque_strike_admonition">استووا واعتدلوا، يرجى إغلاق الهواتف المحمولة.</string>
+    <string name="mosque_iqamah_prefix">الإقامة: %1$s</string>
+    <string name="mosque_next_prayer_badge">الصلاة القادمة</string>
+    <string name="mosque_countdown_to_prayer">الوقت المتبقي للصلاة: %1$s</string>
+    <string name="mosque_default_name">المسجد الكبير</string>
+    <string name="mosque_default_subtitle">استووا وتراصوا</string>
+
+    <!-- Notifications & Services -->
+    <string name="notif_channel_adhan_name">تشغيل الأذان</string>
+    <string name="notif_channel_adhan_desc">إشعار صوتي لموعد الأذان والصلاة</string>
+    <string name="notif_channel_reminder_name">تذكير الصلاة</string>
+    <string name="notif_channel_reminder_desc">تنبيه قبل موعد الصلاة بـ 15 دقيقة</string>
+    <string name="notif_adhan_title">حان موعد صلاة %1$s</string>
+    <string name="notif_adhan_text">رفع أذان %1$s الآن...</string>
+    <string name="notif_adhan_stop_action">إيقاف الأذان</string>
+    <string name="notif_reminder_title">تبقى 15 دقيقة على صلاة %1$s</string>
+    <string name="notif_reminder_text">اقترب موعد صلاة %1$s، استعدوا للصلاة.</string>
+
+    <!-- PIN Dialog -->
+    <string name="pin_title_verify">أدخل رمز PIN للمسؤول</string>
+    <string name="pin_title_set_new">تعيين رمز PIN جديد</string>
+    <string name="pin_title_confirm_new">تأكيد رمز PIN الجديد</string>
+    <string name="pin_subtitle_default">الرمز الافتراضي: 0000</string>
+    <string name="pin_subtitle_enter">أدخل 4 إلى 8 أرقام</string>
+    <string name="pin_subtitle_digits">أدخل من 4 إلى 8 أرقام</string>
+    <string name="pin_subtitle_repeat">أعد إدخال الرمز للتأكيد</string>
+    <string name="pin_err_format">يجب أن يتكون الرمز من 4 إلى 8 أرقام</string>
+    <string name="pin_err_incorrect_remaining">رمز غير صحيح. المحاولات المتبقية: %1$d</string>
+    <string name="pin_err_locked_sec">تم قفل الإدخال لكثرة المحاولات. انتظر %1$d ثانية.</string>
+    <string name="pin_err_locked_retry">الرمز مقفل. حاول مرة أخرى بعد %1$d ثانية.</string>
+    <string name="pin_err_locked_banner">الرمز مقفل! انتظر %1$d ثانية</string>
+    <string name="pin_msg_confirm_new">أعد إدخال الرمز الجديد للتأكيد</string>
+    <string name="pin_err_mismatch">الرمزان غير متطابقين. يرجى المحاولة ثانية.</string>
+
+    <!-- Storage & Import -->
+    <string name="storage_internal">وحدة التخزين الداخلية</string>
+    <string name="storage_usb">ذاكرة فلاش USB (%1$s)</string>
+    <string name="storage_external">قرص تخزين خارجي (%1$s)</string>
+    <string name="storage_title_slide_image">إضافة صورة إعلانية (USB/TV)</string>
+    <string name="storage_title_mosque_logo">اختيار شعار المسجد من ذاكرة USB</string>
+    <string name="storage_title_custom_adhan">اختيار ملف صوت الأذان من USB</string>
+    <string name="storage_hint_slide_image">يدعم صيغ JPG، PNG، WEBP (دقة Full HD 1080p كحد أقصى)</string>
+    <string name="storage_hint_mosque_logo">يدعم صيغ JPG، PNG (دقة 512x512 كحد أقصى)</string>
+    <string name="storage_hint_custom_adhan">يدعم MP3، WAV، M4A، OGG (بحد أقصى 10 ميغابايت / 10 دقائق)</string>
+    <string name="storage_location_prefix">المسار: %1$s</string>
+    <string name="storage_parent_folder">.. [المجلد السابق]</string>
+    <string name="storage_empty_folder">لا توجد ملفات مدعومة في هذا المجلد.</string>
+    <string name="storage_empty_hint">تأكد من توصيل ذاكرة USB أو نسخ الملفات إلى الذاكرة الداخلية.</string>
+    <string name="storage_import_failed">فشل استيراد الملف</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_subtitle_home">إعدادات الوضع المنزلي والشخصي</string>
+    <string name="settings_subtitle_mosque">إعدادات وضع المسجد (الشاشات الرقمية)</string>
+    <string name="settings_open_wizard">فتح معالج الإعداد الأولي</string>
+    <string name="settings_pin_warning_title">تنبيه أمان: الرمز الافتراضي (0000) قيد الاستخدام</string>
+    <string name="settings_pin_warning_desc">شاشة المسجد العامة متاحة للجميع، يرجى تعيين رمز PIN مخصص لحماية الإعدادات.</string>
+    <string name="settings_mode_active_mosque">الوضع الحالي: وضع المسجد (شاشة رقمية)</string>
+    <string name="settings_mode_active_home">الوضع الحالي: الوضع المنزلي (شخصي)</string>
+    <string name="settings_mode_switch_to_home">انقر للتبديل إلى الوضع المنزلي</string>
+    <string name="settings_mode_switch_to_mosque">انقر للتبديل إلى وضع المسجد</string>
+    <string name="settings_section_language">لغة العرض</string>
+    <string name="settings_section_theme">سمة الشاشة (فاتح / داكن)</string>
+    <string name="settings_section_calc_method">طريقة حساب أوقات الصلاة</string>
+    <string name="settings_section_madhab">مذهب صلاة العصر</string>
+    <string name="settings_madhab_standard">الجمهور (الشافعي، المالكي، الحنبلي)</string>
+    <string name="settings_madhab_standard_desc">ظل الشيء مثله (المعتمد في أغلب العالم الإسلامي).</string>
+    <string name="settings_madhab_hanafi">الحنفي</string>
+    <string name="settings_madhab_hanafi_desc">ظل الشيء مثليه (يبدأ العصر بعد حوالي 45-60 دقيقة من مذهب الجمهور).</string>
+    <string name="settings_section_high_latitude">قاعدة خطوط العرض العليا والقطبية</string>
+    <string name="settings_high_latitude_none">تلقائي (بدون)</string>
+    <string name="settings_high_latitude_motn">منتصف الليل</string>
+    <string name="settings_high_latitude_sotn">سُبع الليل</string>
+    <string name="settings_high_latitude_angle">زاوية الشفق</string>
+    <string name="settings_section_offsets">تعديل أوقات الصلاة (دقائق)</string>
+    <string name="settings_offset_sunrise">تعديل وقت الشروق (دقائق)</string>
+    <string name="settings_section_iqamah">وقت الإقامة (دقائق بعد الأذان)</string>
+    <string name="settings_iqamah_disabled">معطل (0 دقيقة)</string>
+    <string name="settings_iqamah_minutes">%1$d دقيقة</string>
+    <string name="settings_section_location">المدينة والمنطقة الزمنية</string>
+    <string name="settings_current_zone">المنطقة الزمنية: %1$s</string>
+    <string name="settings_section_hijri_offset">تعديل التاريخ الهجري (أيام)</string>
+    <string name="settings_section_hijri_rollover">توقيت تغيير التاريخ الهجري</string>
+    <string name="settings_hijri_rollover_magrib">عند غروب الشمس / المغرب (المعتمد شرعاً)</string>
+    <string name="settings_hijri_rollover_midnight">عند منتصف الليل 00:00 (تزامن مع التقويم الميلادي)</string>
+    <string name="settings_section_home_reminders">تذكير قبل الصلاة بـ 15 دقيقة</string>
+    <string name="settings_reminder_toggle_on">التذكير قبل الصلاة: مفعل</string>
+    <string name="settings_reminder_toggle_off">التذكير قبل الصلاة: معطل</string>
+    <string name="settings_reminder_toggle_desc">إظهار تنبيه على الشاشة قبل موعد الصلاة بـ 15 دقيقة.</string>
+    <string name="settings_section_home_adhan">أصوات الأذان لكل صلاة</string>
+    <string name="settings_btn_usb_file">ملف USB</string>
+    <string name="settings_section_mosque_audio">الصوت والتنبيهات في وضع المسجد</string>
+    <string name="settings_mosque_adhan_toggle">صوت الأذان في وضع المسجد</string>
+    <string name="settings_mosque_adhan_on">صوت الأذان في وضع المسجد: مفعل</string>
+    <string name="settings_mosque_adhan_off">صوت الأذان في وضع المسجد: صامت (افتراضي)</string>
+    <string name="settings_mosque_adhan_desc">تشغيل الأذان عبر مكبرات صوت التلفاز في شاشة المسجد.</string>
+    <string name="settings_mosque_reminders_toggle">تنبيهات الإشعارات في وضع المسجد</string>
+    <string name="settings_mosque_reminders_on">تنبيهات الإشعارات في وضع المسجد: مفعل</string>
+    <string name="settings_mosque_reminders_off">تنبيهات الإشعارات في وضع المسجد: معطل (افتراضي)</string>
+    <string name="settings_mosque_strike_toggle">وميض وتنبيه بصري عند وقت الصلاة</string>
+    <string name="settings_mosque_strike_on">التنبيه البصري: مفعل (افتراضي)</string>
+    <string name="settings_mosque_strike_off">التنبيه البصري: معطل</string>
+    <string name="settings_mosque_strike_desc">إيقاف عرض الإعلانات وعرض تنبيه بصري بارز فور دخول وقت الصلاة.</string>
+    <string name="settings_section_mosque_symbol">رمز وشعار المسجد</string>
+    <string name="settings_btn_import_logo_usb">اختيار شعار المسجد من ذاكرة USB</string>
+    <string name="settings_custom_logo_active">الشعار المخصص مفعل</string>
+    <string name="settings_section_mosque_font">نمط خط اسم المسجد</string>
+    <string name="settings_section_mosque_identity">اسم المسجد والنص الإضافي</string>
+    <string name="settings_custom_name_saved">الاسم المخصص: %1$s</string>
+    <string name="settings_custom_subtitle_saved">النص الإضافي: %1$s</string>
+    <string name="settings_section_schedule_duration">مدة عرض جدول أوقات الصلاة</string>
+    <string name="settings_section_slides">شرائح الإعلانات (%1$d من %2$d شريحة)</string>
+    <string name="settings_btn_add_image_slide">إضافة شريحة صورة (USB/TV)</string>
+    <string name="settings_btn_add_text_slide">إضافة إعلان نصي</string>
+    <string name="settings_btn_clear_slides">حذف جميع الشرائح</string>
+    <string name="settings_no_slides_title">لا توجد شرائح إعلانات حالياً</string>
+    <string name="settings_no_slides_desc">أضف شرائح صور من فلاش USB أو أنشئ إعلانات نصية.</string>
+    <string name="settings_section_security">رمز PIN وأمان المسؤول</string>
+    <string name="settings_home_pin_toggle">حماية الإعدادات برمز PIN في الوضع المنزلي</string>
+    <string name="settings_home_pin_on">حماية PIN في الوضع المنزلي: مفعل</string>
+    <string name="settings_home_pin_off">حماية PIN في الوضع المنزلي: معطل</string>
+    <string name="settings_home_pin_desc">طلب رمز PIN لفتح الإعدادات في الوضع المنزلي (مطلوب دائماً في وضع المسجد).</string>
+    <string name="settings_custom_pin_active">رمز PIN مخصص ومحمي</string>
+    <string name="settings_custom_pin_desc">الإعدادات محمية برمز PIN المخصص الخاص بك.</string>
+    <string name="settings_using_default_pin">قيد استخدام الرمز الافتراضي (0000)</string>
+    <string name="settings_btn_change_admin_pin">تغيير رمز PIN للمسؤول</string>
+    <string name="settings_time_format_toggle">تنسيق الوقت 12 / 24 ساعة</string>
+    <string name="settings_time_format_12">12 ساعة (ص/م)</string>
+    <string name="settings_time_format_24">24 ساعة (00:00)</string>
+    <string name="settings_arabic_names_toggle">عرض أسماء الصلوات بالعربية</string>
+
+    <string name="desc_announcement_slide">شريحة إعلانات المسجد</string>
+    <string name="desc_app_logo">شعار صلاة ساين</string>
+
+    <!-- About & Credits Dialog -->
+    <string name="settings_section_about">حول التطبيق والاعتمادات</string>
+    <string name="settings_about_app_name">SalatSign Android TV</string>
+    <string name="settings_about_version">الإصدار %1$s (%2$d)</string>
+    <string name="settings_about_license">مفتوح المصدر بموجب رخصة جنو العمومية v3.0 (GPL-3.0-or-later)</string>
+    <string name="settings_about_copyright">حقوق النشر (C) 2026 Rocky Adam Tauhid ومساهمو SalatSign</string>
+    <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
+    <string name="settings_about_trademarks">SalatSign علامة تجارية. راجع ملف TRADEMARKS.md لمعرفة السياسة.</string>
+    <string name="settings_about_dialog_title">عن تطبيق صلاة ساين</string>
+    <string name="settings_about_libraries">المكتبات البرمجية: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
+
+    <!-- Setup Wizard -->
+    <string name="wizard_welcome">مرحباً بك في SalatSign</string>
+    <string name="wizard_step_indicator">دليل الإعداد الأولي لتلفاز أندرويد (الخطوة %1$d من %2$d)</string>
+    <string name="wizard_step_lang_title">الخطوة 1: اختيار لغة العرض</string>
+    <string name="wizard_step_lang_desc">اختر لغتك المفضلة لواجهة التطبيق واللوحة الرقمية.</string>
+    <string name="wizard_step_location_title">الخطوة %1$d: تحديد المدينة والمنطقة الزمنية (الحالية: %2$s)</string>
+    <string name="wizard_step_method_title">الخطوة %1$d: طريقة الحساب والمذهب الفقهي</string>
+    <string name="wizard_step_mode_title">الخطوة %1$d: اختيار وضع استخدام التطبيق</string>
+    <string name="wizard_step_pin_title">الخطوة %1$d: رمز حماية المسؤول (أمان الشاشة)</string>
+    <string name="wizard_step_mosque_title">الخطوة %1$d: هوية وشعار المسجد</string>
+    <string name="wizard_mode_home_title">الوضع المنزلي (شخصي)</string>
+    <string name="wizard_mode_home_desc">أوقات الصلاة مع تصفح التقويم عبر جهاز التحكم، تنبيهات قبل الصلاة بـ 15 دقيقة، وصوت الأذان.</string>
+    <string name="wizard_mode_mosque_title">وضع المسجد (شاشات رقمية)</string>
+    <string name="wizard_mode_mosque_desc">شاشة إعلانات رقمية صامتة بيضاء بدون شعارات التطبيق، مع جدول الصلاة وشعار المسجد والشرائح.</string>
+    <string name="wizard_mosque_silent_note">وضع المسجد صامت افتراضياً. يمكنك تفعيل صوت الأذان من الإعدادات.</string>
+    <string name="wizard_pin_default_title">استخدام الرمز الافتراضي (0000)</string>
+    <string name="wizard_pin_default_desc">الرمز الافتراضي هو 0000. يمكنك تغييره في أي وقت من الإعدادات.</string>
+    <string name="wizard_pin_custom_title">تعيين رمز PIN جديد (4 إلى 8 أرقام)</string>
+    <string name="wizard_pin_custom_desc">يوصى بشدة للشاشات العامة لمنع التعديل على الإعدادات بسهولة.</string>
+    <string name="wizard_pin_custom_active">الرمز المخصص مفعل (محفوظ)</string>
+
+    <!-- About & Credit -->
+    <string name="about_credit">SalatSign بواسطة Rocky Adam Tauhid</string>
+    <string name="about_license">مفتوح المصدر بموجب رخصة GPL-3.0-or-later</string>
+</resources>

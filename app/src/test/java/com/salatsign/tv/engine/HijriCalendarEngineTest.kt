@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.engine
 
 import org.junit.Assert.assertEquals
@@ -98,6 +101,33 @@ class HijriCalendarEngineTest {
         assertNotEquals(baseline, plusOneDay)
         assertNotEquals(baseline, minusOneDay)
         assertNotEquals(plusOneDay, minusOneDay)
+    }
+
+    @Test
+    fun formatHijriDate_multilingualMonthNames() {
+        val dateEn = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.EnglishHijriMonthNames,
+            yearSuffix = "AH"
+        )
+        assertTrue(dateEn.contains("Jumada al-Akhirah"))
+        assertTrue(dateEn.endsWith("AH"))
+
+        val dateId = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.IndonesianHijriMonthNames,
+            yearSuffix = "H"
+        )
+        assertTrue(dateId.contains("Jumadil Akhir"))
+        assertTrue(dateId.endsWith("H"))
+
+        val dateAr = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.ArabicHijriMonthNames,
+            yearSuffix = "هـ"
+        )
+        assertTrue(dateAr.contains(HijriCalendarEngine.ArabicHijriMonthNames[5]))
+        assertTrue(dateAr.endsWith("هـ"))
     }
 
     @Test

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.engine
 
 import com.salatsign.tv.data.model.Prayer
@@ -430,13 +433,13 @@ class PrayerCalculationEngineTest {
         assertEquals(java.time.DayOfWeek.FRIDAY, fridayDate.dayOfWeek)
         val fridayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(fridayDate, config)
         val fridayZuhur = fridayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
-        assertEquals("Jum'at", fridayZuhur.displayLabel)
+        assertEquals("Jumu'ah", fridayZuhur.displayLabel)
 
         // 2026-11-17 is Tuesday
         val tuesdayDate = LocalDate.of(2026, 11, 17)
         val tuesdayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(tuesdayDate, config)
         val tuesdayZuhur = tuesdayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
-        assertEquals("Zuhur", tuesdayZuhur.displayLabel)
+        assertEquals("Dhuhr", tuesdayZuhur.displayLabel)
     }
 
     @Test

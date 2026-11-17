@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -75,11 +78,13 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            isPseudoLocalesEnabled = true
         }
     }
 
     lint {
         error.add("NewApi")
+        error.add("MissingTranslation")
         abortOnError = true
         checkReleaseBuilds = false
     }

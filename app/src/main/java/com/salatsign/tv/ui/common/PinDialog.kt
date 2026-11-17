@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.common
 
 import androidx.compose.foundation.background
@@ -38,6 +41,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,6 +52,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
+import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.security.PinHasher
 import com.salatsign.tv.security.PinVerifyResult
@@ -75,6 +81,7 @@ fun PinDialog(
     onPinSuccess: () -> Unit = {},
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     val initialFocusRequester = remember { FocusRequester() }
 
@@ -107,7 +114,7 @@ fun PinDialog(
 
         if (!PinHasher.validatePinFormat(enteredPin)) {
             isError = true
-            statusMessage = "PIN harus 4-8 digit angka"
+            statusMessage = context.getString(R.string.pin_err_format)
             return
         }
 
@@ -139,15 +146,15 @@ fun PinDialog(
                         if (lockout.lockedUntilEpochMillis > now) {
                             val sec = ((lockout.lockedUntilEpochMillis - now + 999) / 1000).toInt()
                             lockoutSeconds = sec
-                            statusMessage = "Terlalu banyak percobaan. Terkunci $sec detik."
+                            statusMessage = context.getString(R.string.pin_err_locked_sec, sec)
                         } else {
-                            statusMessage = "PIN salah. Sisa percobaan: ${result.attemptsLeftBeforeLockout}"
+                            statusMessage = context.getString(R.string.pin_err_incorrect_remaining, result.attemptsLeftBeforeLockout)
                         }
                     }
                     is PinVerifyResult.LockedOut -> {
                         isError = true
                         lockoutSeconds = result.remainingSeconds
-                        statusMessage = "PIN Terkunci. Coba lagi dalam ${result.remainingSeconds} detik."
+                        statusMessage = context.getString(R.string.pin_err_locked_retry, result.remainingSeconds)
                     }
                     is PinVerifyResult.InvalidFormat -> {
                         isError = true
@@ -163,7 +170,7 @@ fun PinDialog(
                         enteredPin = ""
                         setPinStep = SetPinStep.CONFIRM_NEW
                         isError = false
-                        statusMessage = "Ulangi PIN baru untuk konfirmasi"
+                        statusMessage = context.getString(R.string.pin_msg_confirm_new)
                     }
                     SetPinStep.CONFIRM_NEW -> {
                         if (enteredPin == firstEnteredPin) {
@@ -171,7 +178,7 @@ fun PinDialog(
                             onDismiss()
                         } else {
                             isError = true
-                            statusMessage = "PIN tidak cocok. Silakan masukkan kembali."
+                            statusMessage = context.getString(R.string.pin_err_mismatch)
                             enteredPin = ""
                             firstEnteredPin = ""
                             setPinStep = SetPinStep.ENTER_NEW
@@ -256,8 +263,8 @@ fun PinDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val titleText = when (mode) {
-                    PinDialogMode.VERIFY -> "Masukkan PIN Admin"
-                    PinDialogMode.SET_NEW -> if (setPinStep == SetPinStep.ENTER_NEW) "Atur PIN Admin Baru" else "Konfirmasi PIN Baru"
+                    PinDialogMode.VERIFY -> stringResource(R.string.pin_title_verify)
+                    PinDialogMode.SET_NEW -> if (setPinStep == SetPinStep.ENTER_NEW) stringResource(R.string.pin_title_set_new) else stringResource(R.string.pin_title_confirm_new)
                 }
 
                 Text(
@@ -267,10 +274,10 @@ fun PinDialog(
 
                 val subtitleText = when (mode) {
                     PinDialogMode.VERIFY -> {
-                        if (!settings.hasCustomPin) "Gunakan PIN bawaan: 0000" else "Masukkan 4-8 digit PIN admin"
+                        if (!settings.hasCustomPin) stringResource(R.string.pin_subtitle_default) else stringResource(R.string.pin_subtitle_enter)
                     }
                     PinDialogMode.SET_NEW -> {
-                        if (setPinStep == SetPinStep.ENTER_NEW) "Masukkan 4 hingga 8 digit angka" else "Masukkan PIN yang sama sekali lagi"
+                        if (setPinStep == SetPinStep.ENTER_NEW) stringResource(R.string.pin_subtitle_digits) else stringResource(R.string.pin_subtitle_repeat)
                     }
                 }
 
@@ -311,7 +318,7 @@ fun PinDialog(
                 // Status / Error / Lockout Banner
                 if (lockoutSeconds > 0) {
                     Text(
-                        text = "PIN Terkunci! Coba lagi dalam $lockoutSeconds detik",
+                        text = stringResource(R.string.pin_err_locked_banner, lockoutSeconds),
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -369,7 +376,7 @@ fun PinDialog(
                                         .size(width = 90.dp, height = 48.dp)
                                         .tvFocusable()
                                         .then(if (isFirstKey) Modifier.focusRequester(initialFocusRequester) else Modifier)
-                                ) {
+                                 ) {
                                     Box(
                                         modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
@@ -377,13 +384,13 @@ fun PinDialog(
                                         when (key) {
                                             "CLEAR" -> Icon(
                                                 imageVector = Icons.AutoMirrored.Filled.Backspace,
-                                                contentDescription = "Hapus",
+                                                contentDescription = stringResource(R.string.btn_delete),
                                                 tint = colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                             "OK" -> Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = "Selesai",
+                                                contentDescription = stringResource(R.string.btn_done),
                                                 tint = Color.White,
                                                 modifier = Modifier.size(22.dp)
                                             )
@@ -427,7 +434,7 @@ fun PinDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Batal",
+                            text = stringResource(R.string.btn_cancel),
                             style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
                         )
                     }

@@ -1,8 +1,12 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.data
 
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.MosqueFontPreset
@@ -60,6 +64,11 @@ class DataModelAndSettingsTest {
         assertFalse("Mosque Mode Adhan must be false by default (quiet)", settings.mosqueModeAdhanEnabled)
         assertFalse("Mosque Mode Reminders must be false by default (quiet)", settings.mosqueModeRemindersEnabled)
         assertTrue("Visual strike highlight should be true by default", settings.showStrikeHighlight)
+        assertEquals(AppLanguage.SYSTEM, settings.appLanguage)
+        assertTrue("24-hour format should be true by default", settings.is24HourFormat)
+        assertTrue("Arabic prayer names should be shown by default", settings.showArabicPrayerNames)
+        assertEquals("", settings.mosqueName)
+        assertEquals("", settings.mosqueSubtitle)
 
         assertFalse(settings.homeModePinRequired)
         assertFalse(settings.hasCustomPin)

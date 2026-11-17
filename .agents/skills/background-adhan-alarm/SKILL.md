@@ -20,6 +20,7 @@ description: Implements exact AlarmManager scheduling, ForegroundService Adhan p
    - Call `startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)` within 5 seconds.
    - Configure `MediaPlayer` with `AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()` so Adhan plays clearly even if another app is active or the TV is on the Home screen.
    - Listen for `KEYCODE_BACK` or a "Stop Adhan" notification action to allow the user to dismiss the Adhan early. Automatically stop the service (`stopSelf()`) upon `OnCompletionListener`.
-4. **Resilience (`BootAndTimeReceiver` & `DailyScheduleWorker`):**
+4. **Resilience (`BootAndTimeReceiver`, Alarm Chaining & `DailyScheduleWorker`):**
    - Register a receiver for `ACTION_BOOT_COMPLETED`, `ACTION_TIME_CHANGED`, and `ACTION_TIMEZONE_CHANGED` that recalculates today's prayer times and re-registers alarms.
-   - Schedule a daily `WorkManager` periodic task just after midnight (`00:05`) to queue the new day's alarms.
+   - When scheduling, always chain alarms across midnight: if all prayers today have elapsed, schedule tomorrow's Subuh. After each alarm fires, schedule the next prayer event.
+   - Run a daily `WorkManager` periodic task just after midnight (`00:05`) as an additional safety net to refresh the day's alarms.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.mosque
 
 import androidx.compose.animation.Crossfade
@@ -38,6 +41,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
@@ -49,9 +53,12 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.salatsign.tv.R
+import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
 import com.salatsign.tv.ui.common.getMosqueTitleStyle
+import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.home.PrayerCardsRow
@@ -139,7 +146,8 @@ fun MosqueScheduleView(
                 mosqueLogoUri = uiState.settings.mosqueLogoUri,
                 mosqueIconPreset = uiState.settings.mosqueIconPreset,
                 mosqueFontPreset = uiState.settings.mosqueFontPreset,
-                isViewingToday = true
+                isViewingToday = true,
+                is24HourFormat = uiState.settings.is24HourFormat
             )
 
             if (prayerTimes != null) {
@@ -149,6 +157,7 @@ fun MosqueScheduleView(
                     MosqueActiveStrikeBanner(
                         prayer = prayerTimes.prayers.firstOrNull { it.prayer == uiState.interruptedActivePrayer }
                             ?: prayerTimes.prayers.first(),
+                        is24HourFormat = uiState.settings.is24HourFormat,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1.3f)
@@ -157,6 +166,7 @@ fun MosqueScheduleView(
                     MosqueNextPrayerBanner(
                         nextPrayer = prayerTimes.nextPrayer,
                         countdown = prayerTimes.countdownFormatted,
+                        is24HourFormat = uiState.settings.is24HourFormat,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1.3f)
@@ -168,6 +178,8 @@ fun MosqueScheduleView(
                 // 5 Prayers Grid / Row
                 PrayerCardsRow(
                     prayers = prayerTimes.prayers,
+                    is24HourFormat = uiState.settings.is24HourFormat,
+                    showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1.0f)
@@ -180,9 +192,15 @@ fun MosqueScheduleView(
 @Composable
 fun MosqueActiveStrikeBanner(
     prayer: PrayerTimeItem,
+    is24HourFormat: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val prayerLabel = if (prayer.prayer == Prayer.ZUHUR && prayer.isFriday) {
+        stringResource(R.string.prayer_jumuah)
+    } else {
+        stringResource(prayer.prayer.labelRes())
+    }
 
     Card(
         onClick = {},
@@ -211,7 +229,7 @@ fun MosqueActiveStrikeBanner(
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text = "WAKTU SHALAT TELAH TIBA",
+                            text = stringResource(R.string.mosque_strike_title),
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
@@ -229,7 +247,7 @@ fun MosqueActiveStrikeBanner(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Shalat ${prayer.displayLabel}",
+                    text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -239,22 +257,23 @@ fun MosqueActiveStrikeBanner(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                if (prayer.formattedIqamahTime != null) {
+                val formattedIqamah = prayer.formattedIqamahTime(is24HourFormat)
+                if (formattedIqamah != null) {
                     Text(
-                        text = "Iqamah: ${prayer.formattedIqamahTime}",
+                        text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
                         style = TvTypography.Subtitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
                 Text(
-                    text = "Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.",
+                    text = stringResource(R.string.mosque_strike_admonition),
                     style = TvTypography.Subtitle.copy(fontSize = 22.sp, color = AccentGold)
                 )
             }
 
             Text(
-                text = prayer.formattedTime,
+                text = prayer.formattedTime(is24HourFormat),
                 style = TvTypography.ActivePrayerTime.copy(fontSize = 84.sp, color = AccentEmerald)
             )
         }
@@ -265,9 +284,15 @@ fun MosqueActiveStrikeBanner(
 fun MosqueNextPrayerBanner(
     nextPrayer: PrayerTimeItem,
     countdown: String,
+    is24HourFormat: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val prayerLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
+        stringResource(R.string.prayer_jumuah)
+    } else {
+        stringResource(nextPrayer.prayer.labelRes())
+    }
 
     Card(
         onClick = {},
@@ -296,7 +321,7 @@ fun MosqueNextPrayerBanner(
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "MENUJU SHALAT BERIKUTNYA",
+                            text = stringResource(R.string.mosque_next_prayer_badge),
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
@@ -314,7 +339,7 @@ fun MosqueNextPrayerBanner(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = nextPrayer.displayLabel,
+                    text = prayerLabel,
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 50.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -339,19 +364,20 @@ fun MosqueNextPrayerBanner(
                             modifier = Modifier.size(28.dp)
                         )
                         Text(
-                            text = "Menuju Waktu Shalat: $countdown",
+                            text = stringResource(R.string.mosque_countdown_to_prayer, countdown),
                             style = TvTypography.CountdownText.copy(fontSize = 46.sp)
                         )
                     }
 
-                    if (nextPrayer.formattedIqamahTime != null) {
+                    val formattedIqamah = nextPrayer.formattedIqamahTime(is24HourFormat)
+                    if (formattedIqamah != null) {
                         Box(
                             modifier = Modifier
                                 .background(AccentEmerald.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 14.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "Iqamah ${nextPrayer.formattedIqamahTime}",
+                                text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
                                 style = TvTypography.BodyLabel.copy(
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
@@ -368,7 +394,7 @@ fun MosqueNextPrayerBanner(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = nextPrayer.formattedTime,
+                    text = nextPrayer.formattedTime(is24HourFormat),
                     style = TvTypography.ActivePrayerTime.copy(fontSize = 80.sp, color = colorScheme.onSurface)
                 )
             }
@@ -399,7 +425,7 @@ fun MosqueAnnouncementView(
                 if (imageFile != null && imageFile.exists()) {
                     AsyncImage(
                         model = imageFile,
-                        contentDescription = slide.title.ifBlank { "Mosque Announcement Slide" },
+                        contentDescription = slide.title.ifBlank { stringResource(R.string.desc_announcement_slide) },
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -457,11 +483,16 @@ fun MosqueAnnouncementView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         for (p in prayerTimes.prayers) {
+                            val prayerLabel = if (p.prayer == Prayer.ZUHUR && p.isFriday) {
+                                stringResource(R.string.prayer_jumuah)
+                            } else {
+                                stringResource(p.prayer.labelRes())
+                            }
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = p.displayLabel,
+                                    text = prayerLabel,
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 14.sp,
                                         fontWeight = if (p.isNext) FontWeight.Bold else FontWeight.Normal,
@@ -469,7 +500,7 @@ fun MosqueAnnouncementView(
                                     )
                                 )
                                 Text(
-                                    text = p.formattedTime,
+                                    text = p.formattedTime(uiState.settings.is24HourFormat),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,

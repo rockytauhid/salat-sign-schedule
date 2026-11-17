@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.settings
 
 import android.app.Application
@@ -331,6 +334,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.setZoneId(zoneId)
             val updated = settings.value.copy(zoneId = zoneId)
             scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setAppLanguage(language: com.salatsign.tv.data.model.AppLanguage) {
+        viewModelScope.launch {
+            repository.setAppLanguage(language)
+        }
+    }
+
+    fun set24HourFormat(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.set24HourFormat(enabled)
+        }
+    }
+
+    fun setShowArabicPrayerNames(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setShowArabicPrayerNames(enabled)
         }
     }
 }

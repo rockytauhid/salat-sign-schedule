@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.setup
 
 import android.Manifest
@@ -27,6 +30,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.runtime.Composable
@@ -42,7 +46,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -53,15 +58,16 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.salatsign.tv.R
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
-import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
-import com.salatsign.tv.data.model.MosqueNamePresets
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
+import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
@@ -71,6 +77,7 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun SetupWizardScreen(
     settings: AppSettings,
+    onSelectLanguage: (AppLanguage) -> Unit = {},
     onSelectMode: (Boolean) -> Unit,
     onSelectCity: (CityPreset) -> Unit,
     onSelectMethod: (String) -> Unit = {},
@@ -86,7 +93,7 @@ fun SetupWizardScreen(
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
 
-    val maxSteps = if (settings.isMosqueMode) 5 else 4
+    val maxSteps = if (settings.isMosqueMode) 6 else 5
     val context = LocalContext.current
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -133,11 +140,11 @@ fun SetupWizardScreen(
             ) {
                 Column {
                     Text(
-                        text = "Selamat Datang di SalatSign",
+                        text = stringResource(R.string.wizard_welcome),
                         style = TvTypography.HeaderTitle.copy(fontSize = 36.sp, color = colorScheme.onBackground)
                     )
                     Text(
-                        text = "Panduan Konfigurasi Awal Android TV (Langkah $currentStep dari $maxSteps)",
+                        text = stringResource(R.string.wizard_step_indicator, currentStep, maxSteps),
                         style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                     )
                 }
@@ -164,7 +171,7 @@ fun SetupWizardScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Lewati Setup (Default)",
+                            text = stringResource(R.string.btn_skip),
                             style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant)
                         )
                     }
@@ -181,10 +188,65 @@ fun SetupWizardScreen(
             ) {
                 when (currentStep) {
                     1 -> {
-                        // Step 1: City & Timezone Selection
+                        // Step 1: Language Chooser
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 1: Pilih Lokasi Kota & Zona Waktu (Saat ini: ${settings.cityName})",
+                                text = stringResource(R.string.wizard_step_lang_title),
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                            )
+                            Text(
+                                text = stringResource(R.string.wizard_step_lang_desc),
+                                style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                for ((idx, lang) in AppLanguage.entries.withIndex()) {
+                                    val isSelected = (settings.appLanguage == lang)
+                                    Card(
+                                        onClick = { onSelectLanguage(lang) },
+                                        colors = CardDefaults.colors(
+                                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                        ),
+                                        shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .tvFocusable()
+                                            .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
+                                            .then(
+                                                if (isSelected) Modifier.border(2.5.dp, AccentEmerald, RoundedCornerShape(14.dp))
+                                                else Modifier
+                                            )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(20.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Language,
+                                                contentDescription = null,
+                                                tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                                modifier = Modifier.size(36.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Text(
+                                                text = stringResource(lang.labelRes()),
+                                                style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    2 -> {
+                        // Step 2: City & Timezone Selection
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.wizard_step_location_title, 2, settings.cityName),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
@@ -219,7 +281,7 @@ fun SetupWizardScreen(
                                                 style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                             )
                                             Text(
-                                                text = "Zona: ${city.zoneId ?: "Otomatis"}",
+                                                text = stringResource(R.string.settings_current_zone, city.zoneId ?: "Auto"),
                                                 style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                             )
                                         }
@@ -229,16 +291,16 @@ fun SetupWizardScreen(
                         }
                     }
 
-                    2 -> {
-                        // Step 2: Method & Madhab
+                    3 -> {
+                        // Step 3: Method & Madhab
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 2: Metode Perhitungan & Mazhab Waktu Shalat",
+                                text = stringResource(R.string.wizard_step_method_title, 3),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
                             Text(
-                                text = "Metode Perhitungan:",
+                                text = stringResource(R.string.settings_section_calc_method),
                                 style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                             )
 
@@ -250,12 +312,12 @@ fun SetupWizardScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 val methods = listOf(
-                                    "SINGAPORE" to "Singapura / MABIMS (Kemenag RI)",
+                                    "SINGAPORE" to "Singapura / MABIMS",
                                     "MUSLIM_WORLD_LEAGUE" to "Muslim World League (MWL)",
                                     "UMM_AL_QURA" to "Umm al-Qura (Makkah)",
                                     "EGYPTIAN" to "Egyptian Authority",
                                     "KARACHI" to "Univ. of Karachi",
-                                    "NORTH_AMERICA" to "ISNA (Amerika Utara)",
+                                    "NORTH_AMERICA" to "ISNA",
                                     "DUBAI" to "Dubai (UAE)"
                                 )
                                 for ((key, label) in methods) {
@@ -282,7 +344,7 @@ fun SetupWizardScreen(
                             }
 
                             Text(
-                                text = "Mazhab untuk Waktu Ashr:",
+                                text = stringResource(R.string.settings_section_madhab),
                                 style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                             )
 
@@ -306,12 +368,12 @@ fun SetupWizardScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text(
-                                            text = "Standar (Syafi'i, Maliki, Hanbali)",
+                                            text = stringResource(R.string.settings_madhab_standard),
                                             style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Bayangan 1x panjang objek (mayoritas Muslim Indonesia, Malaysia, Asia Tenggara).",
+                                            text = stringResource(R.string.settings_madhab_standard_desc),
                                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
@@ -332,12 +394,12 @@ fun SetupWizardScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Text(
-                                            text = "Hanafi",
+                                            text = stringResource(R.string.settings_madhab_hanafi),
                                             style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Bayangan 2x panjang objek (Ashr dimulai sekitar 45-60 menit lebih lambat).",
+                                            text = stringResource(R.string.settings_madhab_hanafi_desc),
                                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
@@ -346,11 +408,11 @@ fun SetupWizardScreen(
                         }
                     }
 
-                    3 -> {
-                        // Step 3: Mode Selection
+                    4 -> {
+                        // Step 4: Mode Selection
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 3: Pilih Mode Penggunaan Aplikasi",
+                                text = stringResource(R.string.wizard_step_mode_title, 4),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
@@ -383,13 +445,13 @@ fun SetupWizardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text(
-                                            text = "Mode Rumah / Personal",
-                                            style = TvTypography.CardTitle.copy(fontSize = 24.sp, color = colorScheme.onSurface)
+                                            text = stringResource(R.string.wizard_mode_home_title),
+                                            style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.onSurface)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "Tampilan TV keluarga: Navigasi remote D-pad, notifikasi pengingat 15 menit, dan suara Adhan otomatis menyala.",
-                                            style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                            text = stringResource(R.string.wizard_mode_home_desc),
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
                                 }
@@ -418,13 +480,13 @@ fun SetupWizardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text(
-                                            text = "Mode Masjid / Signage (Hening)",
-                                            style = TvTypography.CardTitle.copy(fontSize = 24.sp, color = colorScheme.onSurface)
+                                            text = stringResource(R.string.wizard_mode_mosque_title),
+                                            style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.onSurface)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "Digital signage TV masjid: White-label (nama & logo masjid sendiri), slideshow poster infaq/kajian, dan hening total demi ketertiban jamaah.",
-                                            style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                            text = stringResource(R.string.wizard_mode_mosque_desc),
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
                                 }
@@ -432,16 +494,16 @@ fun SetupWizardScreen(
                         }
                     }
 
-                    4 -> {
-                        // Step 4: Admin PIN
+                    5 -> {
+                        // Step 5: Admin PIN
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 4: Atur Keamanan PIN Admin Pengaturan",
+                                text = stringResource(R.string.wizard_step_pin_title, 5),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
                             Text(
-                                text = "PIN Admin diperlukan untuk membuka menu Pengaturan dari layar TV agar konfigurasi tidak diubah tanpa izin.",
+                                text = stringResource(R.string.settings_pin_warning_desc),
                                 style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
                             )
 
@@ -477,13 +539,13 @@ fun SetupWizardScreen(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "Gunakan PIN Bawaan (0000)",
+                                                text = stringResource(R.string.wizard_pin_default_title),
                                                 style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.",
+                                            text = stringResource(R.string.wizard_pin_default_desc),
                                             style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
@@ -516,14 +578,13 @@ fun SetupWizardScreen(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = if (customPinSetSuccess) "PIN Kustom Aktif (Tersimpan)" else "Atur PIN Kustom Baru (4-8 Digit)",
+                                                text = if (customPinSetSuccess) stringResource(R.string.wizard_pin_custom_active) else stringResource(R.string.wizard_pin_custom_title),
                                                 style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                             )
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = if (customPinSetSuccess) "PIN kustom telah berhasil disetel. Klik kartu ini jika ingin mengubahnya lagi."
-                                            else "Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.",
+                                            text = stringResource(R.string.wizard_pin_custom_desc),
                                             style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
@@ -532,16 +593,16 @@ fun SetupWizardScreen(
                         }
                     }
 
-                    5 -> {
-                        // Step 5: Mosque Name & Icon (Only if Mosque Mode)
+                    6 -> {
+                        // Step 6: Mosque Name & Icon (Only if Mosque Mode)
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 5: Identitas & Simbol Masjid Anda",
+                                text = stringResource(R.string.wizard_step_mosque_title, 6),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
                             Text(
-                                text = "Pilih Simbol Ikon Masjid:",
+                                text = stringResource(R.string.settings_section_mosque_symbol),
                                 style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                             )
 
@@ -575,7 +636,7 @@ fun SetupWizardScreen(
                                             MosqueEmblemIcon(preset = iconPreset, customLogoUri = settings.mosqueLogoUri, size = 44.dp)
                                             Spacer(modifier = Modifier.height(6.dp))
                                             Text(
-                                                text = iconPreset.displayName,
+                                                text = stringResource(iconPreset.labelRes()),
                                                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface)
                                             )
                                         }
@@ -584,10 +645,11 @@ fun SetupWizardScreen(
                             }
 
                             Text(
-                                text = "Pilih Preset Nama Masjid (Bisa diubah kapan saja di pengaturan):",
+                                text = stringResource(R.string.settings_section_mosque_identity),
                                 style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                             )
 
+                            val namePresets = stringArrayResource(R.array.mosque_name_presets)
                             val nameScroll = rememberScrollState()
                             Row(
                                 modifier = Modifier
@@ -595,7 +657,7 @@ fun SetupWizardScreen(
                                     .horizontalScroll(nameScroll),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                for (name in MosqueNamePresets) {
+                                for (name in namePresets) {
                                     val isSelected = (settings.mosqueName == name)
                                     Surface(
                                         onClick = { onSelectMosqueName(name) },
@@ -636,7 +698,7 @@ fun SetupWizardScreen(
                         modifier = Modifier.tvFocusable()
                     ) {
                         Text(
-                            text = "Kembali",
+                            text = stringResource(R.string.btn_back),
                             style = TvTypography.ButtonText.copy(color = colorScheme.onSurface),
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
                         )
@@ -667,7 +729,7 @@ fun SetupWizardScreen(
                         val isFinalStep = (currentStep == maxSteps)
 
                         Text(
-                            text = if (isFinalStep) "Selesai & Buka Aplikasi" else "Lanjut (Berikutnya)",
+                            text = if (isFinalStep) stringResource(R.string.btn_finish) else stringResource(R.string.btn_next),
                             style = TvTypography.ButtonText.copy(color = Color.White)
                         )
                         Spacer(modifier = Modifier.width(8.dp))

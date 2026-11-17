@@ -29,6 +29,7 @@ Always consult `PRODUCT_SPEC.md` for feature requirements and the specialized sk
      - **Audio & Notifications MUST be disabled** (cancel all pending `AlarmManager` alarms).
      - **App branding MUST be hidden** (render custom Mosque Name & Logo instead).
      - **Screen Wake Lock MUST be active** (`FLAG_KEEP_SCREEN_ON`).
+     - **Admin PIN Protection MUST be active** (PBKDF2-hashed PIN with lockout protection against brute force).
    - When `isMosqueMode == false`:
      - Standard app header, D-pad date navigation, 15-minute pre-prayer notifications, and exact-time Adhan audio are enabled.
 3. **10-Foot UI & Overscan Safety:**

@@ -42,5 +42,10 @@
    - **Step 3:** Repeat loop indefinitely.
 3. **Silent Exact-Time Interruption:**
    - If the exact time of any prayer arrives while an announcement image is on screen, immediately cancel the current slide timer, transition back to the Prayer Schedule screen, and visually highlight/pulse the current prayer row without making any sound.
-4. **Hidden Admin Access:**
+4. **Hidden Admin Access & PIN Security:**
    - Hide on-screen settings buttons in Mosque Mode. Open Settings only via long-pressing `DPAD_CENTER` (3 seconds) or pressing the remote `KEYCODE_MENU` button.
+   - Gated behind an admin PIN with brute-force lockout protection (persisted across restarts). No cloud backdoor; recovery via Android TV system app data clear.
+5. **Kiosk Back Interception:**
+   - In Mosque Mode, the remote `Back` button is intercepted to prevent accidental exit to the TV launcher.
+6. **Remote Management (Planned):**
+   - Phone controller application for local network configuration and asset uploads.

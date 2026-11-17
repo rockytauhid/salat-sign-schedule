@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.picker
 
 import androidx.compose.foundation.background
@@ -37,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +50,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.salatsign.tv.R
 import com.salatsign.tv.data.importing.AssetImporter
 import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.importing.ImportResult
@@ -125,9 +130,9 @@ fun StorageFilePickerScreen(
                     )
                     Text(
                         text = when (kind) {
-                            ImportKind.SLIDE_IMAGE -> "Mendukung JPG, PNG, WEBP (Maksimal resolusi Full HD 1080p)"
-                            ImportKind.MOSQUE_LOGO -> "Mendukung JPG, PNG (Maksimal resolusi 512x512)"
-                            ImportKind.CUSTOM_ADHAN -> "Mendukung MP3, WAV, M4A, OGG (Maksimal 10MB / 10 menit)"
+                            ImportKind.SLIDE_IMAGE -> stringResource(R.string.storage_hint_slide_image)
+                            ImportKind.MOSQUE_LOGO -> stringResource(R.string.storage_hint_mosque_logo)
+                            ImportKind.CUSTOM_ADHAN -> stringResource(R.string.storage_hint_custom_adhan)
                         },
                         style = TvTypography.Subtitle.copy(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
@@ -149,11 +154,11 @@ fun StorageFilePickerScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Tutup",
+                            contentDescription = stringResource(R.string.btn_close),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
                         )
-                        Text(text = "Batal", style = TvTypography.BodyLabel.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Text(text = stringResource(R.string.btn_cancel), style = TvTypography.BodyLabel.copy(color = MaterialTheme.colorScheme.onSurface))
                     }
                 }
             }
@@ -218,7 +223,7 @@ fun StorageFilePickerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Lokasi: ${currentDir?.absolutePath ?: "-"}",
+                    text = stringResource(R.string.storage_location_prefix, currentDir?.absolutePath ?: "-"),
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
@@ -279,12 +284,12 @@ fun StorageFilePickerScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Kembali ke folder atas",
+                                    contentDescription = stringResource(R.string.storage_parent_folder),
                                     tint = AccentGold,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    text = ".. [Folder Atas]",
+                                    text = stringResource(R.string.storage_parent_folder),
                                     style = TvTypography.BodyLabel.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = AccentGold)
                                 )
                             }
@@ -310,11 +315,11 @@ fun StorageFilePickerScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Tidak ada file media yang didukung di folder ini.",
+                                    text = stringResource(R.string.storage_empty_folder),
                                     style = TvTypography.Subtitle.copy(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 )
                                 Text(
-                                    text = "Pastikan USB flashdisk terpasang atau salin file ke folder Download / Internal.",
+                                    text = stringResource(R.string.storage_empty_hint),
                                     style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                                 )
                             }
@@ -343,7 +348,7 @@ fun StorageFilePickerScreen(
                                             onFileImported(result.relativeFileName)
                                             onDismiss()
                                         } else {
-                                            errorMessage = result.errorMessage ?: "Gagal mengimpor file"
+                                            errorMessage = result.errorMessage ?: context.getString(R.string.storage_import_failed)
                                         }
                                     }
                                 }

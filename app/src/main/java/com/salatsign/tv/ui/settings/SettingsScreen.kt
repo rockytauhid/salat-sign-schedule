@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.settings
 
 import androidx.compose.foundation.background
@@ -18,30 +21,30 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Warning
-import java.time.Instant
-import java.time.ZoneId
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,11 +54,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,16 +73,16 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.salatsign.tv.BuildConfig
+import com.salatsign.tv.R
 import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
-import com.salatsign.tv.data.model.MosqueNamePresets
-import com.salatsign.tv.data.model.MosqueSubtitlePresets
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.SlideType
@@ -86,14 +91,16 @@ import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
 import com.salatsign.tv.ui.common.getMosqueFontFamily
+import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.picker.StorageFilePickerScreen
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
-import com.salatsign.tv.ui.theme.DarkBackground
 import com.salatsign.tv.ui.theme.TvTypography
 import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.ZoneId
 
 @Composable
 fun SettingsScreen(
@@ -131,12 +138,16 @@ fun SettingsScreen(
     onSetMosqueModeAdhan: (Boolean) -> Unit = {},
     onSetMosqueModeReminders: (Boolean) -> Unit = {},
     onSetShowStrikeHighlight: (Boolean) -> Unit = {},
+    onSetAppLanguage: (AppLanguage) -> Unit = {},
+    onSet24HourFormat: (Boolean) -> Unit = {},
+    onSetShowArabicPrayerNames: (Boolean) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
     val initialFocusRequester = remember { FocusRequester() }
     val verticalScrollState = rememberScrollState()
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
 
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
@@ -171,7 +182,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(verticalScrollState),
-            verticalArrangement = Arrangement.spacedBy(22.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header Bar
             Row(
@@ -181,15 +192,12 @@ fun SettingsScreen(
             ) {
                 Column {
                     Text(
-                        text = if (settings.isMosqueMode) "Pengaturan Mode Masjid (Signage)" else "Pengaturan Mode Rumah (Personal)",
-                        style = TvTypography.HeaderTitle.copy(fontSize = 34.sp, color = colorScheme.onBackground)
+                        text = stringResource(R.string.settings_title),
+                        style = TvTypography.HeaderTitle.copy(color = colorScheme.onBackground)
                     )
                     Text(
-                        text = if (settings.isMosqueMode)
-                            "Konfigurasi identitas masjid, ikon, font, rotasi slide pengumuman & tema layar"
-                        else
-                            "Konfigurasi tema, lokasi kota, suara adhan, dan pengingat waktu shalat",
-                        style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
+                        text = if (settings.isMosqueMode) stringResource(R.string.settings_subtitle_mosque) else stringResource(R.string.settings_subtitle_home),
+                        style = TvTypography.Subtitle.copy(fontSize = 16.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                     )
                 }
 
@@ -214,7 +222,7 @@ fun SettingsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Buka Setup Wizard", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant))
+                            Text(stringResource(R.string.settings_open_wizard), style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant))
                         }
                     }
 
@@ -233,12 +241,12 @@ fun SettingsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Tutup",
+                                contentDescription = stringResource(R.string.btn_close),
                                 tint = colorScheme.onSurface,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tutup", style = TvTypography.ButtonText.copy(color = colorScheme.onSurface))
+                            Text(stringResource(R.string.btn_close), style = TvTypography.ButtonText.copy(color = colorScheme.onSurface))
                         }
                     }
                 }
@@ -276,7 +284,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    text = "Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan",
+                                    text = stringResource(R.string.settings_pin_warning_title),
                                     style = TvTypography.CardTitle.copy(
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
@@ -284,7 +292,7 @@ fun SettingsScreen(
                                     )
                                 )
                                 Text(
-                                    text = "Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.",
+                                    text = stringResource(R.string.settings_pin_warning_desc),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         color = Color.White.copy(alpha = 0.8f)
@@ -298,7 +306,7 @@ fun SettingsScreen(
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = "Ubah PIN",
+                                text = stringResource(R.string.btn_change_pin),
                                 style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color.White)
                             )
                         }
@@ -334,14 +342,11 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = if (settings.isMosqueMode) "Mode Aktif: MODE MASJID (Digital Signage)" else "Mode Aktif: MODE RUMAH (Personal)",
+                                text = if (settings.isMosqueMode) stringResource(R.string.settings_mode_active_mosque) else stringResource(R.string.settings_mode_active_home),
                                 style = TvTypography.CardTitle.copy(fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                             )
                             Text(
-                                text = if (settings.isMosqueMode)
-                                    "Klik tombol ini untuk beralih ke Mode Rumah (Personal)"
-                                else
-                                    "Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage)",
+                                text = if (settings.isMosqueMode) stringResource(R.string.settings_mode_switch_to_home) else stringResource(R.string.settings_mode_switch_to_mosque),
                                 style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                             )
                         }
@@ -353,16 +358,140 @@ fun SettingsScreen(
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = if (settings.isMosqueMode) "Ganti ke Mode Rumah" else "Ganti ke Mode Masjid",
-                            style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color.White)
+                            text = if (settings.isMosqueMode) stringResource(R.string.settings_mode_switch_to_home) else stringResource(R.string.settings_mode_switch_to_mosque),
+                            style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color.White)
                         )
+                    }
+                }
+            }
+
+            // Section: Display Language Selector
+            Text(
+                text = stringResource(R.string.settings_section_language),
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                for (lang in AppLanguage.entries) {
+                    val isSelected = (settings.appLanguage == lang)
+                    Card(
+                        onClick = { onSetAppLanguage(lang) },
+                        colors = CardDefaults.colors(
+                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                        ),
+                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .tvFocusable()
+                            .then(
+                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                else Modifier
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Language,
+                                contentDescription = null,
+                                tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(lang.labelRes()),
+                                style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Section: Time Format & Display Preferences
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // 12/24 hour toggle
+                Card(
+                    onClick = { onSet24HourFormat(!settings.is24HourFormat) },
+                    colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = AccentEmerald,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.settings_time_format_toggle),
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = if (settings.is24HourFormat) stringResource(R.string.settings_time_format_24) else stringResource(R.string.settings_time_format_12),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = AccentEmerald, fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Show Arabic Names Toggle
+                Card(
+                    onClick = { onSetShowArabicPrayerNames(!settings.showArabicPrayerNames) },
+                    colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .tvFocusable()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Translate,
+                                contentDescription = null,
+                                tint = AccentGold,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.settings_arabic_names_toggle),
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                )
+                                Text(
+                                    text = if (settings.showArabicPrayerNames) stringResource(R.string.settings_reminder_toggle_on) else stringResource(R.string.settings_reminder_toggle_off),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = if (settings.showArabicPrayerNames) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f))
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             // 1. Theme Selection (Shared in both modes)
             Text(
-                text = "1. Pilihan Tema Warna Layar TV",
+                text = stringResource(R.string.settings_section_theme),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -403,16 +532,8 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = mode.displayName,
+                                    text = stringResource(mode.labelRes()),
                                     style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
-                                )
-                                Text(
-                                    text = when (mode) {
-                                        ThemeMode.ALWAYS_DARK -> "Latar hitam OLED ramah mata"
-                                        ThemeMode.ALWAYS_LIGHT -> "Latar cerah elegan ruang terang"
-                                        ThemeMode.AUTO_DAY_NIGHT -> "Siang (Syuruq-Magrib), Malam gelap"
-                                    },
-                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                 )
                             }
                         }
@@ -427,7 +548,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "2. Lokasi & Kota Waktu Shalat (Saat Ini: ${settings.cityName})",
+                    text = "${stringResource(R.string.settings_section_location)} (${settings.cityName})",
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
             }
@@ -493,7 +614,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Perhatian: Zona waktu TV (${systemZone.id}) berbeda dengan zona lokasi terpilih (${currentZone.id}). Seluruh jadwal shalat dan jam TV tetap akurat mengikuti zona masjid/lokasi (${currentZone.id}).",
+                            text = "${stringResource(R.string.settings_current_zone, currentZone.id)} (System: ${systemZone.id})",
                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = Color.White)
                         )
                     }
@@ -502,7 +623,7 @@ fun SettingsScreen(
 
             // 3. Calculation Method
             Text(
-                text = "3. Metode Perhitungan Waktu Shalat (Saat Ini: ${settings.calculationMethodName})",
+                text = "${stringResource(R.string.settings_section_calc_method)} (${settings.calculationMethodName})",
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -514,14 +635,13 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val methods = listOf(
-                    "SINGAPORE" to "Singapura / MABIMS (Kemenag RI, JAKIM, MUIS)",
-                    "MUSLIM_WORLD_LEAGUE" to "Muslim World League (MWL - Global)",
-                    "UMM_AL_QURA" to "Umm al-Qura (Makkah al-Mukarramah)",
-                    "EGYPTIAN" to "Egyptian General Authority of Survey",
-                    "KARACHI" to "Univ. of Islamic Sciences, Karachi",
-                    "NORTH_AMERICA" to "ISNA (Islamic Society of North America)",
-                    "DUBAI" to "Dubai (UAE Islamic Affairs)",
-                    "MOON_SIGHTING_COMMITTEE" to "Moonsighting Committee Worldwide"
+                    "SINGAPORE" to "Singapura / MABIMS",
+                    "MUSLIM_WORLD_LEAGUE" to "Muslim World League (MWL)",
+                    "UMM_AL_QURA" to "Umm al-Qura (Makkah)",
+                    "EGYPTIAN" to "Egyptian Authority",
+                    "KARACHI" to "Univ. of Karachi",
+                    "NORTH_AMERICA" to "ISNA",
+                    "DUBAI" to "Dubai (UAE)"
                 )
                 for ((methodKey, methodTitle) in methods) {
                     val isSelected = settings.calculationMethodName.equals(methodKey, ignoreCase = true)
@@ -548,7 +668,7 @@ fun SettingsScreen(
 
             // 4. Madhab Selection (Shafi'i/Standard vs Hanafi)
             Text(
-                text = "4. Pilihan Mazhab untuk Waktu Ashr",
+                text = stringResource(R.string.settings_section_madhab),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -572,12 +692,12 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Standar (Syafi'i, Maliki, Hanbali)",
+                            text = stringResource(R.string.settings_madhab_standard),
                             style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Waktu Ashr dimulai ketika panjang bayangan suatu benda sama dengan panjang aslinya (1x). Dianut mayoritas Muslim Indonesia, Malaysia, dan Asia Tenggara.",
+                            text = stringResource(R.string.settings_madhab_standard_desc),
                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.75f))
                         )
                     }
@@ -598,12 +718,12 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Hanafi",
+                            text = stringResource(R.string.settings_madhab_hanafi),
                             style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Waktu Ashr dimulai ketika panjang bayangan benda menjadi dua kali panjang aslinya (2x) — biasanya 45–60 menit lebih lambat dari standar.",
+                            text = stringResource(R.string.settings_madhab_hanafi_desc),
                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.75f))
                         )
                     }
@@ -612,7 +732,7 @@ fun SettingsScreen(
 
             // 5. High-Latitude Rule (Polar / High Latitude Regions)
             Text(
-                text = "5. Aturan Garis Lintang Tinggi (High-Latitude Rule)",
+                text = stringResource(R.string.settings_section_high_latitude),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -621,10 +741,10 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val rules = listOf(
-                    null to "Otomatis / Standar",
-                    "MIDDLE_OF_THE_NIGHT" to "Middle of Night",
-                    "SEVENTH_OF_THE_NIGHT" to "1/7 of Night",
-                    "TWILIGHT_ANGLE" to "Twilight Angle"
+                    null to stringResource(R.string.settings_high_latitude_none),
+                    "MIDDLE_OF_THE_NIGHT" to stringResource(R.string.settings_high_latitude_motn),
+                    "SEVENTH_OF_THE_NIGHT" to stringResource(R.string.settings_high_latitude_sotn),
+                    "TWILIGHT_ANGLE" to stringResource(R.string.settings_high_latitude_angle)
                 )
                 for ((ruleKey, ruleTitle) in rules) {
                     val isSelected = (settings.highLatitudeRule?.uppercase() == ruleKey)
@@ -651,9 +771,9 @@ fun SettingsScreen(
                 }
             }
 
-            // 6. Per-Prayer Time Offsets (−30m to +30m)
+            // 6. Per-Prayer Time Offsets (-30m to +30m)
             Text(
-                text = "6. Koreksi Menit Waktu Shalat (Per-Prayer Offsets)",
+                text = stringResource(R.string.settings_section_offsets),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -680,7 +800,7 @@ fun SettingsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = prayer.displayName,
+                                text = stringResource(prayer.labelRes()),
                                 style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                             )
                             Text(
@@ -725,7 +845,7 @@ fun SettingsScreen(
 
             // 7. Per-Prayer Iqamah Offsets (Minutes After Adhan)
             Text(
-                text = "7. Jeda Waktu Iqamah Setelah Adhan",
+                text = stringResource(R.string.settings_section_iqamah),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -752,11 +872,11 @@ fun SettingsScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = prayer.displayName,
+                                text = stringResource(prayer.labelRes()),
                                 style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                             )
                             Text(
-                                text = if (currentIqamah == 0) "Nonaktif" else "$currentIqamah m",
+                                text = if (currentIqamah == 0) stringResource(R.string.settings_iqamah_disabled) else stringResource(R.string.settings_iqamah_minutes, currentIqamah),
                                 style = TvTypography.BodyLabel.copy(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
@@ -794,7 +914,7 @@ fun SettingsScreen(
 
             // 8. Hijriyah Date Adjustments & Rollover
             Text(
-                text = "8. Penyesuaian Kalender Hijriyah & Waktu Pergantian Hari",
+                text = stringResource(R.string.settings_section_hijri_offset),
                 style = TvTypography.CardTitle.copy(color = AccentGold)
             )
 
@@ -804,10 +924,6 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Koreksi Hilal (Saat ini: ${settings.hijriOffsetDays} Hari):",
-                    style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-                )
                 val offsets = listOf(-2, -1, 0, 1, 2)
                 for (offset in offsets) {
                     val isSelected = (settings.hijriOffsetDays == offset)
@@ -821,12 +937,12 @@ fun SettingsScreen(
                         modifier = Modifier.tvFocusable()
                     ) {
                         Text(
-                            text = if (offset > 0) "+$offset Hari" else "$offset Hari",
+                            text = if (offset > 0) "+$offset" else "$offset",
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 15.sp,
                                 color = if (isSelected) Color.White else colorScheme.onSurface
                             ),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
                 }
@@ -852,13 +968,8 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
-                            text = "Ganti Hari Saat Magrib (Sunset)",
+                            text = stringResource(R.string.settings_hijri_rollover_magrib),
                             style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Bawaan Syariat Islam: Hari baru kalender Hijriyah dimulai begitu matahari terbenam (waktu Magrib).",
-                            style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                         )
                     }
                 }
@@ -878,13 +989,8 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
-                            text = "Ganti Hari Saat Tengah Malam (00:00)",
+                            text = stringResource(R.string.settings_hijri_rollover_midnight),
                             style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Tanggal Hijriyah berganti bersamaan dengan tanggal Masehi tepat pukul 00:00 malam.",
-                            style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                         )
                     }
                 }
@@ -894,7 +1000,7 @@ fun SettingsScreen(
             if (!settings.isMosqueMode) {
                 // ================= HOME MODE ONLY SETTINGS =================
                 Text(
-                    text = "4. Pengingat 15 Menit & Suara Adhan Otomatis",
+                    text = stringResource(R.string.settings_section_home_reminders),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
@@ -920,14 +1026,11 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = if (settings.prePrayerReminderEnabled)
-                                    "Pengingat 15 Menit Sebelum Shalat: AKTIF"
-                                else
-                                    "Pengingat 15 Menit Sebelum Shalat: NONAKTIF",
+                                text = if (settings.prePrayerReminderEnabled) stringResource(R.string.settings_reminder_toggle_on) else stringResource(R.string.settings_reminder_toggle_off),
                                 style = TvTypography.ButtonText.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                             )
                             Text(
-                                text = "Menampilkan notifikasi pop-up TV 15 menit sebelum masuk waktu shalat",
+                                text = stringResource(R.string.settings_reminder_toggle_desc),
                                 style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                             )
                         }
@@ -935,6 +1038,11 @@ fun SettingsScreen(
                 }
 
                 // Per-Prayer Adhan Sound Selector
+                Text(
+                    text = stringResource(R.string.settings_section_home_adhan),
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -962,12 +1070,12 @@ fun SettingsScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = prayer.displayName,
+                                    text = stringResource(prayer.labelRes()),
                                     style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = currentOption.displayName,
+                                    text = stringResource(currentOption.labelRes()),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
@@ -1013,7 +1121,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "USB / File",
+                                    text = stringResource(R.string.settings_btn_usb_file),
                                     style = TvTypography.BodyLabel.copy(fontSize = 11.sp, color = colorScheme.onSurface)
                                 )
                             }
@@ -1021,9 +1129,9 @@ fun SettingsScreen(
                     }
                 }
 
-                // 5. Security & Admin PIN (Home Mode)
+                // Security & Admin PIN (Home Mode)
                 Text(
-                    text = "5. Keamanan & Kunci Pengaturan PIN",
+                    text = stringResource(R.string.settings_section_security),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
@@ -1050,17 +1158,11 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = if (settings.homeModePinRequired)
-                                        "Kunci Pengaturan dengan PIN: AKTIF"
-                                    else
-                                        "Kunci Pengaturan dengan PIN: NONAKTIF",
+                                    text = if (settings.homeModePinRequired) stringResource(R.string.settings_home_pin_on) else stringResource(R.string.settings_home_pin_off),
                                     style = TvTypography.ButtonText.copy(fontSize = 16.sp, color = colorScheme.onSurface)
                                 )
                                 Text(
-                                    text = if (settings.homeModePinRequired)
-                                        "Membuka menu Pengaturan memerlukan PIN (${if (settings.hasCustomPin) "PIN Kustom" else "PIN Bawaan 0000"})"
-                                    else
-                                        "Aktifkan agar anak-anak atau anggota keluarga tidak sengaja mengubah jadwal",
+                                    text = stringResource(R.string.settings_home_pin_desc),
                                     style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                 )
                             }
@@ -1078,7 +1180,7 @@ fun SettingsScreen(
                                     modifier = Modifier.tvFocusable()
                                 ) {
                                     Text(
-                                        text = "Ubah PIN",
+                                        text = stringResource(R.string.btn_change_pin),
                                         style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color.White),
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
@@ -1095,7 +1197,7 @@ fun SettingsScreen(
                                         modifier = Modifier.tvFocusable()
                                     ) {
                                         Text(
-                                            text = "Reset ke 0000",
+                                            text = stringResource(R.string.btn_reset_pin),
                                             style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = colorScheme.onSurface),
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                         )
@@ -1128,7 +1230,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(14.dp))
                         Text(
-                            text = "Perhatian: Mengaktifkan suara di mode masjid dapat mengganggu jamaah jika TV terhubung ke amplifier/sound system masjid.",
+                            text = stringResource(R.string.settings_mosque_adhan_desc),
                             style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurfaceVariant)
                         )
                     }
@@ -1164,12 +1266,8 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = if (settings.mosqueModeAdhanEnabled) "Suara Adhan: AKTIF" else "Suara Adhan: HENING",
+                                    text = if (settings.mosqueModeAdhanEnabled) stringResource(R.string.settings_mosque_adhan_on) else stringResource(R.string.settings_mosque_adhan_off),
                                     style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-                                )
-                                Text(
-                                    text = "Bawaan hening total",
-                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
                                 )
                             }
                         }
@@ -1200,12 +1298,8 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = if (settings.mosqueModeRemindersEnabled) "Pengingat 15m: AKTIF" else "Pengingat 15m: NONAKTIF",
+                                    text = if (settings.mosqueModeRemindersEnabled) stringResource(R.string.settings_mosque_reminders_on) else stringResource(R.string.settings_mosque_reminders_off),
                                     style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-                                )
-                                Text(
-                                    text = "Notifikasi 15m sebelum shalat",
-                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
                                 )
                             }
                         }
@@ -1236,12 +1330,8 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = if (settings.showStrikeHighlight) "Denyut Visual: AKTIF" else "Denyut Visual: NONAKTIF",
+                                    text = if (settings.showStrikeHighlight) stringResource(R.string.settings_mosque_strike_on) else stringResource(R.string.settings_mosque_strike_off),
                                     style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-                                )
-                                Text(
-                                    text = "Denyut hening 5m saat adhan",
-                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
                                 )
                             }
                         }
@@ -1250,7 +1340,7 @@ fun SettingsScreen(
 
                 // 4. Mosque Icon & Emblem Preset Selector
                 Text(
-                    text = "4. Pilihan Ikon / Simbol Masjid",
+                    text = stringResource(R.string.settings_section_mosque_symbol),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
@@ -1281,7 +1371,7 @@ fun SettingsScreen(
                                 MosqueEmblemIcon(preset = preset, customLogoUri = settings.mosqueLogoUri, size = 48.dp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = preset.displayName,
+                                    text = stringResource(preset.labelRes()),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -1316,9 +1406,9 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (!settings.mosqueLogoUri.isNullOrBlank())
-                                    "Ganti Logo Masjid dari USB (Aktif: ${settings.mosqueLogoUri})"
+                                    stringResource(R.string.settings_custom_logo_active)
                                 else
-                                    "Pilih Logo Masjid dari USB Flashdisk (JPG / PNG)",
+                                    stringResource(R.string.settings_btn_import_logo_usb),
                                 style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                             )
                         }
@@ -1327,10 +1417,11 @@ fun SettingsScreen(
 
                 // 5. Mosque Name & Font Selector
                 Text(
-                    text = "5. Nama Masjid (Pilih Preset Nama):",
+                    text = stringResource(R.string.settings_section_mosque_identity),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
+                val namePresets = stringArrayResource(R.array.mosque_name_presets)
                 val nameScrollState = rememberScrollState()
                 Row(
                     modifier = Modifier
@@ -1338,7 +1429,7 @@ fun SettingsScreen(
                         .horizontalScroll(nameScrollState),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    for (name in MosqueNamePresets) {
+                    for (name in namePresets) {
                         val isSelected = (settings.mosqueName == name)
                         Surface(
                             onClick = { onSetMosqueName(name) },
@@ -1362,7 +1453,7 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    text = "Gaya Font Nama Masjid:",
+                    text = stringResource(R.string.settings_section_mosque_font),
                     style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                 )
 
@@ -1391,7 +1482,7 @@ fun SettingsScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = settings.mosqueName,
+                                    text = settings.mosqueName.ifBlank { stringResource(R.string.mosque_default_name) },
                                     fontFamily = getMosqueFontFamily(font),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
@@ -1399,7 +1490,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = font.displayName,
+                                    text = stringResource(font.labelRes()),
                                     style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                 )
                             }
@@ -1408,11 +1499,7 @@ fun SettingsScreen(
                 }
 
                 // 6. Subtitle / Tagline Selector
-                Text(
-                    text = "6. Subtitle / Pesan Jamaah (Pilih Preset):",
-                    style = TvTypography.CardTitle.copy(color = AccentGold)
-                )
-
+                val subtitlePresets = stringArrayResource(R.array.mosque_subtitle_presets)
                 val subtitleScrollState = rememberScrollState()
                 Row(
                     modifier = Modifier
@@ -1420,7 +1507,7 @@ fun SettingsScreen(
                         .horizontalScroll(subtitleScrollState),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    for (subtitle in MosqueSubtitlePresets) {
+                    for (subtitle in subtitlePresets) {
                         val isSelected = (settings.mosqueSubtitle == subtitle)
                         Surface(
                             onClick = { onSetMosqueSubtitle(subtitle) },
@@ -1445,7 +1532,7 @@ fun SettingsScreen(
 
                 // 7. Slideshow & Signage Poster Timing
                 Text(
-                    text = "7. Pengaturan Durasi Jadwal & Poster Slide Pengumuman",
+                    text = stringResource(R.string.settings_section_schedule_duration),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
@@ -1453,11 +1540,6 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "Durasi Tampilan Jadwal Shalat:",
-                        style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
-                    )
-
                     val durations = listOf(30, 60, 90, 120)
                     for (dur in durations) {
                         val isSelected = (settings.scheduleDurationSeconds == dur)
@@ -1482,6 +1564,11 @@ fun SettingsScreen(
                     }
                 }
 
+                Text(
+                    text = stringResource(R.string.settings_section_slides, slides.size, 10),
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Surface(
                         onClick = { activePickerKind = ImportKind.SLIDE_IMAGE },
@@ -1500,13 +1587,17 @@ fun SettingsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tambah Slide Gambar (USB/TV)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                            Text(stringResource(R.string.settings_btn_add_image_slide), style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
                         }
                     }
 
                     Surface(
                         onClick = {
-                            onAddTextSlide("Maklumat Jamaah", "Mari luruskan dan rapatkan shaf sebelum memulai shalat berjamaah.", 15)
+                            onAddTextSlide(
+                                context.getString(R.string.mosque_default_name),
+                                context.getString(R.string.mosque_strike_admonition),
+                                15
+                            )
                         },
                         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
                         colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
@@ -1523,23 +1614,7 @@ fun SettingsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tambah Slide Teks", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
-                        }
-                    }
-
-                    if (BuildConfig.DEBUG) {
-                        Surface(
-                            onClick = onAddSampleSlide,
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
-                            modifier = Modifier.tvFocusable()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Contoh (Debug)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
-                            }
+                            Text(stringResource(R.string.settings_btn_add_text_slide), style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
                         }
                     }
 
@@ -1551,7 +1626,7 @@ fun SettingsScreen(
                             modifier = Modifier.tvFocusable()
                         ) {
                             Text(
-                                text = "Hapus Semua (${slides.size})",
+                                text = "${stringResource(R.string.settings_btn_clear_slides)} (${slides.size})",
                                 style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color(0xFFEF4444)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )
@@ -1583,16 +1658,16 @@ fun SettingsScreen(
                                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                                         ) {
                                             Text(
-                                                text = "#${index + 1} ${if (slide.type == SlideType.IMAGE) "GAMBAR" else "TEKS"}",
+                                                text = "#${index + 1} ${if (slide.type == SlideType.IMAGE) "IMG" else "TXT"}",
                                                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = AccentEmerald, fontWeight = FontWeight.Bold)
                                             )
                                         }
                                         Text(
-                                            text = slide.title.ifBlank { "(Tanpa Judul)" },
+                                            text = slide.title.ifBlank { "(Untitled)" },
                                             style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                                         )
                                         Text(
-                                            text = "(${slide.durationSeconds} detik)",
+                                            text = "(${slide.durationSeconds}s)",
                                             style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
                                         )
                                     }
@@ -1612,13 +1687,13 @@ fun SettingsScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
-                                                contentDescription = "Hapus slide",
+                                                contentDescription = stringResource(R.string.btn_delete),
                                                 tint = Color(0xFFEF4444),
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = "Hapus",
+                                                text = stringResource(R.string.btn_delete),
                                                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = Color(0xFFEF4444))
                                             )
                                         }
@@ -1631,7 +1706,7 @@ fun SettingsScreen(
 
                 // 8. Mosque Admin PIN Security
                 Text(
-                    text = "8. Keamanan & PIN Admin Layar Signage",
+                    text = stringResource(R.string.settings_section_security),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
@@ -1659,14 +1734,14 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    text = if (settings.hasCustomPin) "Status: PIN Kustom Aktif (Aman)" else "Status: PIN Bawaan (0000)",
+                                    text = if (settings.hasCustomPin) stringResource(R.string.settings_custom_pin_active) else stringResource(R.string.settings_using_default_pin),
                                     style = TvTypography.CardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurfaceVariant)
                                 )
                                 Text(
                                     text = if (settings.hasCustomPin)
-                                        "PIN disimpan dalam bentuk salted hash (PBKDF2). Reset data aplikasi akan mengembalikan PIN ke 0000."
+                                        stringResource(R.string.settings_custom_pin_desc)
                                     else
-                                        "PIN 0000 mudah ditebak. Sangat disarankan mengganti PIN agar layar masjid aman dari akses tidak berizin.",
+                                        stringResource(R.string.settings_pin_warning_desc),
                                     style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
                                 )
                             }
@@ -1683,7 +1758,7 @@ fun SettingsScreen(
                                 modifier = Modifier.tvFocusable()
                             ) {
                                 Text(
-                                    text = "Ubah PIN Admin",
+                                    text = stringResource(R.string.settings_btn_change_admin_pin),
                                     style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color.White),
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                 )
@@ -1700,7 +1775,7 @@ fun SettingsScreen(
                                     modifier = Modifier.tvFocusable()
                                 ) {
                                     Text(
-                                        text = "Reset ke 0000",
+                                        text = stringResource(R.string.btn_reset_pin),
                                         style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
                                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                                     )
@@ -1708,6 +1783,78 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // ================= SECTION: ABOUT & CREDITS (Phase 7.1) =================
+            Text(
+                text = stringResource(R.string.settings_section_about),
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Card(
+                onClick = {},
+                colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = AccentEmerald,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Column {
+                            Text(
+                                text = stringResource(R.string.settings_about_app_name),
+                                style = TvTypography.HeaderTitle.copy(fontSize = 22.sp, color = colorScheme.onSurface)
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                                style = TvTypography.Subtitle.copy(fontSize = 14.sp, color = AccentGold)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = stringResource(R.string.about_credit),
+                        style = TvTypography.BodyLabel.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                    )
+
+                    Text(
+                        text = stringResource(R.string.settings_about_license),
+                        style = TvTypography.BodyLabel.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                    )
+
+                    Text(
+                        text = stringResource(R.string.settings_about_copyright),
+                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                    )
+
+                    Text(
+                        text = stringResource(R.string.settings_about_source_code),
+                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                    )
+
+                    Text(
+                        text = stringResource(R.string.settings_about_trademarks),
+                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                    )
+
+                    Text(
+                        text = stringResource(R.string.settings_about_libraries),
+                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                    )
                 }
             }
 
@@ -1719,10 +1866,10 @@ fun SettingsScreen(
             StorageFilePickerScreen(
                 kind = activePickerKind!!,
                 title = when (activePickerKind) {
-                    ImportKind.MOSQUE_LOGO -> "Pilih Logo Masjid (USB / TV)"
-                    ImportKind.CUSTOM_ADHAN -> "Pilih Audio Adhan (USB / TV)"
-                    ImportKind.SLIDE_IMAGE -> "Pilih Gambar Slide Pengumuman (USB / TV)"
-                    else -> "Pilih File Media"
+                    ImportKind.MOSQUE_LOGO -> stringResource(R.string.storage_title_mosque_logo)
+                    ImportKind.CUSTOM_ADHAN -> stringResource(R.string.storage_title_custom_adhan)
+                    ImportKind.SLIDE_IMAGE -> stringResource(R.string.storage_title_slide_image)
+                    else -> stringResource(R.string.storage_title_slide_image)
                 },
                 onFileImported = { fileName ->
                     when (activePickerKind) {
@@ -1730,11 +1877,11 @@ fun SettingsScreen(
                         ImportKind.CUSTOM_ADHAN -> {
                             val prayer = pickerTargetPrayer
                             if (prayer != null) {
-                                onSetCustomAdhan(prayer, fileName, "Adhan Kustom (${fileName.take(15)})")
+                                onSetCustomAdhan(prayer, fileName, "Adhan (${fileName.take(15)})")
                             }
                         }
                         ImportKind.SLIDE_IMAGE -> {
-                            onAddImageSlide("Pengumuman Masjid", fileName, 15)
+                            onAddImageSlide("Poster", fileName, 15)
                         }
                         null -> {}
                     }
@@ -1789,7 +1936,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Ganti PIN Bawaan (0000)?",
+                            text = stringResource(R.string.settings_pin_warning_title),
                             style = TvTypography.CardTitle.copy(
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1798,7 +1945,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Anda saat ini masih menggunakan PIN bawaan 0000. Demi keamanan layar publik masjid, apakah Anda ingin menggantinya sekarang?",
+                            text = stringResource(R.string.settings_pin_warning_desc),
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
                                 color = colorScheme.onSurface.copy(alpha = 0.8f)
@@ -1818,7 +1965,7 @@ fun SettingsScreen(
                                 modifier = Modifier.tvFocusable()
                             ) {
                                 Text(
-                                    text = "Nanti Saja",
+                                    text = stringResource(R.string.btn_keep_default_pin),
                                     style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )
@@ -1837,7 +1984,7 @@ fun SettingsScreen(
                                 modifier = Modifier.tvFocusable()
                             ) {
                                 Text(
-                                    text = "Ganti PIN Sekarang",
+                                    text = stringResource(R.string.btn_change_pin_now),
                                     style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color.White),
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                 )

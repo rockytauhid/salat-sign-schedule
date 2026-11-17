@@ -1,15 +1,19 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.engine
 
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.chrono.HijrahDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.temporal.ChronoField
 import java.util.Locale
 
 object HijriCalendarEngine {
 
-    val HijriMonthNames = listOf(
+    val EnglishHijriMonthNames = listOf(
         "Muharram",
         "Safar",
         "Rabi' al-Awwal",
@@ -24,19 +28,51 @@ object HijriCalendarEngine {
         "Dhu al-Hijjah"
     )
 
-    private val GregorianFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale("id", "ID"))
-    private val GregorianFormatterEn = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.ENGLISH)
+    val IndonesianHijriMonthNames = listOf(
+        "Muharram",
+        "Safar",
+        "Rabiul Awal",
+        "Rabiul Akhir",
+        "Jumadil Awal",
+        "Jumadil Akhir",
+        "Rajab",
+        "Sya'ban",
+        "Ramadhan",
+        "Syawal",
+        "Dzulqa'dah",
+        "Dzulhijjah"
+    )
+
+    val ArabicHijriMonthNames = listOf(
+        "مُحَرَّم",
+        "صَفَر",
+        "رَبِيع الأوَّل",
+        "رَبِيع الآخِر",
+        "جُمَادَى الأولى",
+        "جُمَادَى الآخِرة",
+        "رَجَب",
+        "شَعْبَان",
+        "رَمَضَان",
+        "شَوَّال",
+        "ذُو القَعْدَة",
+        "ذُو الحِجَّة"
+    )
+
+    // Backwards compatibility alias
+    val HijriMonthNames = EnglishHijriMonthNames
 
     /**
      * Converts a LocalDate into a formatted Hijriyah date string taking into account
-     * the user-configured offset (-2 to +2 days) and Maghrib rollover (D8).
+     * the user-configured offset (-2 to +2 days), Maghrib rollover (D8), and language.
      */
     fun formatHijriDate(
         date: LocalDate,
         offsetDays: Int = 0,
         now: ZonedDateTime? = null,
         maghribTime: ZonedDateTime? = null,
-        changeAtMidnight: Boolean = false
+        changeAtMidnight: Boolean = false,
+        monthNames: List<String> = EnglishHijriMonthNames,
+        yearSuffix: String = "H"
     ): String {
         return try {
             val effectiveDate = calculateEffectiveDate(date, offsetDays, now, maghribTime, changeAtMidnight)
@@ -45,16 +81,18 @@ object HijriCalendarEngine {
             val monthIndex = hijrahDate.get(ChronoField.MONTH_OF_YEAR) - 1
             val year = hijrahDate.get(ChronoField.YEAR)
 
-            val monthName = if (monthIndex in HijriMonthNames.indices) {
-                HijriMonthNames[monthIndex]
+            val monthName = if (monthIndex in monthNames.indices) {
+                monthNames[monthIndex]
+            } else if (monthIndex in EnglishHijriMonthNames.indices) {
+                EnglishHijriMonthNames[monthIndex]
             } else {
-                "Bulan ${monthIndex + 1}"
+                "${monthIndex + 1}"
             }
 
-            "$day $monthName $year H"
+            "$day $monthName $year $yearSuffix"
         } catch (_: Exception) {
             val fallbackDate = calculateEffectiveDate(date, offsetDays, now, maghribTime, changeAtMidnight)
-            "${fallbackDate.dayOfMonth} Hijriyah"
+            "${fallbackDate.dayOfMonth} $yearSuffix"
         }
     }
 
@@ -88,14 +126,21 @@ object HijriCalendarEngine {
     }
 
     /**
-     * Formats the Gregorian date into a readable string (e.g. "Senin, 17 November 2026").
+     * Formats the Gregorian date into a readable string using locale-aware formatting.
+     * Enforces Latin digits even in Arabic (D9).
      */
-    fun formatGregorianDate(date: LocalDate, locale: Locale = Locale("id", "ID")): String {
+    fun formatGregorianDate(date: LocalDate, locale: Locale = Locale.forLanguageTag("en-AU")): String {
         return try {
-            val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)
+            val effectiveLocale = if (locale.language == "ar") {
+                Locale.forLanguageTag("ar-u-nu-latn")
+            } else {
+                locale
+            }
+            val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(effectiveLocale)
             date.format(formatter)
         } catch (_: Exception) {
-            date.format(GregorianFormatterEn)
+            val fallbackFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.ENGLISH)
+            date.format(fallbackFormatter)
         }
     }
 }

@@ -71,7 +71,8 @@ SalatSign adheres strictly to Android TV design principles:
 - **Image Loading:** `io.coil-kt.coil3:coil-compose`
 - **Audio Engine:** Android `MediaPlayer` configured with `AudioAttributes.USAGE_ALARM`
 - **Background Scheduling:** `AlarmManager` (`setAlarmClock`) + `ForegroundService` + `WorkManager` (recurring daily 00:05 AM scheduler). Uses `setAlarmClock()` without requiring `SCHEDULE_EXACT_ALARM` or `USE_EXACT_ALARM`.
-- **Offline First & Network:** Core prayer calculations, Hijri calendar, Adhan audio, and Mosque digital signage work 100% offline; network access (`INTERNET`) is retained exclusively for optional local remote control.
+- **Offline First & Network:** Core prayer calculations, Hijri calendar, Adhan audio, and Mosque digital signage work 100% offline; network access (`INTERNET`) is retained exclusively for local remote control (planned phone controller).
+- **Supported Languages:** English (default, en-AU formatting), Indonesian (Bahasa Indonesia), and Arabic (العربية with Latin digits). Full runtime language switching without clearing app data.
 
 ---
 
@@ -151,5 +152,20 @@ RELEASE_KEY_PASSWORD=your_key_password
 
 ---
 
-## 📄 License
-This project is open-source and available under the [MIT License](LICENSE).
+## License
+
+SalatSign is free software: you can redistribute it and/or modify it under the terms
+of the GNU General Public License, version 3 or (at your option) any later version.
+See [LICENSE](LICENSE).
+
+Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors.
+
+The name "SalatSign" and the logo are not covered by this license; see
+[TRADEMARKS.md](TRADEMARKS.md). You are welcome to fork the project under a
+different name.
+
+Third-party libraries, fonts and audio are listed in
+[docs/THIRD_PARTY.md](docs/THIRD_PARTY.md) and
+[docs/AUDIO_SOURCES.md](docs/AUDIO_SOURCES.md). The project does not distribute
+third-party adhan recordings that lack a clear license.
+

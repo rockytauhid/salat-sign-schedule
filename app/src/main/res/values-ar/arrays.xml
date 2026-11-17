@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hijri Months (1-12) Arabic -->
+    <string-array name="hijri_months">
+        <item>مُحَرَّم</item>
+        <item>صَفَر</item>
+        <item>رَبِيع الأوَّل</item>
+        <item>رَبِيع الآخِر</item>
+        <item>جُمَادَى الأولى</item>
+        <item>جُمَادَى الآخِرة</item>
+        <item>رَجَب</item>
+        <item>شَعْبَان</item>
+        <item>رَمَضَان</item>
+        <item>شَوَّال</item>
+        <item>ذُو القَعْدَة</item>
+        <item>ذُو الحِجَّة</item>
+    </string-array>
+
+    <!-- Mosque Name Presets Arabic -->
+    <string-array name="mosque_name_presets">
+        <item>المسجد الكبير</item>
+        <item>المسجد الجامع</item>
+        <item>مسجد الإخلاص</item>
+        <item>مسجد التقوى</item>
+        <item>مسجد المهاجرين</item>
+        <item>مسجد بيت الرحمن</item>
+        <item>مسجد الهدى</item>
+        <item>مسجد نور الإيمان</item>
+        <item>مسجد دار السلام</item>
+        <item>مصلى البركة</item>
+    </string-array>
+
+    <!-- Mosque Subtitle Presets Arabic -->
+    <string-array name="mosque_subtitle_presets">
+        <item>استووا وتراصوا</item>
+        <item>يرجى إغلاق الهواتف المحمولة</item>
+        <item>سووا صفوفكم فإن تسوية الصف من تمام الصلاة</item>
+        <item>أهلاً وسهلاً بضيوف الرحمن</item>
+        <item>حافظوا على نظافة المسجد وطهارته</item>
+    </string-array>
+</resources>

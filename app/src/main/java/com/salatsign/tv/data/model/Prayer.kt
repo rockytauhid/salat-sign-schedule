@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.data.model
 
 enum class Prayer(
@@ -7,27 +10,27 @@ enum class Prayer(
 ) {
     SUBUH(
         id = "subuh",
-        displayName = "Subuh",
+        displayName = "Fajr",
         arabicName = "الفجر"
     ),
     ZUHUR(
         id = "zuhur",
-        displayName = "Zuhur",
+        displayName = "Dhuhr",
         arabicName = "الظهر"
     ),
     ASHR(
         id = "ashr",
-        displayName = "Ashr",
+        displayName = "Asr",
         arabicName = "العصر"
     ),
     MAGRIB(
         id = "magrib",
-        displayName = "Magrib",
+        displayName = "Maghrib",
         arabicName = "المغرب"
     ),
     ISYA(
         id = "isya",
-        displayName = "Isya",
+        displayName = "Isha",
         arabicName = "العشاء"
     );
 

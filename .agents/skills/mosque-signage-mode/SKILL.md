@@ -15,7 +15,7 @@ description: Implements silent white-label Mosque Mode with configurable prayer 
 3. **Slideshow State Machine (`MosqueSlideshowViewModel`):**
    - Maintain a sealed state:
      - `SlideState.PrayerSchedule(durationSeconds: Int)` (default `60`)
-     - `SlideState.AnnouncementImage(slideIndex: Int, imageUri: String, durationSeconds: Int)` (configurable `3`, `5`, `10`, or custom seconds per image)
+     - `SlideState.Announcement(slide: SignageSlide)` (rendering title, body, optional image)
    - Run a coroutine timer loop:
      - Show `PrayerSchedule` for `scheduleDurationSeconds`.
      - If `announcementSlides.isNotEmpty()`, iterate through each slide for its configured `durationSeconds` using `Crossfade(animationSpec = tween(800))`.
@@ -25,6 +25,7 @@ description: Implements silent white-label Mosque Mode with configurable prayer 
    - When the current minute matches any prayer time (`Subuh`, `Zuhur`, `Ashr`, `Magrib`, `Isya`):
      - **Do NOT play any audio or show any toast/notification.**
      - Immediately force `SlideState.PrayerSchedule` (interrupting any active announcement slide) and set `activePrayerHighlight = currentPrayer` for 5 minutes so the congregation sees the active prayer pulsing clearly on screen.
-5. **Hidden Settings Trigger:**
+5. **Hidden Settings Trigger & PIN Protection:**
    - In Mosque Mode, hide all Settings icons/buttons from the screen.
-   - Intercept `Key.Menu` or a 3-second long-press on `Key.DirectionCenter` to open the Settings screen.
+   - Intercept `Key.Menu` or a 3-second long-press on `Key.DirectionCenter` to trigger Settings access.
+   - Access is gated behind a PBKDF2 PIN dialog with lockout protection (persisted across reboots). Recovery is via Android TV system app data reset.

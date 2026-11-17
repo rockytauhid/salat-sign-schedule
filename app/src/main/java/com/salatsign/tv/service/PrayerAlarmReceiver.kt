@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.service
 
 import android.app.NotificationChannel
@@ -15,6 +18,7 @@ import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.engine.PrayerCalculationEngine
+import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -79,7 +83,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
                             PrayerAlarmScheduler.ACTION_PRE_PRAYER_REMINDER -> {
                                 if (isReminderAllowed) {
-                                    showReminderNotification(context, prayerDisplayName)
+                                    val localizedContext = LocaleHelper.wrap(context, settings.appLanguage)
+                                    showReminderNotification(localizedContext, prayerDisplayName)
                                 }
                             }
                         }
@@ -103,10 +108,10 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 REMINDER_CHANNEL_ID,
-                REMINDER_CHANNEL_NAME,
+                context.getString(R.string.notif_channel_reminder_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifikasi 15 menit menjelang waktu shalat"
+                description = context.getString(R.string.notif_channel_reminder_desc)
                 enableVibration(true)
             }
             notificationManager.createNotificationChannel(channel)
@@ -124,8 +129,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, REMINDER_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("15 Menit Menjelang $prayerDisplayName")
-            .setContentText("Waktu shalat $prayerDisplayName akan segera tiba. Siapkan diri untuk beribadah.")
+            .setContentTitle(context.getString(R.string.notif_reminder_title, prayerDisplayName))
+            .setContentText(context.getString(R.string.notif_reminder_text, prayerDisplayName))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
 package com.salatsign.tv.ui.home
 
 import androidx.compose.foundation.background
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,9 +39,12 @@ import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
+import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
+import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.common.tvFocusable
@@ -81,6 +88,7 @@ fun HomeScreen(
                 cityName = uiState.settings.cityName,
                 zoneId = uiState.settings.zoneId,
                 isViewingToday = uiState.isViewingToday,
+                is24HourFormat = uiState.settings.is24HourFormat,
                 onPreviousDay = onPreviousDay,
                 onNextDay = onNextDay,
                 onTodayClick = onTodayClick,
@@ -96,6 +104,8 @@ fun HomeScreen(
                         sunrise = prayerTimes.formattedSunrise,
                         isReminderEnabled = uiState.settings.prePrayerReminderEnabled,
                         adhanType = uiState.settings.adhanFor(prayerTimes.nextPrayer.prayer).type,
+                        is24HourFormat = uiState.settings.is24HourFormat,
+                        showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1.3f)
@@ -118,6 +128,8 @@ fun HomeScreen(
                 // 5 Daily Prayers Row
                 PrayerCardsRow(
                     prayers = prayerTimes.prayers,
+                    is24HourFormat = uiState.settings.is24HourFormat,
+                    showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1.0f)
@@ -134,9 +146,16 @@ fun NextPrayerSpotlightCard(
     sunrise: String,
     isReminderEnabled: Boolean,
     adhanType: AdhanAudioType,
+    is24HourFormat: Boolean = true,
+    showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val prayerLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
+        stringResource(R.string.prayer_jumuah)
+    } else {
+        stringResource(nextPrayer.prayer.labelRes())
+    }
 
     Card(
         onClick = {},
@@ -170,7 +189,7 @@ fun NextPrayerSpotlightCard(
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "SHALAT BERIKUTNYA",
+                            text = stringResource(R.string.home_badge_next_prayer),
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
@@ -179,16 +198,18 @@ fun NextPrayerSpotlightCard(
                         )
                     }
 
-                    Text(
-                        text = nextPrayer.prayer.arabicName,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 24.sp)
-                    )
+                    if (showArabicPrayerNames) {
+                        Text(
+                            text = nextPrayer.prayer.arabicName,
+                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = nextPrayer.displayLabel,
+                    text = prayerLabel,
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -209,7 +230,7 @@ fun NextPrayerSpotlightCard(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Menuju Adhan: $countdown",
+                        text = stringResource(R.string.home_countdown_to_adhan, countdown),
                         style = TvTypography.CountdownText
                     )
                 }
@@ -221,7 +242,7 @@ fun NextPrayerSpotlightCard(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = nextPrayer.formattedTime,
+                    text = nextPrayer.formattedTime(is24HourFormat),
                     style = TvTypography.ActivePrayerTime.copy(color = colorScheme.onSurfaceVariant)
                 )
 
@@ -246,7 +267,7 @@ fun NextPrayerSpotlightCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Syuruq: $sunrise",
+                            text = stringResource(R.string.home_sunrise, sunrise),
                             style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                         )
                     }
@@ -266,7 +287,7 @@ fun NextPrayerSpotlightCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isReminderEnabled) "Pengingat 15m Aktif" else "Pengingat Nonaktif",
+                            text = if (isReminderEnabled) stringResource(R.string.home_reminder_active) else stringResource(R.string.home_reminder_inactive),
                             style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                         )
                     }
@@ -299,7 +320,7 @@ fun NonTodaySummaryCard(
         ) {
             Column {
                 Text(
-                    text = "Jadwal Shalat Arsip / Masa Datang",
+                    text = stringResource(R.string.home_archive_future_schedule),
                     style = TvTypography.Subtitle.copy(color = AccentGold)
                 )
                 Text(
@@ -321,7 +342,7 @@ fun NonTodaySummaryCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Syuruq: $sunrise",
+                    text = stringResource(R.string.home_sunrise, sunrise),
                     style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurfaceVariant)
                 )
             }
@@ -332,6 +353,8 @@ fun NonTodaySummaryCard(
 @Composable
 fun PrayerCardsRow(
     prayers: List<PrayerTimeItem>,
+    is24HourFormat: Boolean = true,
+    showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -341,6 +364,8 @@ fun PrayerCardsRow(
         for (item in prayers) {
             PrayerCard(
                 item = item,
+                is24HourFormat = is24HourFormat,
+                showArabicPrayerNames = showArabicPrayerNames,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
@@ -352,9 +377,16 @@ fun PrayerCardsRow(
 @Composable
 fun PrayerCard(
     item: PrayerTimeItem,
+    is24HourFormat: Boolean = true,
+    showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val prayerLabel = if (item.prayer == Prayer.ZUHUR && item.isFriday) {
+        stringResource(R.string.prayer_jumuah)
+    } else {
+        stringResource(item.prayer.labelRes())
+    }
 
     val cardModifier = if (item.isActive) {
         modifier
@@ -381,17 +413,21 @@ fun PrayerCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Arabic Name
-            Text(
-                text = item.prayer.arabicName,
-                style = TvTypography.ArabicTitle.copy(
-                    fontSize = 20.sp,
-                    color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
+            if (showArabicPrayerNames) {
+                Text(
+                    text = item.prayer.arabicName,
+                    style = TvTypography.ArabicTitle.copy(
+                        fontSize = 20.sp,
+                        color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
                 )
-            )
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+            }
 
-            // Latin Name
+            // Localized Name
             Text(
-                text = item.displayLabel,
+                text = prayerLabel,
                 style = TvTypography.CardTitle.copy(
                     fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
                     color = colorScheme.onSurface
@@ -400,7 +436,7 @@ fun PrayerCard(
 
             // Prayer Time (Large TV typography)
             Text(
-                text = item.formattedTime,
+                text = item.formattedTime(is24HourFormat),
                 style = if (item.isNext) {
                     TvTypography.InactivePrayerTime.copy(
                         fontSize = 42.sp,
@@ -413,9 +449,10 @@ fun PrayerCard(
             )
 
             // Iqamah indicator if configured
-            if (item.formattedIqamahTime != null) {
+            val formattedIqamah = item.formattedIqamahTime(is24HourFormat)
+            if (formattedIqamah != null) {
                 Text(
-                    text = "Iqamah ${item.formattedIqamahTime}",
+                    text = stringResource(R.string.home_iqamah_time, formattedIqamah),
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -432,7 +469,7 @@ fun PrayerCard(
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = "WAKTU SHALAT",
+                        text = stringResource(R.string.home_badge_active_prayer),
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -447,7 +484,7 @@ fun PrayerCard(
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
                     Text(
-                        text = "SELANJUTNYA",
+                        text = stringResource(R.string.home_badge_next),
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
