@@ -1,5 +1,6 @@
 package com.salatsign.tv
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.WindowManager
@@ -16,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.service.AdhanPlaybackService
+import com.salatsign.tv.service.PrayerAlarmScheduler
 import com.salatsign.tv.ui.home.HomeScreen
 import com.salatsign.tv.ui.home.HomeViewModel
 import com.salatsign.tv.ui.mosque.MosqueSignageScreen
@@ -79,6 +82,18 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Task P1.4: Stop adhan playback if user presses Back, OK / DPAD_CENTER / ENTER while adhan is playing
+        if (AdhanPlaybackService.isPlaying.value) {
+            if (keyCode == KeyEvent.KEYCODE_BACK ||
+                keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                keyCode == KeyEvent.KEYCODE_ENTER ||
+                keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER
+            ) {
+                stopAdhanPlayback()
+                return true
+            }
+        }
+
         if (keyCode == KeyEvent.KEYCODE_MENU) {
             isSettingsOpen.value = !isSettingsOpen.value
             return true
@@ -95,6 +110,13 @@ class MainActivity : ComponentActivity() {
         }
 
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun stopAdhanPlayback() {
+        val stopIntent = Intent(this, AdhanPlaybackService::class.java).apply {
+            action = PrayerAlarmScheduler.ACTION_STOP_ADHAN
+        }
+        startService(stopIntent)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
@@ -119,6 +141,8 @@ fun MainContent(
     val settings by settingsViewModel.settings.collectAsState()
 
     val currentView = LocalView.current
+    val isAdhanPlaying by AdhanPlaybackService.isPlaying.collectAsState()
+    val context = currentView.context
 
     // Rule: Screen Wake Lock must be active in Mosque Mode (FLAG_KEEP_SCREEN_ON)
     DisposableEffect(settings.isMosqueMode) {
@@ -134,8 +158,13 @@ fun MainContent(
     }
 
     // Back button handling
-    BackHandler(enabled = isSettingsOpen || !homeUiState.isViewingToday) {
-        if (isSettingsOpen) {
+    BackHandler(enabled = isAdhanPlaying || isSettingsOpen || !homeUiState.isViewingToday) {
+        if (isAdhanPlaying) {
+            val stopIntent = Intent(context, AdhanPlaybackService::class.java).apply {
+                action = PrayerAlarmScheduler.ACTION_STOP_ADHAN
+            }
+            context.startService(stopIntent)
+        } else if (isSettingsOpen) {
             onCloseSettings()
         } else if (!homeUiState.isViewingToday) {
             homeViewModel.resetToToday()
