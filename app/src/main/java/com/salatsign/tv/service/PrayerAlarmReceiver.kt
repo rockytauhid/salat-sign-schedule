@@ -48,8 +48,12 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             try {
                 withTimeout(8_000) {
                     val settings = repository.appSettingsFlow.first()
-                    if (settings.isMosqueMode) {
-                        Log.d(TAG, "Mosque Mode is active: Aborting alarm event execution.")
+                    val isAdhanAllowed = if (settings.isMosqueMode) settings.mosqueModeAdhanEnabled else true
+                    val isReminderAllowed = if (settings.isMosqueMode) settings.mosqueModeRemindersEnabled else settings.prePrayerReminderEnabled
+
+                    if (settings.isMosqueMode && !isAdhanAllowed && !isReminderAllowed) {
+                        Log.d(TAG, "Mosque Mode is active and quiet: Aborting alarm event execution.")
+                        scheduler.cancelAllAlarms()
                         return@withTimeout
                     }
 
@@ -60,8 +64,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                     } else {
                         when (action) {
                             PrayerAlarmScheduler.ACTION_PLAY_ADHAN -> {
-                                // Only play adhan if prayer option is not SILENT
-                                if (adhanType != AdhanAudioType.SILENT.name) {
+                                if (isAdhanAllowed && adhanType != AdhanAudioType.SILENT.name) {
                                     val serviceIntent = Intent(context, AdhanPlaybackService::class.java).apply {
                                         putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayerName)
                                         putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_DISPLAY_NAME, prayerDisplayName)
@@ -70,12 +73,12 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                                     }
                                     ContextCompat.startForegroundService(context, serviceIntent)
                                 } else {
-                                    Log.d(TAG, "Adhan for $prayerDisplayName is SILENT. Skipping audio playback.")
+                                    Log.d(TAG, "Adhan for $prayerDisplayName is SILENT or not allowed. Skipping audio playback.")
                                 }
                             }
 
                             PrayerAlarmScheduler.ACTION_PRE_PRAYER_REMINDER -> {
-                                if (settings.prePrayerReminderEnabled) {
+                                if (isReminderAllowed) {
                                     showReminderNotification(context, prayerDisplayName)
                                 }
                             }
