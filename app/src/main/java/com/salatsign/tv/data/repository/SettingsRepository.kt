@@ -12,7 +12,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
-import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
@@ -51,7 +50,6 @@ class SettingsRepository(private val context: Context) {
         val MOSQUE_ICON_PRESET = stringPreferencesKey("mosque_icon_preset")
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
-        val SLIDES_RAW = stringPreferencesKey("slides_raw")
     }
 
     val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -92,9 +90,6 @@ class SettingsRepository(private val context: Context) {
 
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
 
-            val slidesRaw = preferences[PreferencesKeys.SLIDES_RAW] ?: ""
-            val slides = deserializeSlides(slidesRaw)
-
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
@@ -115,8 +110,7 @@ class SettingsRepository(private val context: Context) {
                 mosqueLogoUri = mosqueLogoUri,
                 mosqueIconPreset = mosqueIconPreset,
                 mosqueFontPreset = mosqueFontPreset,
-                scheduleDurationSeconds = scheduleDuration,
-                announcementSlides = slides
+                scheduleDurationSeconds = scheduleDuration
             )
         }
 
@@ -222,33 +216,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun updateScheduleDuration(seconds: Int) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SCHEDULE_DURATION_SECONDS] = seconds.coerceAtLeast(10)
-        }
-    }
-
-    suspend fun updateSlides(slides: List<AnnouncementSlide>) {
-        context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.SLIDES_RAW] = serializeSlides(slides)
-        }
-    }
-
-    private fun serializeSlides(slides: List<AnnouncementSlide>): String {
-        return slides.joinToString(";;") { slide ->
-            "${slide.id}::${slide.imageFile ?: ""}::${slide.title}::${slide.durationSeconds}"
-        }
-    }
-
-    private fun deserializeSlides(raw: String): List<AnnouncementSlide> {
-        if (raw.isBlank()) return emptyList()
-        return raw.split(";;").mapNotNull { part ->
-            val tokens = part.split("::")
-            if (tokens.size >= 4) {
-                AnnouncementSlide(
-                    id = tokens[0],
-                    imageFile = tokens[1].ifBlank { null },
-                    title = tokens[2],
-                    durationSeconds = tokens[3].toIntOrNull() ?: 10
-                )
-            } else null
         }
     }
 }

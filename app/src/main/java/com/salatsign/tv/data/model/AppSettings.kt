@@ -86,8 +86,7 @@ data class AppSettings(
     val mosqueLogoUri: String? = null,
     val mosqueIconPreset: MosqueIconPreset = MosqueIconPreset.DOME_CRESCENT,
     val mosqueFontPreset: MosqueFontPreset = MosqueFontPreset.MODERN_SANS,
-    val scheduleDurationSeconds: Int = 60,
-    val announcementSlides: List<AnnouncementSlide> = emptyList()
+    val scheduleDurationSeconds: Int = 60
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {
