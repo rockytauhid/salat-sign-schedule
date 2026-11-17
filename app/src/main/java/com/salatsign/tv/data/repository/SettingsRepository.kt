@@ -31,7 +31,7 @@ import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "salatsign_preferences")
 
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(private val context: Context) : ISettingsRepository {
 
     private object PreferencesKeys {
         val IS_SETUP_COMPLETED = booleanPreferencesKey("is_setup_completed")
@@ -96,7 +96,7 @@ class SettingsRepository(private val context: Context) {
         val SHOW_ARABIC_PRAYER_NAMES = booleanPreferencesKey("show_arabic_prayer_names")
     }
 
-    val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
+    override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -232,25 +232,25 @@ class SettingsRepository(private val context: Context) {
         return AdhanAudioOption(type = type, displayName = name, customUri = uri)
     }
 
-    suspend fun setSetupCompleted(completed: Boolean) {
+    override suspend fun setSetupCompleted(completed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_SETUP_COMPLETED] = completed
         }
     }
 
-    suspend fun setMosqueMode(enabled: Boolean) {
+    override suspend fun setMosqueMode(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_MOSQUE_MODE] = enabled
         }
     }
 
-    suspend fun setThemeMode(mode: ThemeMode) {
+    override suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.THEME_MODE] = mode.name
         }
     }
 
-    suspend fun selectCity(city: CityPreset) {
+    override suspend fun selectCity(city: CityPreset) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.LATITUDE] = city.latitude
             prefs[PreferencesKeys.LONGITUDE] = city.longitude
@@ -260,12 +260,12 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateLocation(
+    override suspend fun updateLocation(
         latitude: Double,
         longitude: Double,
         cityName: String,
-        method: String? = null,
-        zoneId: String? = null
+        method: String?,
+        zoneId: String?
     ) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.LATITUDE] = latitude
@@ -280,19 +280,19 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setCalculationMethod(method: String) {
+    override suspend fun setCalculationMethod(method: String) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.CALCULATION_METHOD] = method
         }
     }
 
-    suspend fun setMadhab(madhab: String) {
+    override suspend fun setMadhab(madhab: String) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MADHAB] = madhab
         }
     }
 
-    suspend fun setHighLatitudeRule(rule: String?) {
+    override suspend fun setHighLatitudeRule(rule: String?) {
         context.dataStore.edit { prefs ->
             if (rule != null) {
                 prefs[PreferencesKeys.HIGH_LATITUDE_RULE] = rule
@@ -302,26 +302,26 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateHijriOffset(offsetDays: Int) {
+    override suspend fun updateHijriOffset(offsetDays: Int) {
         val clamped = offsetDays.coerceIn(-2, 2)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.HIJRI_OFFSET_DAYS] = clamped
         }
     }
 
-    suspend fun setHijriChangeAtMidnight(atMidnight: Boolean) {
+    override suspend fun setHijriChangeAtMidnight(atMidnight: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.HIJRI_CHANGE_AT_MIDNIGHT] = atMidnight
         }
     }
 
-    suspend fun setPrePrayerReminder(enabled: Boolean) {
+    override suspend fun setPrePrayerReminder(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PRE_PRAYER_REMINDER] = enabled
         }
     }
 
-    suspend fun updatePrayerOffset(prayer: Prayer, offsetMinutes: Int) {
+    override suspend fun updatePrayerOffset(prayer: Prayer, offsetMinutes: Int) {
         val clamped = offsetMinutes.coerceIn(-30, 30)
         context.dataStore.edit { prefs ->
             when (prayer) {
@@ -334,14 +334,14 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateSunriseOffset(offsetMinutes: Int) {
+    override suspend fun updateSunriseOffset(offsetMinutes: Int) {
         val clamped = offsetMinutes.coerceIn(-30, 30)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.OFFSET_SUNRISE] = clamped
         }
     }
 
-    suspend fun updateIqamahOffset(prayer: Prayer, minutesAfter: Int) {
+    override suspend fun updateIqamahOffset(prayer: Prayer, minutesAfter: Int) {
         val clamped = minutesAfter.coerceIn(0, 60)
         context.dataStore.edit { prefs ->
             when (prayer) {
@@ -354,37 +354,37 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setZoneId(zoneId: String) {
+    override suspend fun setZoneId(zoneId: String) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.ZONE_ID] = zoneId
         }
     }
 
-    suspend fun setPrayerOffset(prayer: Prayer, offsetMinutes: Int) = updatePrayerOffset(prayer, offsetMinutes)
-    suspend fun setSunriseOffset(offsetMinutes: Int) = updateSunriseOffset(offsetMinutes)
-    suspend fun setIqamahOffset(prayer: Prayer, minutesAfter: Int) = updateIqamahOffset(prayer, minutesAfter)
-    suspend fun setMosqueModeAdhan(enabled: Boolean) = setMosqueModeAdhanEnabled(enabled)
-    suspend fun setMosqueModeReminders(enabled: Boolean) = setMosqueModeRemindersEnabled(enabled)
+    override suspend fun setPrayerOffset(prayer: Prayer, offsetMinutes: Int) = updatePrayerOffset(prayer, offsetMinutes)
+    override suspend fun setSunriseOffset(offsetMinutes: Int) = updateSunriseOffset(offsetMinutes)
+    override suspend fun setIqamahOffset(prayer: Prayer, minutesAfter: Int) = updateIqamahOffset(prayer, minutesAfter)
+    override suspend fun setMosqueModeAdhan(enabled: Boolean) = setMosqueModeAdhanEnabled(enabled)
+    override suspend fun setMosqueModeReminders(enabled: Boolean) = setMosqueModeRemindersEnabled(enabled)
 
-    suspend fun setMosqueModeAdhanEnabled(enabled: Boolean) {
+    override suspend fun setMosqueModeAdhanEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MOSQUE_MODE_ADHAN_ENABLED] = enabled
         }
     }
 
-    suspend fun setMosqueModeRemindersEnabled(enabled: Boolean) {
+    override suspend fun setMosqueModeRemindersEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] = enabled
         }
     }
 
-    suspend fun setShowStrikeHighlight(show: Boolean) {
+    override suspend fun setShowStrikeHighlight(show: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] = show
         }
     }
 
-    suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {
+    override suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.adhanTypeKey(prayer)] = option.type.name
             prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
@@ -396,7 +396,7 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateMosqueBranding(name: String, subtitle: String, logoUri: String?) {
+    override suspend fun updateMosqueBranding(name: String, subtitle: String, logoUri: String?) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MOSQUE_NAME] = name
             prefs[PreferencesKeys.MOSQUE_SUBTITLE] = subtitle
@@ -408,25 +408,25 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setMosqueIconPreset(preset: MosqueIconPreset) {
+    override suspend fun setMosqueIconPreset(preset: MosqueIconPreset) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MOSQUE_ICON_PRESET] = preset.name
         }
     }
 
-    suspend fun setMosqueFontPreset(preset: MosqueFontPreset) {
+    override suspend fun setMosqueFontPreset(preset: MosqueFontPreset) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MOSQUE_FONT_PRESET] = preset.name
         }
     }
 
-    suspend fun updateScheduleDuration(seconds: Int) {
+    override suspend fun updateScheduleDuration(seconds: Int) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SCHEDULE_DURATION_SECONDS] = seconds.coerceAtLeast(10)
         }
     }
 
-    suspend fun setCustomPin(pin: String) {
+    override suspend fun setCustomPin(pin: String) {
         val hashed = PinHasher.createHashedPin(pin)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.HAS_CUSTOM_PIN] = true
@@ -438,7 +438,7 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun resetToDefaultPin() {
+    override suspend fun resetToDefaultPin() {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.HAS_CUSTOM_PIN] = false
             prefs.remove(PreferencesKeys.PIN_SALT_HEX)
@@ -449,45 +449,45 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun setHomeModePinRequired(required: Boolean) {
+    override suspend fun setHomeModePinRequired(required: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.HOME_MODE_PIN_REQUIRED] = required
         }
     }
 
-    suspend fun recordPinSuccess() {
+    override suspend fun recordPinSuccess() {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
             prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
         }
     }
 
-    suspend fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
+    override suspend fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = newFailedAttempts
             prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = lockedUntilEpochMillis
         }
     }
 
-    suspend fun dismissDefaultPinPrompt() {
+    override suspend fun dismissDefaultPinPrompt() {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
         }
     }
 
-    suspend fun setAppLanguage(language: AppLanguage) {
+    override suspend fun setAppLanguage(language: AppLanguage) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.APP_LANGUAGE] = language.name
         }
     }
 
-    suspend fun set24HourFormat(enabled: Boolean) {
+    override suspend fun set24HourFormat(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_24_HOUR_FORMAT] = enabled
         }
     }
 
-    suspend fun setShowArabicPrayerNames(enabled: Boolean) {
+    override suspend fun setShowArabicPrayerNames(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] = enabled
         }

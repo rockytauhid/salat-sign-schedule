@@ -26,7 +26,7 @@ class RevisionConflictException(val expected: Int, val actual: Int) :
 
 class ContentRepository(
     private val baseDir: File
-) {
+) : IContentRepository {
 
     constructor(context: Context) : this(context.filesDir)
 
@@ -53,7 +53,7 @@ class ContentRepository(
     }
 
     private val _slidesFlow = MutableStateFlow(readContainerSafely())
-    val slidesFlow: StateFlow<SlideContainer> = _slidesFlow.asStateFlow()
+    override val slidesFlow: StateFlow<SlideContainer> = _slidesFlow.asStateFlow()
 
     init {
         contentDir.mkdirs()
@@ -63,7 +63,7 @@ class ContentRepository(
     /**
      * Replaces all slides with optimistic locking check against expectedRevision.
      */
-    suspend fun replaceAll(expectedRevision: Int, slides: List<AnnouncementSlide>): Result<SlideContainer> =
+    override suspend fun replaceAll(expectedRevision: Int, slides: List<AnnouncementSlide>): Result<SlideContainer> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 runCatching {
@@ -87,7 +87,7 @@ class ContentRepository(
     /**
      * Adds a new slide.
      */
-    suspend fun addSlide(slide: AnnouncementSlide): Result<SlideContainer> = withContext(Dispatchers.IO) {
+    override suspend fun addSlide(slide: AnnouncementSlide): Result<SlideContainer> = withContext(Dispatchers.IO) {
         mutex.withLock {
             runCatching {
                 val current = _slidesFlow.value
@@ -107,7 +107,7 @@ class ContentRepository(
     /**
      * Updates an existing slide matching slide.id.
      */
-    suspend fun updateSlide(slide: AnnouncementSlide): Result<SlideContainer> = withContext(Dispatchers.IO) {
+    override suspend fun updateSlide(slide: AnnouncementSlide): Result<SlideContainer> = withContext(Dispatchers.IO) {
         mutex.withLock {
             runCatching {
                 val current = _slidesFlow.value
@@ -127,7 +127,7 @@ class ContentRepository(
     /**
      * Deletes a slide matching slideId.
      */
-    suspend fun deleteSlide(slideId: String): Result<SlideContainer> = withContext(Dispatchers.IO) {
+    override suspend fun deleteSlide(slideId: String): Result<SlideContainer> = withContext(Dispatchers.IO) {
         mutex.withLock {
             runCatching {
                 val current = _slidesFlow.value
@@ -146,9 +146,9 @@ class ContentRepository(
     /**
      * Filters active slides for signage display (enabled and within date window).
      */
-    fun getActiveSlides(
+    override fun getActiveSlides(
         slides: List<AnnouncementSlide>,
-        today: LocalDate = LocalDate.now()
+        today: LocalDate
     ): List<AnnouncementSlide> {
         return slides
             .filter { it.enabled }
@@ -166,7 +166,7 @@ class ContentRepository(
             .sortedBy { it.sortOrder }
     }
 
-    fun getImageFile(fileName: String): File {
+    override fun getImageFile(fileName: String): File {
         return File(imagesDir, fileName)
     }
 
