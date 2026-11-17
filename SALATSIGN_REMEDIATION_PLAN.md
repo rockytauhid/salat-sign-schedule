@@ -356,7 +356,7 @@ Specific fixes while extracting:
 
 ### Phase 7 — Repository hygiene and docs (P2)
 
-- **P7.1 License and branding (D11):** the README claims MIT and no `LICENSE` file exists. Replace with **GPL-3.0** (`LICENSE`, plus an SPDX header `// SPDX-License-Identifier: GPL-3.0-or-later` on source files; use AGPL-3.0 instead if the owner prefers a network-use clause). Update the README badge/text. Add `TRADEMARKS.md`: the name "SalatSign" and the logo are not licensed for use by forks; forks must rename. Add `CONTRIBUTING.md` requiring a DCO sign-off (`Signed-off-by`) on contributions. Check compatibility: Adhan (MIT), AndroidX/Coil (Apache-2.0) and OFL fonts are compatible with GPL-3.0; audio files follow P2.4. Note for the owner: a copyleft license makes closed-source copies a violation, but it **cannot** stop someone rebranding and selling a copy that ships with its source; only the trademark policy and store policies address the name.
+- **P7.1 License and branding (D11):** implement **exactly** what `SALATSIGN_LICENSE_AND_TRADEMARK_DRAFTS.md` specifies: GPL-3.0-or-later `LICENSE`, SPDX headers (`Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors`), `TRADEMARKS.md`, `CONTRIBUTING.md` with DCO sign-off, README license section, and an About-screen credit. The README currently claims MIT; remove every MIT reference. The trademark is **unregistered**; the policy lets others redistribute **unmodified** copies if they keep the owner's name/credit, and requires forks to use a different name. Check compatibility: Adhan (MIT), AndroidX/Coil (Apache-2.0) and OFL fonts are compatible with GPL-3.0; audio files follow P2.4. The contact email in `TRADEMARKS.md` is rockytauhid@gmail.com.
 - **P7.2 `.gitignore` / tracked files:** `.idea/` is committed. Remove it from the index (`git rm -r --cached .idea`) and ignore it fully. Also ignore `.kotlin/`, `*.jks`, `*.keystore`, `*.apk`, `*.aab`, `/captures`. Do **not** rewrite history.
 - **P7.3 `docs/THIRD_PARTY.md`:** list every library and font with license (Adhan: MIT; AndroidX/Compose/Coil: Apache-2.0; fonts: OFL) and the source and license of both adhan recordings (see `docs/AUDIO_SOURCES.md`, P2.4).
 - **P7.4 Fix documentation claims:**
@@ -385,7 +385,7 @@ Specific fixes while extracting:
 | ID | Task |
 |----|------|
 | H1 | Supply the **standard and Fajr adhan** recordings with license evidence (see P2.4 and Appendix D). The current `.wav` files are placeholders. |
-| H2 | Confirm GPL-3.0 vs AGPL-3.0, supply the copyright holder name, and decide the trademark policy wording. Confirm the application ID (`com.salatsign.tv` vs the `com.salatsign.com` you wrote). |
+| H2 | Done: license **GPL-3.0-or-later**, copyright holder (Rocky Adam Tauhid), contact email and application ID (`com.salatsign.tv`) are all confirmed. Nothing left for the owner here. |
 | H3 | Test on the **Sony KD-55X9300D (Android 8.0.0, confirmed)**: adhan volume and which stream follows the TV volume, audio focus with a video app, alarm accuracy after standby, remote key behaviour (Menu, long-press OK), USB import (FAT32 and exFAT) and whether the TV has a system file picker, memory with 1080p slides. |
 | H4 | Compare calculated times with your local official timetable for several dates; decide offsets/ihtiyath; supply them if you want a named preset. |
 | H5 | Owner reviews the Indonesian translation (using `docs/i18n/review-id.csv`, see P6.7). Arabic needs a separate native reviewer, only when Arabic is scheduled. |
