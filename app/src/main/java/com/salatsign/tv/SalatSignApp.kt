@@ -1,6 +1,7 @@
 package com.salatsign.tv
 
 import android.app.Application
+import com.salatsign.tv.data.repository.ContentRepository
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.service.DailyScheduleWorker
 import com.salatsign.tv.service.PrayerAlarmScheduler
@@ -14,12 +15,16 @@ class SalatSignApp : Application() {
     lateinit var settingsRepository: SettingsRepository
         private set
 
+    lateinit var contentRepository: ContentRepository
+        private set
+
     lateinit var alarmScheduler: PrayerAlarmScheduler
         private set
 
     override fun onCreate() {
         super.onCreate()
         settingsRepository = SettingsRepository(this)
+        contentRepository = ContentRepository(this)
         alarmScheduler = PrayerAlarmScheduler(this)
 
         // Schedule daily recurring midnight refresh via WorkManager

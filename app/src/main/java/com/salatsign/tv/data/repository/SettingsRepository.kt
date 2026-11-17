@@ -233,7 +233,7 @@ class SettingsRepository(private val context: Context) {
 
     private fun serializeSlides(slides: List<AnnouncementSlide>): String {
         return slides.joinToString(";;") { slide ->
-            "${slide.id}::${slide.imageUri}::${slide.title}::${slide.durationSeconds}"
+            "${slide.id}::${slide.imageFile ?: ""}::${slide.title}::${slide.durationSeconds}"
         }
     }
 
@@ -244,7 +244,7 @@ class SettingsRepository(private val context: Context) {
             if (tokens.size >= 4) {
                 AnnouncementSlide(
                     id = tokens[0],
-                    imageUri = tokens[1],
+                    imageFile = tokens[1].ifBlank { null },
                     title = tokens[2],
                     durationSeconds = tokens[3].toIntOrNull() ?: 10
                 )

@@ -49,8 +49,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.salatsign.tv.BuildConfig
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
+import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
@@ -72,6 +74,7 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
+    slides: List<AnnouncementSlide> = emptyList(),
     onToggleMosqueMode: (Boolean) -> Unit,
     onSetThemeMode: (ThemeMode) -> Unit,
     onSelectCity: (CityPreset) -> Unit,
@@ -686,28 +689,30 @@ fun SettingsScreen(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(
-                        onClick = onAddSampleSlide,
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
-                        modifier = Modifier.tvFocusable()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    if (BuildConfig.DEBUG) {
+                        Surface(
+                            onClick = onAddSampleSlide,
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
+                            modifier = Modifier.tvFocusable()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AddPhotoAlternate,
-                                contentDescription = null,
-                                tint = AccentEmerald,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tambah Contoh Poster Pengumuman", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddPhotoAlternate,
+                                    contentDescription = null,
+                                    tint = AccentEmerald,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Tambah Contoh Pengumuman (Debug)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                            }
                         }
                     }
 
-                    if (settings.announcementSlides.isNotEmpty()) {
+                    if (slides.isNotEmpty()) {
                         Surface(
                             onClick = onClearSlides,
                             shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
@@ -715,7 +720,7 @@ fun SettingsScreen(
                             modifier = Modifier.tvFocusable()
                         ) {
                             Text(
-                                text = "Hapus Semua Slide (${settings.announcementSlides.size})",
+                                text = "Hapus Semua Slide (${slides.size})",
                                 style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color(0xFFEF4444)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )

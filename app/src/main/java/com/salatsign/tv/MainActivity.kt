@@ -139,6 +139,7 @@ fun MainContent(
     val homeUiState by homeViewModel.uiState.collectAsState()
     val mosqueUiState by mosqueViewModel.uiState.collectAsState()
     val settings by settingsViewModel.settings.collectAsState()
+    val slideContainer by settingsViewModel.slideContainer.collectAsState()
 
     val currentView = LocalView.current
     val isAdhanPlaying by AdhanPlaybackService.isPlaying.collectAsState()
@@ -185,6 +186,7 @@ fun MainContent(
         // 2. Settings Screen (Strict separation between Home Mode and Mosque Mode)
         SettingsScreen(
             settings = settings,
+            slides = slideContainer.slides,
             onToggleMosqueMode = { settingsViewModel.toggleMosqueMode(it) },
             onSetThemeMode = { settingsViewModel.setThemeMode(it) },
             onSelectCity = { settingsViewModel.selectCity(it) },

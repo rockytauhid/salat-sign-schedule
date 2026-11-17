@@ -3,6 +3,7 @@ package com.salatsign.tv.data
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
@@ -72,14 +73,17 @@ class DataModelAndSettingsTest {
     fun announcementSlide_attributes() {
         val slide = AnnouncementSlide(
             id = "slide_1",
-            imageUri = "file:///storage/slide1.jpg",
+            type = SlideType.IMAGE,
             title = "Kajian Ahad Pagi",
+            imageFile = "slide1.jpg",
             durationSeconds = 15
         )
 
         assertEquals("slide_1", slide.id)
-        assertEquals("file:///storage/slide1.jpg", slide.imageUri)
+        assertEquals(SlideType.IMAGE, slide.type)
+        assertEquals("slide1.jpg", slide.imageFile)
         assertEquals("Kajian Ahad Pagi", slide.title)
         assertEquals(15, slide.durationSeconds)
+        assertTrue(slide.enabled)
     }
 }

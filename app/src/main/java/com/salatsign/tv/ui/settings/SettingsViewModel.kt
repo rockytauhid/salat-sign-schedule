@@ -3,6 +3,7 @@ package com.salatsign.tv.ui.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.salatsign.tv.BuildConfig
 import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AnnouncementSlide
@@ -11,6 +12,8 @@ import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.SlideContainer
+import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +24,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val app = application as SalatSignApp
     private val repository = app.settingsRepository
+    private val contentRepository = app.contentRepository
     private val scheduler = app.alarmScheduler
 
     val settings: StateFlow<AppSettings> = repository.appSettingsFlow.stateIn(
@@ -28,6 +32,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AppSettings()
     )
+
+    val slideContainer: StateFlow<SlideContainer> = contentRepository.slidesFlow
 
     fun toggleMosqueMode(enable: Boolean) {
         viewModelScope.launch {
@@ -116,22 +122,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun addSampleAnnouncementSlide() {
+        if (!BuildConfig.DEBUG) return
         viewModelScope.launch {
-            val currentSlides = settings.value.announcementSlides.toMutableList()
-            val newSlide = AnnouncementSlide(
+            val sampleSlide = AnnouncementSlide(
                 id = "slide_${System.currentTimeMillis()}",
-                imageUri = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80",
+                type = SlideType.TEXT,
                 title = "Kajian Rutin & Infaq Masjid",
+                body = "Mari ramaikan shalat berjamaah dan kajian rutin setiap malam Ahad ba'da Magrib.",
                 durationSeconds = 10
             )
-            currentSlides.add(newSlide)
-            repository.updateSlides(currentSlides)
+            contentRepository.addSlide(sampleSlide)
         }
     }
 
     fun clearSlides() {
         viewModelScope.launch {
-            repository.updateSlides(emptyList())
+            val current = contentRepository.slidesFlow.value
+            contentRepository.replaceAll(current.revision, emptyList())
         }
     }
 

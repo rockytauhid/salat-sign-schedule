@@ -36,7 +36,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
@@ -360,18 +364,36 @@ fun MosqueAnnouncementView(
     slide: com.salatsign.tv.data.model.AnnouncementSlide,
     uiState: MosqueSignageUiState
 ) {
+    val context = LocalContext.current
     val prayerTimes = uiState.prayerTimesDay
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Signage Image via Coil 3
-        AsyncImage(
-            model = slide.imageUri,
-            contentDescription = slide.title.ifBlank { "Mosque Announcement Slide" },
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        when (slide.type) {
+            com.salatsign.tv.data.model.SlideType.TEXT -> {
+                MosqueTextSlideContent(
+                    slide = slide,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            com.salatsign.tv.data.model.SlideType.IMAGE -> {
+                val imageFile = slide.imageFile?.let { java.io.File(context.filesDir, "content/images/$it") }
+                if (imageFile != null && imageFile.exists()) {
+                    AsyncImage(
+                        model = imageFile,
+                        contentDescription = slide.title.ifBlank { "Mosque Announcement Slide" },
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    MosqueTextSlideContent(
+                        slide = slide,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
 
         // Overlay: Bottom floating prayer mini-bar with live clock so congregation always sees time
         Box(
@@ -457,6 +479,62 @@ fun MosqueAnnouncementView(
                         style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = Color.White)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MosqueTextSlideContent(
+    slide: com.salatsign.tv.data.model.AnnouncementSlide,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        colorScheme.surfaceVariant,
+                        colorScheme.background
+                    )
+                )
+            )
+            .padding(horizontal = 80.dp, vertical = 60.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(0.85f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (slide.title.isNotBlank()) {
+                Text(
+                    text = slide.title,
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentGold,
+                        textAlign = TextAlign.Center,
+                        textDirection = TextDirection.ContentOrLtr
+                    )
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            if (slide.body.isNotBlank()) {
+                Text(
+                    text = slide.body,
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 30.sp,
+                        lineHeight = 44.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        textDirection = TextDirection.ContentOrLtr
+                    )
+                )
             }
         }
     }

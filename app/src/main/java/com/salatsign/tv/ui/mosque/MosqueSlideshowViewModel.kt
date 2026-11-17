@@ -43,6 +43,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
     private val app = application as SalatSignApp
     private val settingsRepository = app.settingsRepository
+    private val contentRepository = app.contentRepository
 
     private val settingsState = settingsRepository.appSettingsFlow.stateIn(
         scope = viewModelScope,
@@ -124,9 +125,11 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
                 // Step 2: Transition through Announcement Slides
                 val currentSettings = settingsState.value
-                val slides = currentSettings.announcementSlides
-                if (slides.isNotEmpty()) {
-                    for ((index, slide) in slides.withIndex()) {
+                val filterToday = LocalDate.now()
+                val allSlides = contentRepository.slidesFlow.value.slides
+                val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
+                if (activeSlides.isNotEmpty()) {
+                    for ((index, slide) in activeSlides.withIndex()) {
                         // Recompute today and prayerTimes at the start of every slide
                         val slideSettings = settingsState.value
                         val slideToday = LocalDate.now()
