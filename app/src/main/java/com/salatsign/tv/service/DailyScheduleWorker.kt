@@ -54,8 +54,8 @@ class DailyScheduleWorker(
             val scheduler = PrayerAlarmScheduler(applicationContext)
             val settings = repository.appSettingsFlow.first()
 
-            scheduler.scheduleAlarmsForToday(settings)
-            Log.d(TAG, "Daily prayer alarms scheduled successfully by WorkManager.")
+            scheduler.scheduleNext(settings)
+            Log.d(TAG, "Next prayer alarm scheduled successfully by WorkManager safety net.")
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Error running DailyScheduleWorker", e)

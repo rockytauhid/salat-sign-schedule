@@ -36,7 +36,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
@@ -62,7 +66,6 @@ fun MosqueSignageScreen(
     onOpenSettings: () -> Unit
 ) {
     val screenFocusRequester = remember { FocusRequester() }
-    var centerPressStartTime by remember { mutableLongStateOf(0L) }
     val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
@@ -75,24 +78,11 @@ fun MosqueSignageScreen(
             .background(colorScheme.background)
             .focusRequester(screenFocusRequester)
             .focusable()
-            // Hidden Admin Access: Key.Menu or 3-second long-press on Key.DirectionCenter
+            // Hidden Admin Access: Key.Menu (DPAD_CENTER 3s hold handled at root Activity)
             .onKeyEvent { keyEvent ->
                 if (keyEvent.key == Key.Menu && keyEvent.type == KeyEventType.KeyUp) {
                     onOpenSettings()
                     true
-                } else if (keyEvent.key == Key.DirectionCenter) {
-                    if (keyEvent.type == KeyEventType.KeyDown) {
-                        if (centerPressStartTime == 0L) {
-                            centerPressStartTime = System.currentTimeMillis()
-                        } else if (System.currentTimeMillis() - centerPressStartTime >= 3000L) {
-                            centerPressStartTime = 0L
-                            onOpenSettings()
-                            return@onKeyEvent true
-                        }
-                    } else if (keyEvent.type == KeyEventType.KeyUp) {
-                        centerPressStartTime = 0L
-                    }
-                    false
                 } else {
                     false
                 }
@@ -143,6 +133,7 @@ fun MosqueScheduleView(
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
                 hijriDate = prayerTimes?.hijriDate ?: "",
                 cityName = uiState.settings.cityName,
+                zoneId = uiState.settings.zoneId,
                 mosqueName = uiState.settings.mosqueName,
                 mosqueSubtitle = uiState.settings.mosqueSubtitle,
                 mosqueLogoUri = uiState.settings.mosqueLogoUri,
@@ -238,7 +229,7 @@ fun MosqueActiveStrikeBanner(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Shalat ${prayer.prayer.displayName}",
+                    text = "Shalat ${prayer.displayLabel}",
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -247,6 +238,14 @@ fun MosqueActiveStrikeBanner(
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
+
+                if (prayer.formattedIqamahTime != null) {
+                    Text(
+                        text = "Iqamah: ${prayer.formattedIqamahTime}",
+                        style = TvTypography.Subtitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
 
                 Text(
                     text = "Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.",
@@ -315,7 +314,7 @@ fun MosqueNextPrayerBanner(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = nextPrayer.prayer.displayName,
+                    text = nextPrayer.displayLabel,
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 50.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -327,18 +326,40 @@ fun MosqueNextPrayerBanner(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        text = "Iqamah / Adhan: $countdown",
-                        style = TvTypography.CountdownText.copy(fontSize = 46.sp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = "Menuju Waktu Shalat: $countdown",
+                            style = TvTypography.CountdownText.copy(fontSize = 46.sp)
+                        )
+                    }
+
+                    if (nextPrayer.formattedIqamahTime != null) {
+                        Box(
+                            modifier = Modifier
+                                .background(AccentEmerald.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Iqamah ${nextPrayer.formattedIqamahTime}",
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AccentEmerald
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
@@ -360,18 +381,36 @@ fun MosqueAnnouncementView(
     slide: com.salatsign.tv.data.model.AnnouncementSlide,
     uiState: MosqueSignageUiState
 ) {
+    val context = LocalContext.current
     val prayerTimes = uiState.prayerTimesDay
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Signage Image via Coil 3
-        AsyncImage(
-            model = slide.imageUri,
-            contentDescription = slide.title.ifBlank { "Mosque Announcement Slide" },
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        when (slide.type) {
+            com.salatsign.tv.data.model.SlideType.TEXT -> {
+                MosqueTextSlideContent(
+                    slide = slide,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            com.salatsign.tv.data.model.SlideType.IMAGE -> {
+                val imageFile = slide.imageFile?.let { java.io.File(context.filesDir, "content/images/$it") }
+                if (imageFile != null && imageFile.exists()) {
+                    AsyncImage(
+                        model = imageFile,
+                        contentDescription = slide.title.ifBlank { "Mosque Announcement Slide" },
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    MosqueTextSlideContent(
+                        slide = slide,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
 
         // Overlay: Bottom floating prayer mini-bar with live clock so congregation always sees time
         Box(
@@ -422,7 +461,7 @@ fun MosqueAnnouncementView(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = p.prayer.displayName,
+                                    text = p.displayLabel,
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 14.sp,
                                         fontWeight = if (p.isNext) FontWeight.Bold else FontWeight.Normal,
@@ -457,6 +496,62 @@ fun MosqueAnnouncementView(
                         style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = Color.White)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MosqueTextSlideContent(
+    slide: com.salatsign.tv.data.model.AnnouncementSlide,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        colorScheme.surfaceVariant,
+                        colorScheme.background
+                    )
+                )
+            )
+            .padding(horizontal = 80.dp, vertical = 60.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(0.85f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (slide.title.isNotBlank()) {
+                Text(
+                    text = slide.title,
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentGold,
+                        textAlign = TextAlign.Center,
+                        textDirection = TextDirection.ContentOrLtr
+                    )
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            if (slide.body.isNotBlank()) {
+                Text(
+                    text = slide.body,
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 30.sp,
+                        lineHeight = 44.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        textDirection = TextDirection.ContentOrLtr
+                    )
+                )
             }
         }
     }

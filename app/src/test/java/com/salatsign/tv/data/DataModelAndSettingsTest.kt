@@ -3,30 +3,28 @@ package com.salatsign.tv.data
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.service.PrayerAlarmScheduler
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DataModelAndSettingsTest {
 
     @Test
-    fun prayerEnum_hasUniqueRequestCodes() {
-        val adhanCodes = Prayer.entries.map { it.defaultRequestCodeAdhan }
-        val reminderCodes = Prayer.entries.map { it.defaultRequestCodeReminder }
-
-        assertEquals("All adhan request codes must be unique", adhanCodes.size, adhanCodes.toSet().size)
-        assertEquals("All reminder request codes must be unique", reminderCodes.size, reminderCodes.toSet().size)
-
-        // Ensure adhan codes and reminder codes never collide
-        val overlap = adhanCodes.toSet().intersect(reminderCodes.toSet())
-        assertTrue("Adhan and Reminder codes must not overlap", overlap.isEmpty())
+    fun prayerAlarm_requestCodesAreUnique() {
+        assertNotEquals(PrayerAlarmScheduler.REQUEST_CODE_ADHAN, PrayerAlarmScheduler.REQUEST_CODE_REMINDER)
+        assertEquals(100, PrayerAlarmScheduler.REQUEST_CODE_ADHAN)
+        assertEquals(200, PrayerAlarmScheduler.REQUEST_CODE_REMINDER)
+        assertEquals(5, Prayer.entries.size)
     }
 
     @Test
@@ -52,7 +50,24 @@ class DataModelAndSettingsTest {
         assertEquals(MosqueFontPreset.MODERN_SANS, settings.mosqueFontPreset)
         assertTrue("15-min reminder must be enabled by default", settings.prePrayerReminderEnabled)
         assertEquals(0, settings.hijriOffsetDays)
-        assertEquals("Jakarta", settings.cityName)
+        assertEquals("Canberra, ACT, Australia", settings.cityName)
+        assertEquals("Australia/Sydney", settings.zoneId)
+        assertEquals("SHAFI", settings.madhab)
+        org.junit.Assert.assertNull(settings.highLatitudeRule)
+        assertEquals(0, settings.offsetSubuh)
+        assertEquals(0, settings.iqamahSubuh)
+        assertFalse(settings.hijriChangeAtMidnight)
+        assertFalse("Mosque Mode Adhan must be false by default (quiet)", settings.mosqueModeAdhanEnabled)
+        assertFalse("Mosque Mode Reminders must be false by default (quiet)", settings.mosqueModeRemindersEnabled)
+        assertTrue("Visual strike highlight should be true by default", settings.showStrikeHighlight)
+
+        assertFalse(settings.homeModePinRequired)
+        assertFalse(settings.hasCustomPin)
+        assertEquals("", settings.pinSaltHex)
+        assertEquals("", settings.pinHashHex)
+        assertEquals(0, settings.pinFailedAttempts)
+        assertEquals(0L, settings.pinLockedUntilEpochMillis)
+        assertFalse(settings.defaultPinPromptDismissed)
 
         assertEquals(AdhanAudioType.DEFAULT_SUBUH, settings.adhanFor(Prayer.SUBUH).type)
         assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ZUHUR).type)
@@ -62,9 +77,18 @@ class DataModelAndSettingsTest {
     }
 
     @Test
-    fun popularCityPresets_containMajorCities() {
+    fun popularCityPresets_containAustralianAndMajorCities() {
         assertTrue(PopularCityPresets.isNotEmpty())
+        val firstCity = PopularCityPresets.first()
+        assertTrue("Australian presets should come first (Canberra)", firstCity.name.contains("Canberra"))
+        assertEquals("Australia/Sydney", firstCity.zoneId)
+
         val cityNames = PopularCityPresets.map { it.name }
+        assertTrue(cityNames.any { it.contains("Sydney") })
+        assertTrue(cityNames.any { it.contains("Melbourne") })
+        assertTrue(cityNames.any { it.contains("Brisbane") })
+        assertTrue(cityNames.any { it.contains("Adelaide") })
+        assertTrue(cityNames.any { it.contains("Perth") })
         assertTrue(cityNames.any { it.contains("Jakarta") })
         assertTrue(cityNames.any { it.contains("Surabaya") })
         assertTrue(cityNames.any { it.contains("Singapore") })
@@ -75,14 +99,17 @@ class DataModelAndSettingsTest {
     fun announcementSlide_attributes() {
         val slide = AnnouncementSlide(
             id = "slide_1",
-            imageUri = "file:///storage/slide1.jpg",
+            type = SlideType.IMAGE,
             title = "Kajian Ahad Pagi",
+            imageFile = "slide1.jpg",
             durationSeconds = 15
         )
 
         assertEquals("slide_1", slide.id)
-        assertEquals("file:///storage/slide1.jpg", slide.imageUri)
+        assertEquals(SlideType.IMAGE, slide.type)
+        assertEquals("slide1.jpg", slide.imageFile)
         assertEquals("Kajian Ahad Pagi", slide.title)
         assertEquals(15, slide.durationSeconds)
+        assertTrue(slide.enabled)
     }
 }

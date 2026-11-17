@@ -21,11 +21,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +53,8 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.MosqueNamePresets
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
+import com.salatsign.tv.ui.common.PinDialog
+import com.salatsign.tv.ui.common.PinDialogMode
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
@@ -61,13 +66,20 @@ fun SetupWizardScreen(
     settings: AppSettings,
     onSelectMode: (Boolean) -> Unit,
     onSelectCity: (CityPreset) -> Unit,
+    onSelectMethod: (String) -> Unit = {},
+    onSelectMadhab: (String) -> Unit = {},
     onSelectMosqueName: (String) -> Unit,
     onSelectMosqueIcon: (MosqueIconPreset) -> Unit,
+    onSetAdminPin: (String) -> Unit = {},
     onCompleteSetup: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
+    var showPinDialog by remember { mutableStateOf(false) }
+    var customPinSetSuccess by remember { mutableStateOf(settings.hasCustomPin) }
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
+
+    val maxSteps = if (settings.isMosqueMode) 5 else 4
 
     LaunchedEffect(currentStep) {
         initialFocusRequester.requestFocus()
@@ -95,7 +107,7 @@ fun SetupWizardScreen(
                         style = TvTypography.HeaderTitle.copy(fontSize = 36.sp, color = colorScheme.onBackground)
                     )
                     Text(
-                        text = "Panduan Konfigurasi Awal Android TV (Langkah $currentStep dari ${if (settings.isMosqueMode) 3 else 2})",
+                        text = "Panduan Konfigurasi Awal Android TV (Langkah $currentStep dari $maxSteps)",
                         style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                     )
                 }
@@ -139,10 +151,176 @@ fun SetupWizardScreen(
             ) {
                 when (currentStep) {
                     1 -> {
-                        // Step 1: Mode Selection
+                        // Step 1: City & Timezone Selection
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 1: Pilih Mode Penggunaan Aplikasi",
+                                text = "Langkah 1: Pilih Lokasi Kota & Zona Waktu (Saat ini: ${settings.cityName})",
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                            )
+
+                            val scrollState = rememberScrollState()
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(scrollState),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                for ((index, city) in PopularCityPresets.withIndex()) {
+                                    val isSelected = (settings.cityName.startsWith(city.name.split(",")[0]))
+                                    Card(
+                                        onClick = { onSelectCity(city) },
+                                        colors = CardDefaults.colors(
+                                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                        ),
+                                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                        modifier = Modifier
+                                            .tvFocusable()
+                                            .then(
+                                                if (index == 0) Modifier.focusRequester(initialFocusRequester) else Modifier
+                                            )
+                                            .then(
+                                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                                else Modifier
+                                            )
+                                    ) {
+                                        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                                            Text(
+                                                text = city.name,
+                                                style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                            )
+                                            Text(
+                                                text = "Zona: ${city.zoneId ?: "Otomatis"}",
+                                                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    2 -> {
+                        // Step 2: Method & Madhab
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = "Langkah 2: Metode Perhitungan & Mazhab Waktu Shalat",
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                            )
+
+                            Text(
+                                text = "Metode Perhitungan:",
+                                style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                            )
+
+                            val methodScroll = rememberScrollState()
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(methodScroll),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                val methods = listOf(
+                                    "SINGAPORE" to "Singapura / MABIMS (Kemenag RI)",
+                                    "MUSLIM_WORLD_LEAGUE" to "Muslim World League (MWL)",
+                                    "UMM_AL_QURA" to "Umm al-Qura (Makkah)",
+                                    "EGYPTIAN" to "Egyptian Authority",
+                                    "KARACHI" to "Univ. of Karachi",
+                                    "NORTH_AMERICA" to "ISNA (Amerika Utara)",
+                                    "DUBAI" to "Dubai (UAE)"
+                                )
+                                for ((key, label) in methods) {
+                                    val isSelected = settings.calculationMethodName.equals(key, ignoreCase = true)
+                                    Surface(
+                                        onClick = { onSelectMethod(key) },
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
+                                            focusedContainerColor = AccentGold
+                                        ),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            style = TvTypography.ButtonText.copy(
+                                                fontSize = 14.sp,
+                                                color = if (isSelected) Color.White else colorScheme.onSurface
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Text(
+                                text = "Mazhab untuk Waktu Ashr:",
+                                style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                val isHanafi = settings.madhab.equals("HANAFI", ignoreCase = true)
+                                Card(
+                                    onClick = { onSelectMadhab("SHAFI") },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (!isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = "Standar (Syafi'i, Maliki, Hanbali)",
+                                            style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Bayangan 1x panjang objek (mayoritas Muslim Indonesia, Malaysia, Asia Tenggara).",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
+                                    }
+                                }
+
+                                Card(
+                                    onClick = { onSelectMadhab("HANAFI") },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = "Hanafi",
+                                            style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Bayangan 2x panjang objek (Ashr dimulai sekitar 45-60 menit lebih lambat).",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    3 -> {
+                        // Step 3: Mode Selection
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = "Langkah 3: Pilih Mode Penggunaan Aplikasi",
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
@@ -210,12 +388,12 @@ fun SetupWizardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text(
-                                            text = "Mode Masjid / Signage",
+                                            text = "Mode Masjid / Signage (Hening)",
                                             style = TvTypography.CardTitle.copy(fontSize = 24.sp, color = colorScheme.onSurface)
                                         )
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "Digital signage TV masjid: White-label (nama & logo masjid sendiri), slideshow poster infaq/kajian, dan hening total.",
+                                            text = "Digital signage TV masjid: White-label (nama & logo masjid sendiri), slideshow poster infaq/kajian, dan hening total demi ketertiban jamaah.",
                                             style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
                                         )
                                     }
@@ -224,60 +402,111 @@ fun SetupWizardScreen(
                         }
                     }
 
-                    2 -> {
-                        // Step 2: City & Calculation Method
+                    4 -> {
+                        // Step 4: Admin PIN
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 2: Pilih Lokasi Kota Anda (Saat ini: ${settings.cityName})",
+                                text = "Langkah 4: Atur Keamanan PIN Admin Pengaturan",
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
-                            val scrollState = rememberScrollState()
+                            Text(
+                                text = "PIN Admin diperlukan untuk membuka menu Pengaturan dari layar TV agar konfigurasi tidak diubah tanpa izin.",
+                                style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                            )
+
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(scrollState),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                for ((index, city) in PopularCityPresets.withIndex()) {
-                                    val isSelected = (settings.cityName.startsWith(city.name.split(",")[0]))
-                                    Card(
-                                        onClick = { onSelectCity(city) },
-                                        colors = CardDefaults.colors(
-                                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
-                                        ),
-                                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                                        modifier = Modifier
-                                            .tvFocusable()
-                                            .then(
-                                                if (index == 0) Modifier.focusRequester(initialFocusRequester) else Modifier
+                                // Default PIN Card
+                                Card(
+                                    onClick = {
+                                        customPinSetSuccess = false
+                                    },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (!customPinSetSuccess) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .focusRequester(initialFocusRequester)
+                                        .tvFocusable()
+                                        .then(
+                                            if (!customPinSetSuccess) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(20.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = null,
+                                                tint = if (!customPinSetSuccess) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(28.dp)
                                             )
-                                            .then(
-                                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
-                                                else Modifier
-                                            )
-                                    ) {
-                                        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = city.name,
+                                                text = "Gunakan PIN Bawaan (0000)",
                                                 style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                             )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
+                                    }
+                                }
+
+                                // Set Custom PIN Card
+                                Card(
+                                    onClick = {
+                                        showPinDialog = true
+                                    },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (customPinSetSuccess) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (customPinSetSuccess) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(20.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Key,
+                                                contentDescription = null,
+                                                tint = if (customPinSetSuccess) AccentEmerald else AccentGold,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = "Metode: ${city.calculationMethod}",
-                                                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                                text = if (customPinSetSuccess) "PIN Kustom Aktif (Tersimpan)" else "Atur PIN Kustom Baru (4-8 Digit)",
+                                                style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
                                             )
                                         }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = if (customPinSetSuccess) "PIN kustom telah berhasil disetel. Klik kartu ini jika ingin mengubahnya lagi."
+                                            else "Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                        )
                                     }
                                 }
                             }
                         }
                     }
 
-                    3 -> {
-                        // Step 3: Mosque Name & Icon (Only if Mosque Mode)
+                    5 -> {
+                        // Step 5: Mosque Name & Icon (Only if Mosque Mode)
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
-                                text = "Langkah 3: Identitas & Simbol Masjid Anda",
+                                text = "Langkah 5: Identitas & Simbol Masjid Anda",
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
 
@@ -388,7 +617,6 @@ fun SetupWizardScreen(
 
                 Surface(
                     onClick = {
-                        val maxSteps = if (settings.isMosqueMode) 3 else 2
                         if (currentStep < maxSteps) {
                             currentStep++
                         } else {
@@ -406,7 +634,6 @@ fun SetupWizardScreen(
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val maxSteps = if (settings.isMosqueMode) 3 else 2
                         val isFinalStep = (currentStep == maxSteps)
 
                         Text(
@@ -423,6 +650,19 @@ fun SetupWizardScreen(
                     }
                 }
             }
+        }
+
+        if (showPinDialog) {
+            PinDialog(
+                mode = PinDialogMode.SET_NEW,
+                settings = settings,
+                onPinChanged = { pin ->
+                    onSetAdminPin(pin)
+                    customPinSetSuccess = true
+                    showPinDialog = false
+                },
+                onDismiss = { showPinDialog = false }
+            )
         }
     }
 }

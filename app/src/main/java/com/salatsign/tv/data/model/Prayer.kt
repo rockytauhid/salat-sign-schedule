@@ -1,49 +1,34 @@
 package com.salatsign.tv.data.model
 
-import androidx.annotation.StringRes
-import com.salatsign.tv.R
-
 enum class Prayer(
     val id: String,
     val displayName: String,
-    val arabicName: String,
-    val defaultRequestCodeAdhan: Int,
-    val defaultRequestCodeReminder: Int
+    val arabicName: String
 ) {
     SUBUH(
         id = "subuh",
         displayName = "Subuh",
-        arabicName = "الفجر",
-        defaultRequestCodeAdhan = 101,
-        defaultRequestCodeReminder = 201
+        arabicName = "الفجر"
     ),
     ZUHUR(
         id = "zuhur",
         displayName = "Zuhur",
-        arabicName = "الظهر",
-        defaultRequestCodeAdhan = 102,
-        defaultRequestCodeReminder = 202
+        arabicName = "الظهر"
     ),
     ASHR(
         id = "ashr",
         displayName = "Ashr",
-        arabicName = "العصر",
-        defaultRequestCodeAdhan = 103,
-        defaultRequestCodeReminder = 203
+        arabicName = "العصر"
     ),
     MAGRIB(
         id = "magrib",
         displayName = "Magrib",
-        arabicName = "المغرب",
-        defaultRequestCodeAdhan = 104,
-        defaultRequestCodeReminder = 204
+        arabicName = "المغرب"
     ),
     ISYA(
         id = "isya",
         displayName = "Isya",
-        arabicName = "العشاء",
-        defaultRequestCodeAdhan = 105,
-        defaultRequestCodeReminder = 205
+        arabicName = "العشاء"
     );
 
     companion object {

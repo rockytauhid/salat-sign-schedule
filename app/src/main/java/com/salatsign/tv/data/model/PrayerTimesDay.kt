@@ -2,7 +2,6 @@ package com.salatsign.tv.data.model
 
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 data class PrayerTimesDay(
@@ -10,11 +9,20 @@ data class PrayerTimesDay(
     val hijriDate: String,
     val gregorianDate: String,
     val prayers: List<PrayerTimeItem>,
-    val sunrise: LocalTime,
+    val sunrise: LocalTime?,
     val nextPrayer: PrayerTimeItem?,
     val activePrayer: PrayerTimeItem?,
     val secondsUntilNext: Long
 ) {
+    val hasNullTimes: Boolean
+        get() = prayers.any { it.time == null } || sunrise == null
+
+    val hasIqamahConfigured: Boolean
+        get() = prayers.any { it.iqamahMinutesAfter > 0 }
+
+    val formattedSunrise: String
+        get() = sunrise?.format(PrayerTimeItem.TimeFormatter) ?: "--:--"
+
     val countdownFormatted: String
         get() {
             if (secondsUntilNext <= 0) return "00:00:00"

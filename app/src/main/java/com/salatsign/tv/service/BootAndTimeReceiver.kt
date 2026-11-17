@@ -7,8 +7,10 @@ import android.util.Log
 import com.salatsign.tv.data.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class BootAndTimeReceiver : BroadcastReceiver() {
 
@@ -23,13 +25,18 @@ class BootAndTimeReceiver : BroadcastReceiver() {
         val repository = SettingsRepository(context)
         val scheduler = PrayerAlarmScheduler(context)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             try {
-                val settings = repository.appSettingsFlow.first()
-                scheduler.scheduleAlarmsForToday(settings)
-                Log.d(TAG, "Successfully recalculated and rescheduled alarms after $action")
+                withTimeout(8_000) {
+                    val settings = repository.appSettingsFlow.first()
+                    scheduler.scheduleNext(settings)
+                    Log.d(TAG, "Successfully recalculated and rescheduled alarms after $action")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to reschedule alarms after $action", e)
+            } finally {
+                pending.finish()
             }
         }
     }

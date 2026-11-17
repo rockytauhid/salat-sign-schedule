@@ -79,6 +79,7 @@ fun HomeScreen(
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
                 hijriDate = prayerTimes?.hijriDate ?: "",
                 cityName = uiState.settings.cityName,
+                zoneId = uiState.settings.zoneId,
                 isViewingToday = uiState.isViewingToday,
                 onPreviousDay = onPreviousDay,
                 onNextDay = onNextDay,
@@ -92,7 +93,7 @@ fun HomeScreen(
                     NextPrayerSpotlightCard(
                         nextPrayer = prayerTimes.nextPrayer,
                         countdown = prayerTimes.countdownFormatted,
-                        sunrise = prayerTimes.sunrise.format(PrayerTimeItem.TimeFormatter),
+                        sunrise = prayerTimes.formattedSunrise,
                         isReminderEnabled = uiState.settings.prePrayerReminderEnabled,
                         adhanType = uiState.settings.adhanFor(prayerTimes.nextPrayer.prayer).type,
                         modifier = Modifier
@@ -104,7 +105,7 @@ fun HomeScreen(
                     // Non-today summary header
                     NonTodaySummaryCard(
                         dateFormatted = prayerTimes.gregorianDate,
-                        sunrise = prayerTimes.sunrise.format(PrayerTimeItem.TimeFormatter),
+                        sunrise = prayerTimes.formattedSunrise,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.7f)
@@ -187,7 +188,7 @@ fun NextPrayerSpotlightCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = nextPrayer.prayer.displayName,
+                    text = nextPrayer.displayLabel,
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -390,7 +391,7 @@ fun PrayerCard(
 
             // Latin Name
             Text(
-                text = item.prayer.displayName,
+                text = item.displayLabel,
                 style = TvTypography.CardTitle.copy(
                     fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
                     color = colorScheme.onSurface
@@ -410,6 +411,18 @@ fun PrayerCard(
                     TvTypography.InactivePrayerTime.copy(color = colorScheme.onSurface)
                 }
             )
+
+            // Iqamah indicator if configured
+            if (item.formattedIqamahTime != null) {
+                Text(
+                    text = "Iqamah ${item.formattedIqamahTime}",
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AccentGold
+                    )
+                )
+            }
 
             // Status label
             if (item.isActive) {

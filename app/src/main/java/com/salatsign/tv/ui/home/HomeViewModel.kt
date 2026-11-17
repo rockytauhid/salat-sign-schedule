@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 data class HomeUiState(
     val selectedDate: LocalDate = LocalDate.now(),
@@ -32,16 +33,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as SalatSignApp
     private val settingsRepository = app.settingsRepository
 
-    private val _selectedDate = MutableStateFlow(LocalDate.now())
-    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
-
-    private val _ticker = MutableStateFlow(LocalTime.now())
+    private val _selectedDate = MutableStateFlow<LocalDate?>(null)
+    private val _ticker = MutableStateFlow(0L)
 
     init {
         // 1-second ticker for live countdown & accurate prayer transitions
         viewModelScope.launch {
             while (isActive) {
-                _ticker.value = LocalTime.now()
+                _ticker.value = System.currentTimeMillis()
                 delay(1000)
             }
         }
@@ -51,19 +50,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _selectedDate,
         settingsRepository.appSettingsFlow,
         _ticker
-    ) { date, settings, currentTime ->
-        val today = LocalDate.now()
+    ) { customDate, settings, _ ->
+        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+        val nowZoned = ZonedDateTime.now(zone)
+        val today = nowZoned.toLocalDate()
+        val date = customDate ?: today
         val isToday = (date == today)
 
+        val config = settings.prayerConfig()
         val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = date,
-            latitude = settings.latitude,
-            longitude = settings.longitude,
-            calculationMethodName = settings.calculationMethodName,
+            config = config,
+            referenceZoned = nowZoned,
             hijriOffsetDays = settings.hijriOffsetDays,
-            referenceTime = currentTime,
-            referenceDate = today,
-            zoneId = ZoneId.systemDefault()
+            hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
+            iqamahOffsets = settings.iqamahOffsets()
         )
 
         HomeUiState(
@@ -79,14 +80,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     fun previousDay() {
-        _selectedDate.value = _selectedDate.value.minusDays(1)
+        val current = uiState.value.selectedDate
+        _selectedDate.value = current.minusDays(1)
     }
 
     fun nextDay() {
-        _selectedDate.value = _selectedDate.value.plusDays(1)
+        val current = uiState.value.selectedDate
+        _selectedDate.value = current.plusDays(1)
     }
 
     fun resetToToday() {
-        _selectedDate.value = LocalDate.now()
+        _selectedDate.value = null
     }
 }

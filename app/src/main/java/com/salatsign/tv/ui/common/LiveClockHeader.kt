@@ -44,6 +44,8 @@ import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.TvTypography
 import kotlinx.coroutines.delay
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -53,6 +55,7 @@ fun LiveClockHeader(
     gregorianDate: String,
     hijriDate: String,
     cityName: String,
+    zoneId: String = ZoneId.systemDefault().id,
     mosqueName: String = "",
     mosqueSubtitle: String = "",
     mosqueLogoUri: String? = null,
@@ -64,11 +67,14 @@ fun LiveClockHeader(
     onTodayClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
-    var currentTime by remember { mutableStateOf(LocalTime.now()) }
+    val zone = remember(zoneId) {
+        runCatching { ZoneId.of(zoneId) }.getOrDefault(ZoneId.systemDefault())
+    }
+    var currentTime by remember(zone) { mutableStateOf(ZonedDateTime.now(zone).toLocalTime()) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(zone) {
         while (true) {
-            currentTime = LocalTime.now()
+            currentTime = ZonedDateTime.now(zone).toLocalTime()
             delay(1000)
         }
     }

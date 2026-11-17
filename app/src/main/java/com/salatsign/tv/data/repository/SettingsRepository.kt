@@ -8,17 +8,18 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
-import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.security.PinHasher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -35,9 +36,33 @@ class SettingsRepository(private val context: Context) {
         val LATITUDE = doublePreferencesKey("latitude")
         val LONGITUDE = doublePreferencesKey("longitude")
         val CITY_NAME = stringPreferencesKey("city_name")
+        val ZONE_ID = stringPreferencesKey("zone_id")
         val CALCULATION_METHOD = stringPreferencesKey("calculation_method")
+        val MADHAB = stringPreferencesKey("madhab")
+        val HIGH_LATITUDE_RULE = stringPreferencesKey("high_latitude_rule")
         val HIJRI_OFFSET_DAYS = intPreferencesKey("hijri_offset_days")
+        val HIJRI_CHANGE_AT_MIDNIGHT = booleanPreferencesKey("hijri_change_at_midnight")
         val PRE_PRAYER_REMINDER = booleanPreferencesKey("pre_prayer_reminder")
+
+        // Per-prayer offsets (-30..+30 mins)
+        val OFFSET_SUBUH = intPreferencesKey("offset_subuh")
+        val OFFSET_SUNRISE = intPreferencesKey("offset_sunrise")
+        val OFFSET_ZUHUR = intPreferencesKey("offset_zuhur")
+        val OFFSET_ASHR = intPreferencesKey("offset_ashr")
+        val OFFSET_MAGRIB = intPreferencesKey("offset_magrib")
+        val OFFSET_ISYA = intPreferencesKey("offset_isya")
+
+        // Per-prayer Iqamah (minutes after adhan)
+        val IQAMAH_SUBUH = intPreferencesKey("iqamah_subuh")
+        val IQAMAH_ZUHUR = intPreferencesKey("iqamah_zuhur")
+        val IQAMAH_ASHR = intPreferencesKey("iqamah_ashr")
+        val IQAMAH_MAGRIB = intPreferencesKey("iqamah_magrib")
+        val IQAMAH_ISYA = intPreferencesKey("iqamah_isya")
+
+        // Mosque Mode quiet settings & visual strike (P4.7)
+        val MOSQUE_MODE_ADHAN_ENABLED = booleanPreferencesKey("mosque_mode_adhan_enabled")
+        val MOSQUE_MODE_REMINDERS_ENABLED = booleanPreferencesKey("mosque_mode_reminders_enabled")
+        val SHOW_STRIKE_HIGHLIGHT = booleanPreferencesKey("show_strike_highlight")
 
         // Per-prayer adhan keys
         fun adhanTypeKey(prayer: Prayer) = stringPreferencesKey("adhan_type_${prayer.id}")
@@ -51,7 +76,15 @@ class SettingsRepository(private val context: Context) {
         val MOSQUE_ICON_PRESET = stringPreferencesKey("mosque_icon_preset")
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
-        val SLIDES_RAW = stringPreferencesKey("slides_raw")
+
+        // Security / Admin PIN keys
+        val HOME_MODE_PIN_REQUIRED = booleanPreferencesKey("home_mode_pin_required")
+        val HAS_CUSTOM_PIN = booleanPreferencesKey("has_custom_pin")
+        val PIN_SALT_HEX = stringPreferencesKey("pin_salt_hex")
+        val PIN_HASH_HEX = stringPreferencesKey("pin_hash_hex")
+        val PIN_FAILED_ATTEMPTS = intPreferencesKey("pin_failed_attempts")
+        val PIN_LOCKED_UNTIL_EPOCH_MILLIS = longPreferencesKey("pin_locked_until_epoch_millis")
+        val DEFAULT_PIN_PROMPT_DISMISSED = booleanPreferencesKey("default_pin_prompt_dismissed")
     }
 
     val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -68,12 +101,33 @@ class SettingsRepository(private val context: Context) {
             val themeModeStr = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.ALWAYS_DARK.name
             val themeMode = runCatching { ThemeMode.valueOf(themeModeStr) }.getOrDefault(ThemeMode.ALWAYS_DARK)
 
-            val latitude = preferences[PreferencesKeys.LATITUDE] ?: -6.2088
-            val longitude = preferences[PreferencesKeys.LONGITUDE] ?: 106.8456
-            val cityName = preferences[PreferencesKeys.CITY_NAME] ?: "Jakarta"
-            val calculationMethod = preferences[PreferencesKeys.CALCULATION_METHOD] ?: "SINGAPORE"
+            val latitude = preferences[PreferencesKeys.LATITUDE] ?: -35.2809
+            val longitude = preferences[PreferencesKeys.LONGITUDE] ?: 149.1300
+            val cityName = preferences[PreferencesKeys.CITY_NAME] ?: "Canberra, ACT, Australia"
+            val zoneId = preferences[PreferencesKeys.ZONE_ID] ?: "Australia/Sydney"
+            val calculationMethod = preferences[PreferencesKeys.CALCULATION_METHOD] ?: "MUSLIM_WORLD_LEAGUE"
+            val madhab = preferences[PreferencesKeys.MADHAB] ?: "SHAFI"
+            val highLatitudeRule = preferences[PreferencesKeys.HIGH_LATITUDE_RULE]
             val hijriOffset = preferences[PreferencesKeys.HIJRI_OFFSET_DAYS] ?: 0
+            val hijriChangeAtMidnight = preferences[PreferencesKeys.HIJRI_CHANGE_AT_MIDNIGHT] ?: false
             val preReminder = preferences[PreferencesKeys.PRE_PRAYER_REMINDER] ?: true
+
+            val offsetSubuh = preferences[PreferencesKeys.OFFSET_SUBUH] ?: 0
+            val offsetSunrise = preferences[PreferencesKeys.OFFSET_SUNRISE] ?: 0
+            val offsetZuhur = preferences[PreferencesKeys.OFFSET_ZUHUR] ?: 0
+            val offsetAshr = preferences[PreferencesKeys.OFFSET_ASHR] ?: 0
+            val offsetMagrib = preferences[PreferencesKeys.OFFSET_MAGRIB] ?: 0
+            val offsetIsya = preferences[PreferencesKeys.OFFSET_ISYA] ?: 0
+
+            val iqamahSubuh = preferences[PreferencesKeys.IQAMAH_SUBUH] ?: 0
+            val iqamahZuhur = preferences[PreferencesKeys.IQAMAH_ZUHUR] ?: 0
+            val iqamahAshr = preferences[PreferencesKeys.IQAMAH_ASHR] ?: 0
+            val iqamahMagrib = preferences[PreferencesKeys.IQAMAH_MAGRIB] ?: 0
+            val iqamahIsya = preferences[PreferencesKeys.IQAMAH_ISYA] ?: 0
+
+            val mosqueModeAdhanEnabled = preferences[PreferencesKeys.MOSQUE_MODE_ADHAN_ENABLED] ?: false
+            val mosqueModeRemindersEnabled = preferences[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] ?: false
+            val showStrikeHighlight = preferences[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] ?: true
 
             val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.DefaultSubuh)
             val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.DefaultStandard)
@@ -92,8 +146,13 @@ class SettingsRepository(private val context: Context) {
 
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
 
-            val slidesRaw = preferences[PreferencesKeys.SLIDES_RAW] ?: ""
-            val slides = deserializeSlides(slidesRaw)
+            val homeModePinRequired = preferences[PreferencesKeys.HOME_MODE_PIN_REQUIRED] ?: false
+            val hasCustomPin = preferences[PreferencesKeys.HAS_CUSTOM_PIN] ?: false
+            val pinSaltHex = preferences[PreferencesKeys.PIN_SALT_HEX] ?: ""
+            val pinHashHex = preferences[PreferencesKeys.PIN_HASH_HEX] ?: ""
+            val pinFailedAttempts = preferences[PreferencesKeys.PIN_FAILED_ATTEMPTS] ?: 0
+            val pinLockedUntil = preferences[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] ?: 0L
+            val defaultPinPromptDismissed = preferences[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] ?: false
 
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
@@ -102,21 +161,45 @@ class SettingsRepository(private val context: Context) {
                 latitude = latitude,
                 longitude = longitude,
                 cityName = cityName,
+                zoneId = zoneId,
                 calculationMethodName = calculationMethod,
+                madhab = madhab,
+                highLatitudeRule = highLatitudeRule,
                 hijriOffsetDays = hijriOffset,
+                hijriChangeAtMidnight = hijriChangeAtMidnight,
                 prePrayerReminderEnabled = preReminder,
                 adhanSubuh = adhanSubuh,
                 adhanZuhur = adhanZuhur,
                 adhanAshr = adhanAshr,
                 adhanMagrib = adhanMagrib,
                 adhanIsya = adhanIsya,
+                offsetSubuh = offsetSubuh,
+                offsetSunrise = offsetSunrise,
+                offsetZuhur = offsetZuhur,
+                offsetAshr = offsetAshr,
+                offsetMagrib = offsetMagrib,
+                offsetIsya = offsetIsya,
+                iqamahSubuh = iqamahSubuh,
+                iqamahZuhur = iqamahZuhur,
+                iqamahAshr = iqamahAshr,
+                iqamahMagrib = iqamahMagrib,
+                iqamahIsya = iqamahIsya,
+                mosqueModeAdhanEnabled = mosqueModeAdhanEnabled,
+                mosqueModeRemindersEnabled = mosqueModeRemindersEnabled,
+                showStrikeHighlight = showStrikeHighlight,
                 mosqueName = mosqueName,
                 mosqueSubtitle = mosqueSubtitle,
                 mosqueLogoUri = mosqueLogoUri,
                 mosqueIconPreset = mosqueIconPreset,
                 mosqueFontPreset = mosqueFontPreset,
                 scheduleDurationSeconds = scheduleDuration,
-                announcementSlides = slides
+                homeModePinRequired = homeModePinRequired,
+                hasCustomPin = hasCustomPin,
+                pinSaltHex = pinSaltHex,
+                pinHashHex = pinHashHex,
+                pinFailedAttempts = pinFailedAttempts,
+                pinLockedUntilEpochMillis = pinLockedUntil,
+                defaultPinPromptDismissed = defaultPinPromptDismissed
             )
         }
 
@@ -156,16 +239,48 @@ class SettingsRepository(private val context: Context) {
             prefs[PreferencesKeys.LONGITUDE] = city.longitude
             prefs[PreferencesKeys.CITY_NAME] = city.name
             prefs[PreferencesKeys.CALCULATION_METHOD] = city.calculationMethod
+            prefs[PreferencesKeys.ZONE_ID] = city.zoneId
         }
     }
 
-    suspend fun updateLocation(latitude: Double, longitude: Double, cityName: String, method: String? = null) {
+    suspend fun updateLocation(
+        latitude: Double,
+        longitude: Double,
+        cityName: String,
+        method: String? = null,
+        zoneId: String? = null
+    ) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.LATITUDE] = latitude
             prefs[PreferencesKeys.LONGITUDE] = longitude
             prefs[PreferencesKeys.CITY_NAME] = cityName
             if (method != null) {
                 prefs[PreferencesKeys.CALCULATION_METHOD] = method
+            }
+            if (zoneId != null) {
+                prefs[PreferencesKeys.ZONE_ID] = zoneId
+            }
+        }
+    }
+
+    suspend fun setCalculationMethod(method: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CALCULATION_METHOD] = method
+        }
+    }
+
+    suspend fun setMadhab(madhab: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MADHAB] = madhab
+        }
+    }
+
+    suspend fun setHighLatitudeRule(rule: String?) {
+        context.dataStore.edit { prefs ->
+            if (rule != null) {
+                prefs[PreferencesKeys.HIGH_LATITUDE_RULE] = rule
+            } else {
+                prefs.remove(PreferencesKeys.HIGH_LATITUDE_RULE)
             }
         }
     }
@@ -177,9 +292,78 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
+    suspend fun setHijriChangeAtMidnight(atMidnight: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HIJRI_CHANGE_AT_MIDNIGHT] = atMidnight
+        }
+    }
+
     suspend fun setPrePrayerReminder(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PRE_PRAYER_REMINDER] = enabled
+        }
+    }
+
+    suspend fun updatePrayerOffset(prayer: Prayer, offsetMinutes: Int) {
+        val clamped = offsetMinutes.coerceIn(-30, 30)
+        context.dataStore.edit { prefs ->
+            when (prayer) {
+                Prayer.SUBUH -> prefs[PreferencesKeys.OFFSET_SUBUH] = clamped
+                Prayer.ZUHUR -> prefs[PreferencesKeys.OFFSET_ZUHUR] = clamped
+                Prayer.ASHR -> prefs[PreferencesKeys.OFFSET_ASHR] = clamped
+                Prayer.MAGRIB -> prefs[PreferencesKeys.OFFSET_MAGRIB] = clamped
+                Prayer.ISYA -> prefs[PreferencesKeys.OFFSET_ISYA] = clamped
+            }
+        }
+    }
+
+    suspend fun updateSunriseOffset(offsetMinutes: Int) {
+        val clamped = offsetMinutes.coerceIn(-30, 30)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.OFFSET_SUNRISE] = clamped
+        }
+    }
+
+    suspend fun updateIqamahOffset(prayer: Prayer, minutesAfter: Int) {
+        val clamped = minutesAfter.coerceIn(0, 60)
+        context.dataStore.edit { prefs ->
+            when (prayer) {
+                Prayer.SUBUH -> prefs[PreferencesKeys.IQAMAH_SUBUH] = clamped
+                Prayer.ZUHUR -> prefs[PreferencesKeys.IQAMAH_ZUHUR] = clamped
+                Prayer.ASHR -> prefs[PreferencesKeys.IQAMAH_ASHR] = clamped
+                Prayer.MAGRIB -> prefs[PreferencesKeys.IQAMAH_MAGRIB] = clamped
+                Prayer.ISYA -> prefs[PreferencesKeys.IQAMAH_ISYA] = clamped
+            }
+        }
+    }
+
+    suspend fun setZoneId(zoneId: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ZONE_ID] = zoneId
+        }
+    }
+
+    suspend fun setPrayerOffset(prayer: Prayer, offsetMinutes: Int) = updatePrayerOffset(prayer, offsetMinutes)
+    suspend fun setSunriseOffset(offsetMinutes: Int) = updateSunriseOffset(offsetMinutes)
+    suspend fun setIqamahOffset(prayer: Prayer, minutesAfter: Int) = updateIqamahOffset(prayer, minutesAfter)
+    suspend fun setMosqueModeAdhan(enabled: Boolean) = setMosqueModeAdhanEnabled(enabled)
+    suspend fun setMosqueModeReminders(enabled: Boolean) = setMosqueModeRemindersEnabled(enabled)
+
+    suspend fun setMosqueModeAdhanEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MOSQUE_MODE_ADHAN_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setMosqueModeRemindersEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setShowStrikeHighlight(show: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] = show
         }
     }
 
@@ -225,30 +409,52 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    suspend fun updateSlides(slides: List<AnnouncementSlide>) {
+    suspend fun setCustomPin(pin: String) {
+        val hashed = PinHasher.createHashedPin(pin)
         context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.SLIDES_RAW] = serializeSlides(slides)
+            prefs[PreferencesKeys.HAS_CUSTOM_PIN] = true
+            prefs[PreferencesKeys.PIN_SALT_HEX] = hashed.saltHex
+            prefs[PreferencesKeys.PIN_HASH_HEX] = hashed.hashHex
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
         }
     }
 
-    private fun serializeSlides(slides: List<AnnouncementSlide>): String {
-        return slides.joinToString(";;") { slide ->
-            "${slide.id}::${slide.imageUri}::${slide.title}::${slide.durationSeconds}"
+    suspend fun resetToDefaultPin() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HAS_CUSTOM_PIN] = false
+            prefs.remove(PreferencesKeys.PIN_SALT_HEX)
+            prefs.remove(PreferencesKeys.PIN_HASH_HEX)
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = false
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
         }
     }
 
-    private fun deserializeSlides(raw: String): List<AnnouncementSlide> {
-        if (raw.isBlank()) return emptyList()
-        return raw.split(";;").mapNotNull { part ->
-            val tokens = part.split("::")
-            if (tokens.size >= 4) {
-                AnnouncementSlide(
-                    id = tokens[0],
-                    imageUri = tokens[1],
-                    title = tokens[2],
-                    durationSeconds = tokens[3].toIntOrNull() ?: 10
-                )
-            } else null
+    suspend fun setHomeModePinRequired(required: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.HOME_MODE_PIN_REQUIRED] = required
+        }
+    }
+
+    suspend fun recordPinSuccess() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = 0
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = 0L
+        }
+    }
+
+    suspend fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PIN_FAILED_ATTEMPTS] = newFailedAttempts
+            prefs[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] = lockedUntilEpochMillis
+        }
+    }
+
+    suspend fun dismissDefaultPinPrompt() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
         }
     }
 }
