@@ -44,6 +44,12 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val app = application as SalatSignApp
     private val settingsRepository = app.settingsRepository
 
+    private val settingsState = settingsRepository.appSettingsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = AppSettings()
+    )
+
     private val _slideState = MutableStateFlow<SlideState>(SlideState.PrayerSchedule(60))
     val slideState: StateFlow<SlideState> = _slideState.asStateFlow()
 
@@ -71,7 +77,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
         slideshowLoopJob = viewModelScope.launch {
             while (isActive) {
                 // Get current settings
-                val settings = settingsRepository.appSettingsFlow.stateIn(viewModelScope).value
+                val settings = settingsState.value
                 val today = LocalDate.now()
                 val now = LocalTime.now()
                 val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
@@ -117,9 +123,33 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 }
 
                 // Step 2: Transition through Announcement Slides
-                val slides = settings.announcementSlides
+                val currentSettings = settingsState.value
+                val slides = currentSettings.announcementSlides
                 if (slides.isNotEmpty()) {
                     for ((index, slide) in slides.withIndex()) {
+                        // Recompute today and prayerTimes at the start of every slide
+                        val slideSettings = settingsState.value
+                        val slideToday = LocalDate.now()
+                        val slideNow = LocalTime.now()
+                        val slidePrayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
+                            date = slideToday,
+                            latitude = slideSettings.latitude,
+                            longitude = slideSettings.longitude,
+                            calculationMethodName = slideSettings.calculationMethodName,
+                            hijriOffsetDays = slideSettings.hijriOffsetDays,
+                            referenceTime = slideNow,
+                            referenceDate = slideToday,
+                            zoneId = ZoneId.systemDefault()
+                        )
+
+                        // Check strike at the start of this slide
+                        val startStrike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5)
+                        if (startStrike != null) {
+                            _interruptedActivePrayer.value = startStrike
+                            _slideState.value = SlideState.PrayerSchedule(slideSettings.scheduleDurationSeconds.coerceAtLeast(10))
+                            break
+                        }
+
                         val slideDuration = slide.durationSeconds.coerceAtLeast(3)
                         _slideState.value = SlideState.AnnouncementImage(
                             slideIndex = index,
@@ -132,11 +162,11 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         for (sec in 0 until slideDuration) {
                             delay(1000)
                             val currentNow = LocalTime.now()
-                            val strike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, currentNow, 5)
+                            val strike = PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, currentNow, 5)
                             if (strike != null) {
                                 // Silent Exact-Time Interruption: Cancel slide immediately and return to schedule
                                 _interruptedActivePrayer.value = strike
-                                _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
+                                _slideState.value = SlideState.PrayerSchedule(slideSettings.scheduleDurationSeconds.coerceAtLeast(10))
                                 interrupted = true
                                 break
                             }
@@ -153,7 +183,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
     val uiState: StateFlow<MosqueSignageUiState> = combine(
         _slideState,
-        settingsRepository.appSettingsFlow,
+        settingsState,
         _tickerTime,
         _interruptedActivePrayer
     ) { currentSlide, settings, currentTime, activePrayer ->
