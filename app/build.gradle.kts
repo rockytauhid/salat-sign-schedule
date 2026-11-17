@@ -121,9 +121,8 @@ dependencies {
     // DataStore (Preferences Storage)
     implementation(libs.androidx.datastore.preferences)
 
-    // Coil 3 (Mosque Logos & Signage Slide Image Loading)
+    // Coil 3 (Mosque Logos & Signage Slide Image Loading - Internal storage & assets)
     implementation(libs.coil.compose)
-    implementation(libs.coil.network.okhttp)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
@@ -131,10 +130,6 @@ dependencies {
 
     // Kotlinx Serialization JSON
     implementation(libs.kotlinx.serialization.json)
-
-    // Media3 / Audio Playback
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.common)
 
     // Background Scheduling & Resilience
     implementation(libs.androidx.work.runtime.ktx)
