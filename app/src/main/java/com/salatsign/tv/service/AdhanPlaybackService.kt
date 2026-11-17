@@ -21,7 +21,12 @@ import androidx.core.app.NotificationCompat
 import com.salatsign.tv.MainActivity
 import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.repository.SettingsRepository
+import com.salatsign.tv.ui.common.LocaleHelper
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,8 +88,15 @@ class AdhanPlaybackService : Service() {
             if (prayer == Prayer.SUBUH) AdhanAudioType.DEFAULT_SUBUH else AdhanAudioType.DEFAULT_STANDARD
         )
 
-        createNotificationChannel()
-        val notification = buildForegroundNotification(prayerDisplayName)
+        val language = runCatching {
+            runBlocking {
+                SettingsRepository(this@AdhanPlaybackService).appSettingsFlow.first().appLanguage
+            }
+        }.getOrDefault(AppLanguage.SYSTEM)
+        val localizedContext = LocaleHelper.wrap(this, language)
+
+        createNotificationChannel(localizedContext)
+        val notification = buildForegroundNotification(localizedContext, prayerDisplayName)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -195,7 +207,7 @@ class AdhanPlaybackService : Service() {
         afd.close()
     }
 
-    private fun buildForegroundNotification(prayerDisplayName: String): Notification {
+    private fun buildForegroundNotification(localizedContext: Context, prayerDisplayName: String): Notification {
         val tapIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -218,25 +230,29 @@ class AdhanPlaybackService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Waktu Shalat $prayerDisplayName Telah Tiba")
-            .setContentText("Mengumandangkan Adhan $prayerDisplayName...")
+            .setContentTitle(localizedContext.getString(R.string.notif_adhan_title, prayerDisplayName))
+            .setContentText(localizedContext.getString(R.string.notif_adhan_text, prayerDisplayName))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true)
             .setContentIntent(tapPendingIntent)
-            .addAction(android.R.drawable.ic_media_pause, "Hentikan Adhan", stopPendingIntent)
+            .addAction(
+                android.R.drawable.ic_media_pause,
+                localizedContext.getString(R.string.notif_adhan_stop_action),
+                stopPendingIntent
+            )
             .build()
     }
 
-    private fun createNotificationChannel() {
+    private fun createNotificationChannel(localizedContext: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                localizedContext.getString(R.string.notif_channel_adhan_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifikasi pemutaran suara Adhan waktu shalat"
+                description = localizedContext.getString(R.string.notif_channel_adhan_desc)
                 setSound(null, null) // Audio is handled explicitly via USAGE_ALARM MediaPlayer
                 enableVibration(true)
             }

@@ -1,6 +1,7 @@
 package com.salatsign.tv
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
@@ -11,16 +12,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.lifecycleScope
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.service.AdhanPlaybackService
 import com.salatsign.tv.service.PrayerAlarmScheduler
+import com.salatsign.tv.ui.common.LocaleHelper
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
 import com.salatsign.tv.ui.home.HomeScreen
@@ -33,7 +39,9 @@ import com.salatsign.tv.ui.setup.SetupWizardScreen
 import com.salatsign.tv.ui.theme.SalatSignTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.time.LocalTime
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +53,15 @@ class MainActivity : ComponentActivity() {
     private var dpadCenterHoldJob: Job? = null
     private val isSettingsOpen = mutableStateOf(false)
     private val isPinDialogOpen = mutableStateOf(false)
+
+    override fun attachBaseContext(newBase: Context) {
+        val language = runCatching {
+            runBlocking {
+                SettingsRepository(newBase).appSettingsFlow.first().appLanguage
+            }
+        }.getOrDefault(AppLanguage.SYSTEM)
+        super.attachBaseContext(LocaleHelper.wrap(newBase, language))
+    }
 
     private fun requestOpenSettings() {
         val currentSettings = settingsViewModel.settings.value
@@ -62,6 +79,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by settingsViewModel.settings.collectAsState()
             val homeUiState by homeViewModel.uiState.collectAsState()
+
+            var activeLanguage by remember { mutableStateOf(settings.appLanguage) }
+            LaunchedEffect(settings.appLanguage) {
+                if (settings.appLanguage != activeLanguage) {
+                    activeLanguage = settings.appLanguage
+                    recreate()
+                }
+            }
 
             // Resolve Dark / Light Theme
             val isDark = remember(settings.themeMode, homeUiState.prayerTimesDay) {
@@ -231,6 +256,7 @@ fun MainContent(
     if (!settings.isSetupCompleted) {
         SetupWizardScreen(
             settings = settings,
+            onSelectLanguage = { settingsViewModel.setAppLanguage(it) },
             onSelectMode = { settingsViewModel.toggleMosqueMode(it) },
             onSelectCity = { settingsViewModel.selectCity(it) },
             onSelectMethod = { settingsViewModel.setCalculationMethod(it) },
@@ -277,6 +303,9 @@ fun MainContent(
             onSetMosqueModeAdhan = { settingsViewModel.setMosqueModeAdhan(it) },
             onSetMosqueModeReminders = { settingsViewModel.setMosqueModeReminders(it) },
             onSetShowStrikeHighlight = { settingsViewModel.setShowStrikeHighlight(it) },
+            onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
+            onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
+            onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
             onRestartSetupWizard = {
                 onCloseSettings()
                 settingsViewModel.restartSetupWizard()

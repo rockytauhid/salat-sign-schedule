@@ -1,3 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SalatSign</string>
+    <!-- Core Application -->
+    <string name="app_name" translatable="false">SalatSign</string>
+
+    <!-- Prayer Names (Appendix A) -->
+    <string name="prayer_subuh">Fajr</string>
+    <string name="prayer_zuhur">Dhuhr</string>
+    <string name="prayer_ashr">Asr</string>
+    <string name="prayer_magrib">Maghrib</string>
+    <string name="prayer_isya">Isha</string>
+    <string name="prayer_jumuah">Jumu\'ah</string>
+    <string name="prayer_sunrise">Sunrise</string>
+    <string name="prayer_iqamah">Iqamah</string>
+
+    <!-- Hijri Formatting -->
+    <string name="hijri_date_format">%1$d %2$s %3$d %4$s</string>
+    <string name="hijri_year_suffix">AH</string>
+
+    <!-- Languages -->
+    <string name="lang_system">System Default</string>
+    <string name="lang_en">English (Australia)</string>
+    <string name="lang_id">Bahasa Indonesia</string>
+    <string name="lang_ar">العربية</string>
+
+    <!-- Theme Modes -->
+    <string name="theme_always_dark">Dark Theme (OLED / Night)</string>
+    <string name="theme_always_light">Light Theme (Day)</string>
+    <string name="theme_auto_day_night">Automatic (Day Light / Night Dark)</string>
+
+    <!-- Mosque Icon Presets -->
+    <string name="mosque_icon_dome_crescent">Dome &amp; Crescent</string>
+    <string name="mosque_icon_minaret">Mosque Minaret</string>
+    <string name="mosque_icon_geometric_star">8-Point Star (Rub el Hizb)</string>
+    <string name="mosque_icon_mihrab">Classic Mihrab</string>
+    <string name="mosque_icon_custom">Custom Logo / USB</string>
+
+    <!-- Mosque Font Presets -->
+    <string name="mosque_font_modern_sans">Modern Sans Bold</string>
+    <string name="mosque_font_traditional_serif">Traditional Serif</string>
+    <string name="mosque_font_elegant_display">Elegant Display</string>
+    <string name="mosque_font_clean_tech">Clean Minimalist</string>
+
+    <!-- Adhan Audio Options -->
+    <string name="adhan_standard">Standard Adhan</string>
+    <string name="adhan_subuh_special">Fajr Adhan (Special)</string>
+    <string name="adhan_custom_file">Custom Audio / USB</string>
+    <string name="adhan_silent">Silent / Disabled</string>
+
+    <!-- Buttons & Actions -->
+    <string name="btn_close">Close</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_done">Done</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_finish">Finish &amp; Launch App</string>
+    <string name="btn_skip">Skip Setup (Default)</string>
+    <string name="btn_change_pin">Change PIN</string>
+    <string name="btn_change_pin_now">Change PIN Now</string>
+    <string name="btn_keep_default_pin">Keep Default PIN</string>
+    <string name="btn_reset_pin">Reset to Default PIN (0000)</string>
+
+    <!-- LiveClockHeader & Date Navigation -->
+    <string name="header_nav_prev_day">Previous Day</string>
+    <string name="header_nav_prev_day_short">Prev</string>
+    <string name="header_nav_today">Today</string>
+    <string name="header_nav_next_day">Next Day</string>
+    <string name="header_nav_next_day_short">Next</string>
+    <string name="header_settings">Settings</string>
+
+    <!-- Home Screen -->
+    <string name="home_badge_next_prayer">NEXT PRAYER</string>
+    <string name="home_countdown_to_adhan">Until Adhan: %1$s</string>
+    <string name="home_sunrise">Sunrise: %1$s</string>
+    <string name="home_reminder_active">15m Reminder On</string>
+    <string name="home_reminder_inactive">Reminder Off</string>
+    <string name="home_archive_future_schedule">Prayer Timetable Archive / Future</string>
+    <string name="home_iqamah_time">Iqamah %1$s</string>
+    <string name="home_badge_active_prayer">PRAYER TIME</string>
+    <string name="home_badge_next">NEXT</string>
+
+    <!-- Mosque Signage Display -->
+    <string name="mosque_strike_title">PRAYER TIME HAS ARRIVED</string>
+    <string name="mosque_strike_prayer_name">%1$s Prayer</string>
+    <string name="mosque_strike_admonition">Straighten and close the rows. Please silence mobile phones.</string>
+    <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
+    <string name="mosque_next_prayer_badge">APPROACHING NEXT PRAYER</string>
+    <string name="mosque_countdown_to_prayer">Until Prayer Time: %1$s</string>
+    <string name="mosque_default_name">Grand Mosque</string>
+    <string name="mosque_default_subtitle">Straighten and close the prayer rows</string>
+
+    <!-- Notifications & Services -->
+    <string name="notif_channel_adhan_name">Adhan Playback</string>
+    <string name="notif_channel_adhan_desc">Prayer time adhan audio alert notification</string>
+    <string name="notif_channel_reminder_name">Prayer Reminder</string>
+    <string name="notif_channel_reminder_desc">Notification 15 minutes before prayer time</string>
+    <string name="notif_adhan_title">Time for %1$s Prayer</string>
+    <string name="notif_adhan_text">Playing %1$s Adhan...</string>
+    <string name="notif_adhan_stop_action">Stop Adhan</string>
+    <string name="notif_reminder_title">15 Minutes Until %1$s</string>
+    <string name="notif_reminder_text">Prayer time for %1$s is approaching soon. Prepare for worship.</string>
+
+    <!-- PIN Dialog -->
+    <string name="pin_title_verify">Enter Admin PIN</string>
+    <string name="pin_title_set_new">Set New Admin PIN</string>
+    <string name="pin_title_confirm_new">Confirm New PIN</string>
+    <string name="pin_subtitle_default">Default PIN: 0000</string>
+    <string name="pin_subtitle_enter">Enter 4–8 digit admin PIN</string>
+    <string name="pin_subtitle_digits">Enter 4 to 8 digits</string>
+    <string name="pin_subtitle_repeat">Re-enter the same PIN</string>
+    <string name="pin_err_format">PIN must be 4–8 digits</string>
+    <string name="pin_err_incorrect_remaining">Incorrect PIN. Attempts remaining: %1$d</string>
+    <string name="pin_err_locked_sec">Too many failed attempts. Locked for %1$d seconds.</string>
+    <string name="pin_err_locked_retry">PIN locked. Try again in %1$d seconds.</string>
+    <string name="pin_err_locked_banner">PIN Locked! Try again in %1$d seconds</string>
+    <string name="pin_msg_confirm_new">Re-enter new PIN to confirm</string>
+    <string name="pin_err_mismatch">PINs do not match. Please try again.</string>
+
+    <!-- Storage & Import -->
+    <string name="storage_internal">Internal Storage</string>
+    <string name="storage_usb">USB Flash Drive (%1$s)</string>
+    <string name="storage_external">External Drive (%1$s)</string>
+    <string name="storage_title_slide_image">Import Slide Poster (USB/TV)</string>
+    <string name="storage_title_mosque_logo">Import Mosque Logo (USB/TV)</string>
+    <string name="storage_title_custom_adhan">Import Custom Adhan (USB/TV)</string>
+    <string name="storage_hint_slide_image">Supports JPG, PNG, WEBP (Max Full HD 1080p resolution)</string>
+    <string name="storage_hint_mosque_logo">Supports JPG, PNG (Max 512x512 resolution)</string>
+    <string name="storage_hint_custom_adhan">Supports MP3, WAV, M4A, OGG (Max 10MB / 10 minutes)</string>
+    <string name="storage_location_prefix">Location: %1$s</string>
+    <string name="storage_parent_folder">.. [Parent Folder]</string>
+    <string name="storage_empty_folder">No supported media files in this folder.</string>
+    <string name="storage_empty_hint">Ensure USB flash drive is connected or copy files to Internal storage.</string>
+    <string name="storage_import_failed">Failed to import file</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle_home">Home Mode Configuration (Interactive)</string>
+    <string name="settings_subtitle_mosque">Mosque Mode Configuration (Digital Signage)</string>
+    <string name="settings_open_wizard">Launch Setup Wizard</string>
+    <string name="settings_pin_warning_title">Security Warning: Default PIN (0000) In Use</string>
+    <string name="settings_pin_warning_desc">The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.</string>
+    <string name="settings_mode_active_mosque">Active Mode: MOSQUE MODE (Digital Signage)</string>
+    <string name="settings_mode_active_home">Active Mode: HOME MODE (Personal)</string>
+    <string name="settings_mode_switch_to_home">Click to switch to Home Mode (Personal)</string>
+    <string name="settings_mode_switch_to_mosque">Click to switch to Mosque Mode (Digital Signage)</string>
+    <string name="settings_section_language">Display Language</string>
+    <string name="settings_section_theme">Display Theme (Dark / Light)</string>
+    <string name="settings_section_calc_method">Prayer Calculation Method</string>
+    <string name="settings_section_madhab">Asr Prayer Madhab</string>
+    <string name="settings_madhab_standard">Standard (Shafi\'i, Maliki, Hanbali)</string>
+    <string name="settings_madhab_standard_desc">Shadow 1x object length (majority of Southeast Asia, Middle East).</string>
+    <string name="settings_madhab_hanafi">Hanafi</string>
+    <string name="settings_madhab_hanafi_desc">Shadow 2x object length (Asr starts ~45–60 minutes later).</string>
+    <string name="settings_section_high_latitude">High-Latitude Rule (Polar / High Latitudes)</string>
+    <string name="settings_high_latitude_none">Automatic (None)</string>
+    <string name="settings_high_latitude_motn">Middle of the Night</string>
+    <string name="settings_high_latitude_sotn">Seventh of the Night</string>
+    <string name="settings_high_latitude_angle">Twilight Angle</string>
+    <string name="settings_section_offsets">Prayer Time Offsets (Minutes)</string>
+    <string name="settings_offset_sunrise">Sunrise Offset (Minutes)</string>
+    <string name="settings_section_iqamah">Iqamah Schedule (Minutes After Adhan)</string>
+    <string name="settings_iqamah_disabled">Disabled (0m)</string>
+    <string name="settings_iqamah_minutes">%1$d min</string>
+    <string name="settings_section_location">City Location &amp; Timezone</string>
+    <string name="settings_current_zone">Timezone: %1$s</string>
+    <string name="settings_section_hijri_offset">Hijri Calendar Day Offset</string>
+    <string name="settings_section_hijri_rollover">Hijri Date Rollover Time</string>
+    <string name="settings_hijri_rollover_magrib">At Sunset / Maghrib (Traditional Islamic standard)</string>
+    <string name="settings_hijri_rollover_midnight">At Midnight 00:00 (Civil calendar sync)</string>
+    <string name="settings_section_home_reminders">15-Minute Pre-Prayer Reminder</string>
+    <string name="settings_reminder_toggle_on">15-Minute Pre-Prayer Reminder: ACTIVE</string>
+    <string name="settings_reminder_toggle_off">15-Minute Pre-Prayer Reminder: DISABLED</string>
+    <string name="settings_reminder_toggle_desc">Display a notification on the TV 15 minutes before prayer time.</string>
+    <string name="settings_section_home_adhan">Adhan Audio per Prayer Time</string>
+    <string name="settings_btn_usb_file">USB / File</string>
+    <string name="settings_section_mosque_audio">Mosque Mode Audio &amp; Highlights</string>
+    <string name="settings_mosque_adhan_toggle">Mosque Mode Adhan Audio</string>
+    <string name="settings_mosque_adhan_on">Mosque Mode Adhan Audio: ACTIVE</string>
+    <string name="settings_mosque_adhan_off">Mosque Mode Adhan Audio: SILENT (Default)</string>
+    <string name="settings_mosque_adhan_desc">Play audible Adhan through TV speakers during Mosque digital signage.</string>
+    <string name="settings_mosque_reminders_toggle">Mosque Mode Pre-Prayer Notifications</string>
+    <string name="settings_mosque_reminders_on">Mosque Mode Pre-Prayer Notifications: ACTIVE</string>
+    <string name="settings_mosque_reminders_off">Mosque Mode Pre-Prayer Notifications: DISABLED (Default)</string>
+    <string name="settings_mosque_strike_toggle">Exact-Time Visual Highlight Strike</string>
+    <string name="settings_mosque_strike_on">Visual Highlight Strike: ACTIVE (Default)</string>
+    <string name="settings_mosque_strike_off">Visual Highlight Strike: DISABLED</string>
+    <string name="settings_mosque_strike_desc">Interrupt announcement slideshow with a pulsing visual highlight at prayer time.</string>
+    <string name="settings_section_mosque_symbol">Mosque Icon / Emblem Preset</string>
+    <string name="settings_btn_import_logo_usb">Select Mosque Logo from USB Drive</string>
+    <string name="settings_custom_logo_active">Custom Mosque Logo Active</string>
+    <string name="settings_section_mosque_font">Mosque Name Font Style</string>
+    <string name="settings_section_mosque_identity">Mosque Name &amp; Subtitle</string>
+    <string name="settings_custom_name_saved">Custom Name Active: %1$s</string>
+    <string name="settings_custom_subtitle_saved">Custom Subtitle Active: %1$s</string>
+    <string name="settings_section_schedule_duration">Prayer Schedule Display Duration</string>
+    <string name="settings_section_slides">Announcement Slides (%1$d of %2$d Slides)</string>
+    <string name="settings_btn_add_image_slide">Add Image Slide (USB/TV)</string>
+    <string name="settings_btn_add_text_slide">Add Text Announcement Slide</string>
+    <string name="settings_btn_clear_slides">Clear All Slides</string>
+    <string name="settings_no_slides_title">No announcement slides yet</string>
+    <string name="settings_no_slides_desc">Add image slides from USB flash drive or create text announcement slides.</string>
+    <string name="settings_section_security">Admin PIN &amp; Security Settings</string>
+    <string name="settings_home_pin_toggle">Protect Settings with PIN in Home Mode</string>
+    <string name="settings_home_pin_on">Home Mode PIN Protection: ACTIVE</string>
+    <string name="settings_home_pin_off">Home Mode PIN Protection: DISABLED</string>
+    <string name="settings_home_pin_desc">Require PIN to open settings in Home Mode (always required in Mosque Mode).</string>
+    <string name="settings_custom_pin_active">Custom PIN Active (Hashed &amp; Secured)</string>
+    <string name="settings_custom_pin_desc">Settings are protected with your custom PIN.</string>
+    <string name="settings_using_default_pin">Using Default PIN (0000)</string>
+    <string name="settings_btn_change_admin_pin">Change Admin PIN</string>
+    <string name="settings_time_format_toggle">12 / 24-Hour Time Format</string>
+    <string name="settings_time_format_12">12-Hour (AM/PM)</string>
+    <string name="settings_time_format_24">24-Hour (00:00)</string>
+    <string name="settings_arabic_names_toggle">Show Arabic Prayer Names</string>
+
+    <string name="desc_announcement_slide">Mosque Announcement Slide</string>
+    <string name="desc_app_logo">SalatSign Logo</string>
+
+    <!-- About & Credits Dialog -->
+    <string name="settings_section_about">About &amp; Credits</string>
+    <string name="settings_about_app_name">SalatSign Android TV</string>
+    <string name="settings_about_version">Version %1$s (%2$d)</string>
+    <string name="settings_about_license">Open Source under GNU General Public License v3.0 (GPL-3.0-or-later)</string>
+    <string name="settings_about_copyright">Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors</string>
+    <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
+    <string name="settings_about_trademarks">SalatSign is a trademark. See TRADEMARKS.md for policy.</string>
+    <string name="settings_about_dialog_title">About SalatSign</string>
+    <string name="settings_about_libraries">Open Source Libraries: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
+
+    <!-- Setup Wizard -->
+    <string name="wizard_welcome">Welcome to SalatSign</string>
+    <string name="wizard_step_indicator">Android TV Initial Setup Guide (Step %1$d of %2$d)</string>
+    <string name="wizard_step_lang_title">Step 1: Select Display Language</string>
+    <string name="wizard_step_lang_desc">Choose your preferred language for the interface and announcements.</string>
+    <string name="wizard_step_location_title">Step %1$d: Select City Location &amp; Timezone (Currently: %2$s)</string>
+    <string name="wizard_step_method_title">Step %1$d: Prayer Calculation Method &amp; Madhab</string>
+    <string name="wizard_step_mode_title">Step %1$d: Choose Application Usage Mode</string>
+    <string name="wizard_step_pin_title">Step %1$d: Admin Security PIN (TV Protection)</string>
+    <string name="wizard_step_mosque_title">Step %1$d: Your Mosque Identity &amp; Emblem</string>
+    <string name="wizard_mode_home_title">HOME / PERSONAL MODE</string>
+    <string name="wizard_mode_home_desc">Interactive prayer times with D-pad calendar navigation, 15m reminders, and customizable Adhan alerts.</string>
+    <string name="wizard_mode_mosque_title">MOSQUE MODE (Digital Signage)</string>
+    <string name="wizard_mode_mosque_desc">Silent white-label public signage with prayer schedule, custom mosque logo, and announcement slideshow.</string>
+    <string name="wizard_mosque_silent_note">Mosque mode is silent by default. You can turn on adhan sound in Settings.</string>
+    <string name="wizard_pin_default_title">Use Default PIN (0000)</string>
+    <string name="wizard_pin_default_desc">Default PIN is 0000. You can change it at any time in Settings.</string>
+    <string name="wizard_pin_custom_title">Set New Custom PIN (4–8 Digits)</string>
+    <string name="wizard_pin_custom_desc">Highly recommended for TV displays so PIN cannot be easily guessed.</string>
+    <string name="wizard_pin_custom_active">Custom PIN Active (Saved)</string>
 </resources>

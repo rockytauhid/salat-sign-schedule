@@ -75,11 +75,13 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            isPseudoLocalesEnabled = true
         }
     }
 
     lint {
         error.add("NewApi")
+        error.add("MissingTranslation")
         abortOnError = true
         checkReleaseBuilds = false
     }

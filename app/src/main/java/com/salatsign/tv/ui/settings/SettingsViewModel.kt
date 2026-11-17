@@ -333,4 +333,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             scheduler.scheduleNext(updated)
         }
     }
+
+    fun setAppLanguage(language: com.salatsign.tv.data.model.AppLanguage) {
+        viewModelScope.launch {
+            repository.setAppLanguage(language)
+        }
+    }
+
+    fun set24HourFormat(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.set24HourFormat(enabled)
+        }
+    }
+
+    fun setShowArabicPrayerNames(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setShowArabicPrayerNames(enabled)
+        }
+    }
 }

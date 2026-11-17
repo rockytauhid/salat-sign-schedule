@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.MosqueFontPreset
@@ -85,6 +86,11 @@ class SettingsRepository(private val context: Context) {
         val PIN_FAILED_ATTEMPTS = intPreferencesKey("pin_failed_attempts")
         val PIN_LOCKED_UNTIL_EPOCH_MILLIS = longPreferencesKey("pin_locked_until_epoch_millis")
         val DEFAULT_PIN_PROMPT_DISMISSED = booleanPreferencesKey("default_pin_prompt_dismissed")
+
+        // Localization & Display Option keys
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val IS_24_HOUR_FORMAT = booleanPreferencesKey("is_24_hour_format")
+        val SHOW_ARABIC_PRAYER_NAMES = booleanPreferencesKey("show_arabic_prayer_names")
     }
 
     val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -129,14 +135,19 @@ class SettingsRepository(private val context: Context) {
             val mosqueModeRemindersEnabled = preferences[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] ?: false
             val showStrikeHighlight = preferences[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] ?: true
 
+            val appLanguageStr = preferences[PreferencesKeys.APP_LANGUAGE] ?: AppLanguage.SYSTEM.name
+            val appLanguage = runCatching { AppLanguage.valueOf(appLanguageStr) }.getOrDefault(AppLanguage.SYSTEM)
+            val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: true
+            val showArabicPrayerNames = preferences[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] ?: true
+
             val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.DefaultSubuh)
             val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.DefaultStandard)
             val adhanAshr = readAdhanOption(preferences, Prayer.ASHR, AdhanAudioOption.DefaultStandard)
             val adhanMagrib = readAdhanOption(preferences, Prayer.MAGRIB, AdhanAudioOption.DefaultStandard)
             val adhanIsya = readAdhanOption(preferences, Prayer.ISYA, AdhanAudioOption.DefaultStandard)
 
-            val mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: "Masjid Raya"
-            val mosqueSubtitle = preferences[PreferencesKeys.MOSQUE_SUBTITLE] ?: "Luruskan dan Rapatkan Shaf"
+            val mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: ""
+            val mosqueSubtitle = preferences[PreferencesKeys.MOSQUE_SUBTITLE] ?: ""
             val mosqueLogoUri = preferences[PreferencesKeys.MOSQUE_LOGO_URI]
             val iconPresetStr = preferences[PreferencesKeys.MOSQUE_ICON_PRESET] ?: MosqueIconPreset.DOME_CRESCENT.name
             val mosqueIconPreset = runCatching { MosqueIconPreset.valueOf(iconPresetStr) }.getOrDefault(MosqueIconPreset.DOME_CRESCENT)
@@ -187,6 +198,9 @@ class SettingsRepository(private val context: Context) {
                 mosqueModeAdhanEnabled = mosqueModeAdhanEnabled,
                 mosqueModeRemindersEnabled = mosqueModeRemindersEnabled,
                 showStrikeHighlight = showStrikeHighlight,
+                appLanguage = appLanguage,
+                is24HourFormat = is24HourFormat,
+                showArabicPrayerNames = showArabicPrayerNames,
                 mosqueName = mosqueName,
                 mosqueSubtitle = mosqueSubtitle,
                 mosqueLogoUri = mosqueLogoUri,
@@ -455,6 +469,24 @@ class SettingsRepository(private val context: Context) {
     suspend fun dismissDefaultPinPrompt() {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
+        }
+    }
+
+    suspend fun setAppLanguage(language: AppLanguage) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.APP_LANGUAGE] = language.name
+        }
+    }
+
+    suspend fun set24HourFormat(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.IS_24_HOUR_FORMAT] = enabled
+        }
+    }
+
+    suspend fun setShowArabicPrayerNames(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] = enabled
         }
     }
 }

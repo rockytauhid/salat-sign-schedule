@@ -7,27 +7,27 @@ enum class Prayer(
 ) {
     SUBUH(
         id = "subuh",
-        displayName = "Subuh",
+        displayName = "Fajr",
         arabicName = "الفجر"
     ),
     ZUHUR(
         id = "zuhur",
-        displayName = "Zuhur",
+        displayName = "Dhuhr",
         arabicName = "الظهر"
     ),
     ASHR(
         id = "ashr",
-        displayName = "Ashr",
+        displayName = "Asr",
         arabicName = "العصر"
     ),
     MAGRIB(
         id = "magrib",
-        displayName = "Magrib",
+        displayName = "Maghrib",
         arabicName = "المغرب"
     ),
     ISYA(
         id = "isya",
-        displayName = "Isya",
+        displayName = "Isha",
         arabicName = "العشاء"
     );
 

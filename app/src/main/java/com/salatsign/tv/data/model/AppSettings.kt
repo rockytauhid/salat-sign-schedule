@@ -1,5 +1,12 @@
 package com.salatsign.tv.data.model
 
+enum class AppLanguage {
+    SYSTEM,
+    EN,
+    ID,
+    AR
+}
+
 enum class ThemeMode(val displayName: String) {
     ALWAYS_DARK("Mode Gelap (OLED/Malam)"),
     ALWAYS_LIGHT("Mode Terang (Siang)"),
@@ -116,9 +123,13 @@ data class AppSettings(
     val mosqueModeAdhanEnabled: Boolean = false,
     val mosqueModeRemindersEnabled: Boolean = false,
     val showStrikeHighlight: Boolean = true,
+    // Localization & Display Options
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
+    val is24HourFormat: Boolean = true,
+    val showArabicPrayerNames: Boolean = true,
     // Mosque branding settings
-    val mosqueName: String = "Masjid Raya",
-    val mosqueSubtitle: String = "Luruskan dan Rapatkan Shaf",
+    val mosqueName: String = "",
+    val mosqueSubtitle: String = "",
     val mosqueLogoUri: String? = null,
     val mosqueIconPreset: MosqueIconPreset = MosqueIconPreset.DOME_CRESCENT,
     val mosqueFontPreset: MosqueFontPreset = MosqueFontPreset.MODERN_SANS,

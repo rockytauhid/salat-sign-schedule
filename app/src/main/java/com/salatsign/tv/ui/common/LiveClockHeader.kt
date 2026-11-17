@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,7 @@ fun LiveClockHeader(
     mosqueIconPreset: MosqueIconPreset = MosqueIconPreset.DOME_CRESCENT,
     mosqueFontPreset: MosqueFontPreset = MosqueFontPreset.MODERN_SANS,
     isViewingToday: Boolean = true,
+    is24HourFormat: Boolean = true,
     onPreviousDay: () -> Unit = {},
     onNextDay: () -> Unit = {},
     onTodayClick: () -> Unit = {},
@@ -79,8 +81,9 @@ fun LiveClockHeader(
         }
     }
 
-    val timeFormatted = remember(currentTime) {
-        currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss", Locale.US))
+    val timeFormatted = remember(currentTime, is24HourFormat) {
+        val pattern = if (is24HourFormat) "HH:mm:ss" else "hh:mm:ss a"
+        currentTime.format(DateTimeFormatter.ofPattern(pattern, Locale.US))
     }
 
     val colorScheme = MaterialTheme.colorScheme
@@ -106,21 +109,20 @@ fun LiveClockHeader(
                 )
 
                 Column {
-                    if (mosqueName.isNotBlank()) {
-                        Text(
-                            text = mosqueName,
-                            style = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
-                        )
-                    }
+                    val displayName = mosqueName.ifBlank { stringResource(R.string.mosque_default_name) }
+                    Text(
+                        text = displayName,
+                        style = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
+                    )
                     if (mosqueSubtitle.isNotBlank()) {
                         Text(
                             text = mosqueSubtitle,
                             style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = AccentGold)
                         )
-                    } else if (mosqueName.isBlank()) {
+                    } else {
                         Text(
                             text = cityName,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp, color = colorScheme.onBackground)
+                            style = TvTypography.HeaderTitle.copy(fontSize = 20.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                         )
                     }
                 }
@@ -133,7 +135,7 @@ fun LiveClockHeader(
             ) {
                 Image(
                     painter = painterResource(id = R.mipmap.ic_launcher),
-                    contentDescription = "SalatSign Logo",
+                    contentDescription = stringResource(R.string.desc_app_logo),
                     modifier = Modifier
                         .size(54.dp)
                         .clip(RoundedCornerShape(14.dp))
@@ -145,7 +147,7 @@ fun LiveClockHeader(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "SalatSign",
+                            text = stringResource(R.string.app_name),
                             style = TvTypography.HeaderTitle.copy(fontSize = 32.sp, color = colorScheme.onBackground)
                         )
                         Box(
@@ -181,12 +183,15 @@ fun LiveClockHeader(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Hari Sebelumnya",
+                                    contentDescription = stringResource(R.string.header_nav_prev_day),
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("H-1", style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface))
+                                Text(
+                                    stringResource(R.string.header_nav_prev_day_short),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                )
                             }
                         }
 
@@ -206,13 +211,13 @@ fun LiveClockHeader(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Today,
-                                        contentDescription = "Hari Ini",
+                                        contentDescription = stringResource(R.string.header_nav_today),
                                         tint = colorScheme.onSecondary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        "Hari Ini",
+                                        stringResource(R.string.header_nav_today),
                                         style = TvTypography.BodyLabel.copy(
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
@@ -236,11 +241,14 @@ fun LiveClockHeader(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("H+1", style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface))
+                                Text(
+                                    stringResource(R.string.header_nav_next_day_short),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Hari Berikutnya",
+                                    contentDescription = stringResource(R.string.header_nav_next_day),
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -260,7 +268,7 @@ fun LiveClockHeader(
                             Box(modifier = Modifier.padding(6.dp)) {
                                 Icon(
                                     imageVector = Icons.Default.Settings,
-                                    contentDescription = "Pengaturan",
+                                    contentDescription = stringResource(R.string.header_settings),
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(18.dp)
                                 )

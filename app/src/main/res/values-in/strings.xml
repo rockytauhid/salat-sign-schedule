@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Application -->
+    <string name="app_name" translatable="false">SalatSign</string>
+
+    <!-- Prayer Names (Appendix A) -->
+    <string name="prayer_subuh">Subuh</string>
+    <string name="prayer_zuhur">Zuhur</string>
+    <string name="prayer_ashr">Ashr</string>
+    <string name="prayer_magrib">Magrib</string>
+    <string name="prayer_isya">Isya</string>
+    <string name="prayer_jumuah">Jumat</string>
+    <string name="prayer_sunrise">Terbit</string>
+    <string name="prayer_iqamah">Iqamah</string>
+
+    <!-- Hijri Formatting -->
+    <string name="hijri_date_format">%1$d %2$s %3$d %4$s</string>
+    <string name="hijri_year_suffix">H</string>
+
+    <!-- Languages -->
+    <string name="lang_system">Default Sistem</string>
+    <string name="lang_en">English (Australia)</string>
+    <string name="lang_id">Bahasa Indonesia</string>
+    <string name="lang_ar">العربية</string>
+
+    <!-- Theme Modes -->
+    <string name="theme_always_dark">Mode Gelap (OLED / Malam)</string>
+    <string name="theme_always_light">Mode Terang (Siang)</string>
+    <string name="theme_auto_day_night">Otomatis (Siang Terang / Malam Gelap)</string>
+
+    <!-- Mosque Icon Presets -->
+    <string name="mosque_icon_dome_crescent">Kubah &amp; Bulan Sabit</string>
+    <string name="mosque_icon_minaret">Menara Masjid</string>
+    <string name="mosque_icon_geometric_star">Bintang 8 (Rub el Hizb)</string>
+    <string name="mosque_icon_mihrab">Mihrab Klasik</string>
+    <string name="mosque_icon_custom">Logo Kustom / USB</string>
+
+    <!-- Mosque Font Presets -->
+    <string name="mosque_font_modern_sans">Modern Sans Bold</string>
+    <string name="mosque_font_traditional_serif">Klasik Tradisional</string>
+    <string name="mosque_font_elegant_display">Elegan Kaligrafi</string>
+    <string name="mosque_font_clean_tech">Minimalis Bersih</string>
+
+    <!-- Adhan Audio Options -->
+    <string name="adhan_standard">Adhan Standar</string>
+    <string name="adhan_subuh_special">Adhan Subuh (Khusus)</string>
+    <string name="adhan_custom_file">Audio Kustom / USB</string>
+    <string name="adhan_silent">Hening / Nonaktif</string>
+
+    <!-- Buttons & Actions -->
+    <string name="btn_close">Tutup</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="btn_save">Simpan</string>
+    <string name="btn_delete">Hapus</string>
+    <string name="btn_done">Selesai</string>
+    <string name="btn_back">Kembali</string>
+    <string name="btn_next">Lanjut (Berikutnya)</string>
+    <string name="btn_finish">Selesai &amp; Buka Aplikasi</string>
+    <string name="btn_skip">Lewati Setup (Default)</string>
+    <string name="btn_change_pin">Ubah PIN</string>
+    <string name="btn_change_pin_now">Ganti PIN Sekarang</string>
+    <string name="btn_keep_default_pin">Gunakan Default</string>
+    <string name="btn_reset_pin">Reset ke PIN Default (0000)</string>
+
+    <!-- LiveClockHeader & Date Navigation -->
+    <string name="header_nav_prev_day">Hari Sebelumnya</string>
+    <string name="header_nav_prev_day_short">H-1</string>
+    <string name="header_nav_today">Hari Ini</string>
+    <string name="header_nav_next_day">Hari Berikutnya</string>
+    <string name="header_nav_next_day_short">H+1</string>
+    <string name="header_settings">Pengaturan</string>
+
+    <!-- Home Screen -->
+    <string name="home_badge_next_prayer">SHALAT BERIKUTNYA</string>
+    <string name="home_countdown_to_adhan">Menuju Adhan: %1$s</string>
+    <string name="home_sunrise">Syuruq: %1$s</string>
+    <string name="home_reminder_active">Pengingat 15m Aktif</string>
+    <string name="home_reminder_inactive">Pengingat Nonaktif</string>
+    <string name="home_archive_future_schedule">Jadwal Shalat Arsip / Masa Datang</string>
+    <string name="home_iqamah_time">Iqamah %1$s</string>
+    <string name="home_badge_active_prayer">WAKTU SHALAT</string>
+    <string name="home_badge_next">SELANJUTNYA</string>
+
+    <!-- Mosque Signage Display -->
+    <string name="mosque_strike_title">WAKTU SHALAT TELAH TIBA</string>
+    <string name="mosque_strike_prayer_name">Shalat %1$s</string>
+    <string name="mosque_strike_admonition">Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.</string>
+    <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
+    <string name="mosque_next_prayer_badge">MENUJU SHALAT BERIKUTNYA</string>
+    <string name="mosque_countdown_to_prayer">Menuju Waktu Shalat: %1$s</string>
+    <string name="mosque_default_name">Masjid Raya</string>
+    <string name="mosque_default_subtitle">Luruskan dan Rapatkan Shaf</string>
+
+    <!-- Notifications & Services -->
+    <string name="notif_channel_adhan_name">Pemutaran Adhan</string>
+    <string name="notif_channel_adhan_desc">Notifikasi pemutaran suara Adhan waktu shalat</string>
+    <string name="notif_channel_reminder_name">Pengingat Shalat</string>
+    <string name="notif_channel_reminder_desc">Notifikasi 15 menit menjelang waktu shalat</string>
+    <string name="notif_adhan_title">Waktu Shalat %1$s Telah Tiba</string>
+    <string name="notif_adhan_text">Mengumandangkan Adhan %1$s...</string>
+    <string name="notif_adhan_stop_action">Hentikan Adhan</string>
+    <string name="notif_reminder_title">15 Menit Menjelang %1$s</string>
+    <string name="notif_reminder_text">Waktu shalat %1$s akan segera tiba. Siapkan diri untuk beribadah.</string>
+
+    <!-- PIN Dialog -->
+    <string name="pin_title_verify">Masukkan PIN Admin</string>
+    <string name="pin_title_set_new">Atur PIN Admin Baru</string>
+    <string name="pin_title_confirm_new">Konfirmasi PIN Baru</string>
+    <string name="pin_subtitle_default">Gunakan PIN bawaan: 0000</string>
+    <string name="pin_subtitle_enter">Masukkan 4-8 digit PIN admin</string>
+    <string name="pin_subtitle_digits">Masukkan 4 hingga 8 digit angka</string>
+    <string name="pin_subtitle_repeat">Masukkan PIN yang sama sekali lagi</string>
+    <string name="pin_err_format">PIN harus 4-8 digit angka</string>
+    <string name="pin_err_incorrect_remaining">PIN salah. Sisa percobaan: %1$d</string>
+    <string name="pin_err_locked_sec">Terlalu banyak percobaan. Terkunci %1$d detik.</string>
+    <string name="pin_err_locked_retry">PIN Terkunci. Coba lagi dalam %1$d detik.</string>
+    <string name="pin_err_locked_banner">PIN Terkunci! Coba lagi dalam %1$d detik</string>
+    <string name="pin_msg_confirm_new">Ulangi PIN baru untuk konfirmasi</string>
+    <string name="pin_err_mismatch">PIN tidak cocok. Silakan masukkan kembali.</string>
+
+    <!-- Storage & Import -->
+    <string name="storage_internal">Penyimpanan Internal</string>
+    <string name="storage_usb">USB Flashdisk (%1$s)</string>
+    <string name="storage_external">Drive Eksternal (%1$s)</string>
+    <string name="storage_title_slide_image">Tambah Slide Gambar (USB/TV)</string>
+    <string name="storage_title_mosque_logo">Pilih Logo Masjid dari USB Flashdisk</string>
+    <string name="storage_title_custom_adhan">Pilih Audio Adhan dari USB Flashdisk</string>
+    <string name="storage_hint_slide_image">Mendukung JPG, PNG, WEBP (Maksimal resolusi Full HD 1080p)</string>
+    <string name="storage_hint_mosque_logo">Mendukung JPG, PNG (Maksimal resolusi 512x512)</string>
+    <string name="storage_hint_custom_adhan">Mendukung MP3, WAV, M4A, OGG (Maksimal 10MB / 10 menit)</string>
+    <string name="storage_location_prefix">Lokasi: %1$s</string>
+    <string name="storage_parent_folder">.. [Folder Atas]</string>
+    <string name="storage_empty_folder">Tidak ada file media yang didukung di folder ini.</string>
+    <string name="storage_empty_hint">Pastikan USB flashdisk terpasang atau salin file ke folder Download / Internal.</string>
+    <string name="storage_import_failed">Gagal mengimpor file</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_subtitle_home">Konfigurasi Penggunaan Mode Rumah (Personal)</string>
+    <string name="settings_subtitle_mosque">Konfigurasi Penggunaan Mode Masjid (Digital Signage)</string>
+    <string name="settings_open_wizard">Buka Setup Wizard</string>
+    <string name="settings_pin_warning_title">Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan</string>
+    <string name="settings_pin_warning_desc">Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.</string>
+    <string name="settings_mode_active_mosque">Mode Aktif: MODE MASJID (Digital Signage)</string>
+    <string name="settings_mode_active_home">Mode Aktif: MODE RUMAH (Personal)</string>
+    <string name="settings_mode_switch_to_home">Klik tombol ini untuk beralih ke Mode Rumah (Personal)</string>
+    <string name="settings_mode_switch_to_mosque">Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage)</string>
+    <string name="settings_section_language">Bahasa Tampilan</string>
+    <string name="settings_section_theme">Pilihan Tema Tampilan (Dark / Light)</string>
+    <string name="settings_section_calc_method">Metode Perhitungan Waktu Shalat</string>
+    <string name="settings_section_madhab">Mazhab untuk Waktu Ashr</string>
+    <string name="settings_madhab_standard">Standar (Syafi\'i, Maliki, Hanbali)</string>
+    <string name="settings_madhab_standard_desc">Bayangan 1x panjang objek (mayoritas Muslim Indonesia, Malaysia, Asia Tenggara).</string>
+    <string name="settings_madhab_hanafi">Hanafi</string>
+    <string name="settings_madhab_hanafi_desc">Bayangan 2x panjang objek (Ashr dimulai sekitar 45-60 menit lebih lambat).</string>
+    <string name="settings_section_high_latitude">Aturan Garis Lintang Tinggi (High-Latitude)</string>
+    <string name="settings_high_latitude_none">Otomatis (None)</string>
+    <string name="settings_high_latitude_motn">Tengah Malam (Middle of Night)</string>
+    <string name="settings_high_latitude_sotn">Sepertujuh Malam (1/7 of Night)</string>
+    <string name="settings_high_latitude_angle">Sudut Fajar/Senja (Angle)</string>
+    <string name="settings_section_offsets">Koreksi Waktu Shalat (Menit)</string>
+    <string name="settings_offset_sunrise">Koreksi Waktu Syuruq (Terbit)</string>
+    <string name="settings_section_iqamah">Jadwal Iqamah (Menit Setelah Adhan)</string>
+    <string name="settings_iqamah_disabled">Nonaktif (0m)</string>
+    <string name="settings_iqamah_minutes">%1$d mnt</string>
+    <string name="settings_section_location">Pilihan Lokasi Kota &amp; Zona Waktu</string>
+    <string name="settings_current_zone">Zona: %1$s</string>
+    <string name="settings_section_hijri_offset">Koreksi Penanggalan Hijriyah</string>
+    <string name="settings_section_hijri_rollover">Pergantian Tanggal Hijriyah</string>
+    <string name="settings_hijri_rollover_magrib">Saat Terbenam / Magrib (Tradisional Islam)</string>
+    <string name="settings_hijri_rollover_midnight">Saat Tengah Malam 00:00 (Sinkron Kalender Masehi)</string>
+    <string name="settings_section_home_reminders">Pengingat 15 Menit Sebelum Shalat</string>
+    <string name="settings_reminder_toggle_on">Pengingat 15 Menit Sebelum Shalat: AKTIF</string>
+    <string name="settings_reminder_toggle_off">Pengingat 15 Menit Sebelum Shalat: NONAKTIF</string>
+    <string name="settings_reminder_toggle_desc">Menampilkan notifikasi di layar TV 15 menit menjelang waktu adhan tiba.</string>
+    <string name="settings_section_home_adhan">Pilihan Suara Adhan per Waktu Shalat</string>
+    <string name="settings_btn_usb_file">USB / File</string>
+    <string name="settings_section_mosque_audio">Audio &amp; Highlight Mode Masjid</string>
+    <string name="settings_mosque_adhan_toggle">Suara Adhan di Mode Masjid</string>
+    <string name="settings_mosque_adhan_on">Suara Adhan di Mode Masjid: AKTIF</string>
+    <string name="settings_mosque_adhan_off">Suara Adhan di Mode Masjid: HENING (Default)</string>
+    <string name="settings_mosque_adhan_desc">Memutar suara Adhan melalui speaker TV saat digital signage aktif di masjid.</string>
+    <string name="settings_mosque_reminders_toggle">Notifikasi Pengingat di Mode Masjid</string>
+    <string name="settings_mosque_reminders_on">Notifikasi Pengingat di Mode Masjid: AKTIF</string>
+    <string name="settings_mosque_reminders_off">Notifikasi Pengingat di Mode Masjid: NONAKTIF (Default)</string>
+    <string name="settings_mosque_strike_toggle">Highlight Visual Tepat Waktu Shalat</string>
+    <string name="settings_mosque_strike_on">Highlight Visual: AKTIF (Default)</string>
+    <string name="settings_mosque_strike_off">Highlight Visual: NONAKTIF</string>
+    <string name="settings_mosque_strike_desc">Menginterupsi slideshow pengumuman dengan banner visual berkedip saat waktu shalat tiba.</string>
+    <string name="settings_section_mosque_symbol">Pilihan Ikon / Simbol Masjid</string>
+    <string name="settings_btn_import_logo_usb">Pilih Logo Masjid dari USB Flashdisk</string>
+    <string name="settings_custom_logo_active">Logo Masjid Kustom Aktif</string>
+    <string name="settings_section_mosque_font">Gaya Font Nama Masjid</string>
+    <string name="settings_section_mosque_identity">Nama &amp; Subtitle Identitas Masjid</string>
+    <string name="settings_custom_name_saved">Nama Kustom Aktif: %1$s</string>
+    <string name="settings_custom_subtitle_saved">Subtitle Kustom Aktif: %1$s</string>
+    <string name="settings_section_schedule_duration">Durasi Tampilan Jadwal Shalat</string>
+    <string name="settings_section_slides">Daftar Slide Pengumuman (%1$d dari %2$d Slide)</string>
+    <string name="settings_btn_add_image_slide">Tambah Slide Gambar (USB/TV)</string>
+    <string name="settings_btn_add_text_slide">Tambah Slide Pengumuman Teks</string>
+    <string name="settings_btn_clear_slides">Hapus Semua Slide</string>
+    <string name="settings_no_slides_title">Belum ada slide pengumuman</string>
+    <string name="settings_no_slides_desc">Tambahkan slide poster gambar dari flashdisk atau buat pengumuman teks.</string>
+    <string name="settings_section_security">Pengaturan PIN &amp; Keamanan Admin</string>
+    <string name="settings_home_pin_toggle">Lindungi Pengaturan dengan PIN di Mode Rumah</string>
+    <string name="settings_home_pin_on">Perlindungan PIN Mode Rumah: AKTIF</string>
+    <string name="settings_home_pin_off">Perlindungan PIN Mode Rumah: NONAKTIF</string>
+    <string name="settings_home_pin_desc">Wajibkan PIN untuk membuka menu pengaturan di Mode Rumah (Mode Masjid selalu mewajibkan PIN).</string>
+    <string name="settings_custom_pin_active">PIN Kustom Aktif (Aman &amp; Terenkripsi)</string>
+    <string name="settings_custom_pin_desc">Pengaturan masjid terlindungi dengan PIN kustom Anda.</string>
+    <string name="settings_using_default_pin">Masih Menggunakan PIN Bawaan (0000)</string>
+    <string name="settings_btn_change_admin_pin">Ubah PIN Admin</string>
+    <string name="settings_time_format_toggle">Format Waktu 12 / 24 Jam</string>
+    <string name="settings_time_format_12">12 Jam (AM/PM)</string>
+    <string name="settings_time_format_24">24 Jam (00:00)</string>
+    <string name="settings_arabic_names_toggle">Tampilkan Nama Shalat Bahasa Arab</string>
+
+    <string name="desc_announcement_slide">Slide Pengumuman Masjid</string>
+    <string name="desc_app_logo">Logo SalatSign</string>
+
+    <!-- About & Credits Dialog -->
+    <string name="settings_section_about">Tentang &amp; Kredit</string>
+    <string name="settings_about_app_name">SalatSign Android TV</string>
+    <string name="settings_about_version">Versi %1$s (%2$d)</string>
+    <string name="settings_about_license">Perangkat Lunak Bebas di bawah GNU General Public License v3.0 (GPL-3.0-or-later)</string>
+    <string name="settings_about_copyright">Hak Cipta (C) 2026 Rocky Adam Tauhid dan para kontributor SalatSign</string>
+    <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
+    <string name="settings_about_trademarks">SalatSign adalah merek dagang. Lihat TRADEMARKS.md untuk kebijakan lisensi merek.</string>
+    <string name="settings_about_dialog_title">Tentang SalatSign</string>
+    <string name="settings_about_libraries">Pustaka Open Source: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
+
+    <!-- Setup Wizard -->
+    <string name="wizard_welcome">Selamat Datang di SalatSign</string>
+    <string name="wizard_step_indicator">Panduan Konfigurasi Awal Android TV (Langkah %1$d dari %2$d)</string>
+    <string name="wizard_step_lang_title">Langkah 1: Pilih Bahasa Tampilan</string>
+    <string name="wizard_step_lang_desc">Pilih bahasa pengantar antarmuka dan pengumuman aplikasi.</string>
+    <string name="wizard_step_location_title">Langkah %1$d: Pilih Lokasi Kota &amp; Zona Waktu (Saat ini: %2$s)</string>
+    <string name="wizard_step_method_title">Langkah %1$d: Metode Perhitungan &amp; Mazhab Waktu Shalat</string>
+    <string name="wizard_step_mode_title">Langkah %1$d: Pilih Mode Penggunaan Aplikasi</string>
+    <string name="wizard_step_pin_title">Langkah %1$d: PIN Keamanan Admin (Pengaman TV)</string>
+    <string name="wizard_step_mosque_title">Langkah %1$d: Identitas &amp; Simbol Masjid Anda</string>
+    <string name="wizard_mode_home_title">MODE RUMAH (Personal)</string>
+    <string name="wizard_mode_home_desc">Jadwal shalat interaktif keluarga dengan navigasi kalender remote TV, pengingat 15 menit, dan suara adhan.</string>
+    <string name="wizard_mode_mosque_title">MODE MASJID (Digital Signage)</string>
+    <string name="wizard_mode_mosque_desc">Tampilan layar digital signage masjid publik tanpa logo aplikasi, slideshow jadwal &amp; poster pengumuman.</string>
+    <string name="wizard_mosque_silent_note">Mode masjid hening secara default. Anda dapat mengaktifkan suara adhan di Pengaturan.</string>
+    <string name="wizard_pin_default_title">Gunakan PIN Bawaan (0000)</string>
+    <string name="wizard_pin_default_desc">PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.</string>
+    <string name="wizard_pin_custom_title">Atur PIN Kustom Baru (4-8 Digit)</string>
+    <string name="wizard_pin_custom_desc">Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.</string>
+    <string name="wizard_pin_custom_active">PIN Kustom Aktif (Tersimpan)</string>
+</resources>

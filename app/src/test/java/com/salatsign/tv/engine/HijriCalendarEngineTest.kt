@@ -101,6 +101,33 @@ class HijriCalendarEngineTest {
     }
 
     @Test
+    fun formatHijriDate_multilingualMonthNames() {
+        val dateEn = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.EnglishHijriMonthNames,
+            yearSuffix = "AH"
+        )
+        assertTrue(dateEn.contains("Jumada al-Akhirah"))
+        assertTrue(dateEn.endsWith("AH"))
+
+        val dateId = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.IndonesianHijriMonthNames,
+            yearSuffix = "H"
+        )
+        assertTrue(dateId.contains("Jumadil Akhir"))
+        assertTrue(dateId.endsWith("H"))
+
+        val dateAr = HijriCalendarEngine.formatHijriDate(
+            date = testDate,
+            monthNames = HijriCalendarEngine.ArabicHijriMonthNames,
+            yearSuffix = "هـ"
+        )
+        assertTrue(dateAr.contains(HijriCalendarEngine.ArabicHijriMonthNames[5]))
+        assertTrue(dateAr.endsWith("هـ"))
+    }
+
+    @Test
     fun formatGregorianDate_returnsLocalizedFormat() {
         val dateId = HijriCalendarEngine.formatGregorianDate(testDate, Locale("id", "ID"))
         val dateEn = HijriCalendarEngine.formatGregorianDate(testDate, Locale.ENGLISH)
