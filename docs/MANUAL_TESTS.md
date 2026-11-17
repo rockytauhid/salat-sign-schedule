@@ -84,3 +84,66 @@ This document tracks test cases that require real Android TV hardware or emulato
 6. **Verify:**
    - Import succeeds; the prayer's adhan updates to the custom audio.
    - Trigger Adhan alarm via broadcast: verify the custom audio plays clearly through TV speakers.
+
+---
+
+## MT-3.1: Admin PIN, Lockout Protection & Inactivity Auto-Dismiss
+
+**Objective:** Verify that Mosque Mode (and optionally Home Mode) gates settings access behind a secure PBKDF2-hashed PIN, locks out brute-force attempts with exponential backoff (persisted across restarts), and automatically dismisses settings after 2 minutes of TV inactivity.
+
+### Test Setup
+- Device: Android TV running API 26+ (e.g. Sony Bravia or Emulator).
+- SalatSign configured in Mosque Mode.
+
+### Test Procedure A: PIN Verification & Change
+1. Launch SalatSign in Mosque Mode.
+2. Press `MENU` or hold `DPAD_CENTER` for 3 seconds to request Settings.
+3. Verify the `PinDialog` appears with masked dots (`● ● ● ●`) and D-pad numeric keypad (1..9, CLEAR, 0, OK).
+4. Enter default PIN `0000` using the D-pad keypad or remote number buttons -> Settings screen opens.
+5. Verify the one-time warning dialog appears: *"Anda masih menggunakan PIN bawaan (0000). Ganti sekarang?"*.
+6. Select **Ganti PIN Sekarang** -> Enter new PIN `5678` -> Confirm `5678`.
+7. Close Settings and return to Mosque signage.
+8. Trigger Settings open again:
+   - Enter `0000` -> Rejected (*"PIN salah. Sisa percobaan: 4"*).
+   - Enter `5678` -> Accepted; Settings opens.
+
+### Test Procedure B: Lockout Escalation & Persistence
+1. Trigger the PIN dialog.
+2. Deliberately enter incorrect PINs 5 consecutive times.
+3. **Verify:**
+   - On the 5th failure, screen displays: *"PIN Terkunci! Coba lagi dalam 30 detik"* in red.
+   - Keypad and remote number inputs are disabled during countdown.
+4. Force-stop the app via `adb shell am force-stop com.salatsign.tv` and re-launch.
+5. Trigger Settings open -> **Verify:** Lockout timestamp is persisted in DataStore; remaining lockout seconds are still enforced.
+6. Wait for timer to reach 0; enter wrong PIN again -> **Verify:** Lockout escalates to 60 seconds (and doubles up to 15 minutes on subsequent failures).
+7. Enter correct PIN -> **Verify:** Failed attempts counter resets to 0.
+
+### Test Procedure C: 2-Minute Inactivity Auto-Dismiss
+1. Open Settings in Mosque Mode.
+2. Place the remote control down and leave untouched.
+3. **Verify:** After exactly 2 minutes (120 seconds), Settings automatically closes and returns to the Mosque digital signage slideshow.
+
+---
+
+## MT-3.2: Reliable Admin Gesture & Kiosk Key Handling
+
+**Objective:** Verify that the 3-second `DPAD_CENTER` hold gesture works reliably on remotes that do not send repeated `ACTION_DOWN` events, `KEYCODE_MENU` directly opens settings, and `KEYCODE_BACK` is intercepted in Mosque Mode to prevent accidental exit from the public kiosk display.
+
+### Test Setup
+- Device: Android TV with standard remote control or `adb shell input keyevent`.
+- SalatSign running in Mosque Mode with setup completed.
+
+### Test Procedure A: 3-Second Hold Gesture (No Repeat Dependency)
+1. While Mosque digital signage is displaying, press and hold `DPAD_CENTER` (or `adb shell input keyevent --longpress 23`).
+2. Hold down continuously for 3 seconds.
+3. **Verify:** The 3-second coroutine timer fires and opens the Admin PIN dialog.
+4. Release before 3 seconds (quick click <1s) -> **Verify:** Gesture is cancelled; signage continues uninterrupted.
+
+### Test Procedure B: Remote Menu Key Shortcut
+1. While on Mosque signage, press `KEYCODE_MENU` (or `adb shell input keyevent 82`).
+2. **Verify:** Admin PIN dialog opens immediately.
+
+### Test Procedure C: Kiosk Mode Back-Key Interception
+1. While on Mosque digital signage (Settings closed), press `KEYCODE_BACK` (or `adb shell input keyevent 4`).
+2. **Verify:** The back key is intercepted and consumed. The application **does not** minimize or exit to Android TV Launcher.
+3. Open Settings -> press `KEYCODE_BACK` -> **Verify:** Back key closes Settings and returns to Mosque digital signage.

@@ -66,7 +66,6 @@ fun MosqueSignageScreen(
     onOpenSettings: () -> Unit
 ) {
     val screenFocusRequester = remember { FocusRequester() }
-    var centerPressStartTime by remember { mutableLongStateOf(0L) }
     val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
@@ -79,24 +78,11 @@ fun MosqueSignageScreen(
             .background(colorScheme.background)
             .focusRequester(screenFocusRequester)
             .focusable()
-            // Hidden Admin Access: Key.Menu or 3-second long-press on Key.DirectionCenter
+            // Hidden Admin Access: Key.Menu (DPAD_CENTER 3s hold handled at root Activity)
             .onKeyEvent { keyEvent ->
                 if (keyEvent.key == Key.Menu && keyEvent.type == KeyEventType.KeyUp) {
                     onOpenSettings()
                     true
-                } else if (keyEvent.key == Key.DirectionCenter) {
-                    if (keyEvent.type == KeyEventType.KeyDown) {
-                        if (centerPressStartTime == 0L) {
-                            centerPressStartTime = System.currentTimeMillis()
-                        } else if (System.currentTimeMillis() - centerPressStartTime >= 3000L) {
-                            centerPressStartTime = 0L
-                            onOpenSettings()
-                            return@onKeyEvent true
-                        }
-                    } else if (keyEvent.type == KeyEventType.KeyUp) {
-                        centerPressStartTime = 0L
-                    }
-                    false
                 } else {
                     false
                 }
