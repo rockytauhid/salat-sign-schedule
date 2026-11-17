@@ -11,11 +11,13 @@ import androidx.compose.material.icons.filled.DoorFront
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +31,7 @@ import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
+import java.io.File
 
 @Composable
 fun MosqueEmblemIcon(
@@ -38,8 +41,13 @@ fun MosqueEmblemIcon(
     modifier: Modifier = Modifier
 ) {
     if (preset == MosqueIconPreset.CUSTOM && !customLogoUri.isNullOrBlank()) {
+        val context = LocalContext.current
+        val model = remember(customLogoUri) {
+            val localFile = File(File(context.filesDir, "content/logo"), customLogoUri)
+            if (localFile.exists()) localFile else customLogoUri
+        }
         AsyncImage(
-            model = customLogoUri,
+            model = model,
             contentDescription = "Logo Masjid Kustom",
             modifier = modifier
                 .size(size)

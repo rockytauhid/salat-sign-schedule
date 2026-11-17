@@ -25,6 +25,7 @@ import com.salatsign.tv.data.model.Prayer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 
 class AdhanPlaybackService : Service() {
 
@@ -133,8 +134,14 @@ class AdhanPlaybackService : Service() {
             var customLoaded = false
             if (type == AdhanAudioType.CUSTOM_FILE && !customUriStr.isNullOrBlank()) {
                 try {
-                    player.setDataSource(applicationContext, Uri.parse(customUriStr))
-                    customLoaded = true
+                    val localAudio = File(File(filesDir, "content/audio"), customUriStr)
+                    if (localAudio.exists() && localAudio.canRead()) {
+                        player.setDataSource(localAudio.absolutePath)
+                        customLoaded = true
+                    } else {
+                        player.setDataSource(applicationContext, Uri.parse(customUriStr))
+                        customLoaded = true
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to load custom audio URI: $customUriStr. Falling back to default asset.", e)
                 }

@@ -200,6 +200,11 @@ fun MainContent(
             onUpdateScheduleDuration = { settingsViewModel.updateScheduleDuration(it) },
             onAddSampleSlide = { settingsViewModel.addSampleAnnouncementSlide() },
             onClearSlides = { settingsViewModel.clearSlides() },
+            onSetCustomLogo = { settingsViewModel.setCustomLogo(it) },
+            onSetCustomAdhan = { prayer, file, name -> settingsViewModel.setCustomAdhan(prayer, file, name) },
+            onAddImageSlide = { title, file, dur -> settingsViewModel.addImageSlide(title, file, dur) },
+            onAddTextSlide = { title, body, dur -> settingsViewModel.addTextSlide(title, body, dur) },
+            onDeleteSlide = { settingsViewModel.deleteSlide(it) },
             onRestartSetupWizard = {
                 onCloseSettings()
                 settingsViewModel.restartSetupWizard()

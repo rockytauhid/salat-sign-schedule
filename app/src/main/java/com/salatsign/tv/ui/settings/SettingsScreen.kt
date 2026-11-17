@@ -24,15 +24,22 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Mosque
-import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Usb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +57,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.salatsign.tv.BuildConfig
+import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
@@ -61,11 +69,13 @@ import com.salatsign.tv.data.model.MosqueNamePresets
 import com.salatsign.tv.data.model.MosqueSubtitlePresets
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
+import com.salatsign.tv.ui.picker.StorageFilePickerScreen
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.DarkBackground
@@ -88,12 +98,20 @@ fun SettingsScreen(
     onUpdateScheduleDuration: (Int) -> Unit,
     onAddSampleSlide: () -> Unit,
     onClearSlides: () -> Unit,
+    onSetCustomLogo: (String) -> Unit = {},
+    onSetCustomAdhan: (Prayer, String, String) -> Unit = { _, _, _ -> },
+    onAddImageSlide: (String, String, Int) -> Unit = { _, _, _ -> },
+    onAddTextSlide: (String, String, Int) -> Unit = { _, _, _ -> },
+    onDeleteSlide: (String) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
     val initialFocusRequester = remember { FocusRequester() }
     val verticalScrollState = rememberScrollState()
     val colorScheme = MaterialTheme.colorScheme
+
+    var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
+    var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
 
     LaunchedEffect(Unit) {
         initialFocusRequester.requestFocus()
@@ -458,6 +476,48 @@ fun SettingsScreen(
                     }
                 }
 
+                // Row to browse & select custom audio for each prayer from USB/TV
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val prayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
+                    for (prayer in prayers) {
+                        Surface(
+                            onClick = {
+                                pickerTargetPrayer = prayer
+                                activePickerKind = ImportKind.CUSTOM_ADHAN
+                            },
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = colorScheme.surfaceVariant,
+                                focusedContainerColor = AccentGold
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Usb,
+                                    contentDescription = null,
+                                    tint = AccentGold,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "USB / File",
+                                    style = TvTypography.BodyLabel.copy(fontSize = 11.sp, color = colorScheme.onSurface)
+                                )
+                            }
+                        }
+                    }
+                }
+
             } else {
                 // ================= MOSQUE MODE ONLY SETTINGS =================
 
@@ -527,6 +587,38 @@ fun SettingsScreen(
                                     )
                                 )
                             }
+                        }
+                    }
+                }
+
+                if (settings.mosqueIconPreset == MosqueIconPreset.CUSTOM) {
+                    Surface(
+                        onClick = { activePickerKind = ImportKind.MOSQUE_LOGO },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = colorScheme.surfaceVariant,
+                            focusedContainerColor = AccentEmerald
+                        ),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Upload,
+                                contentDescription = null,
+                                tint = AccentGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (!settings.mosqueLogoUri.isNullOrBlank())
+                                    "Ganti Logo Masjid dari USB (Aktif: ${settings.mosqueLogoUri})"
+                                else
+                                    "Pilih Logo Masjid dari USB Flashdisk (JPG / PNG)",
+                                style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                            )
                         }
                     }
                 }
@@ -689,6 +781,50 @@ fun SettingsScreen(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(
+                        onClick = { activePickerKind = ImportKind.SLIDE_IMAGE },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = null,
+                                tint = AccentEmerald,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Tambah Slide Gambar (USB/TV)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                        }
+                    }
+
+                    Surface(
+                        onClick = {
+                            onAddTextSlide("Maklumat Jamaah", "Mari luruskan dan rapatkan shaf sebelum memulai shalat berjamaah.", 15)
+                        },
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surface),
+                        modifier = Modifier.tvFocusable()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.NoteAdd,
+                                contentDescription = null,
+                                tint = AccentGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Tambah Slide Teks", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                        }
+                    }
+
                     if (BuildConfig.DEBUG) {
                         Surface(
                             onClick = onAddSampleSlide,
@@ -700,14 +836,7 @@ fun SettingsScreen(
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.AddPhotoAlternate,
-                                    contentDescription = null,
-                                    tint = AccentEmerald,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Tambah Contoh Pengumuman (Debug)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                                Text("Contoh (Debug)", style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
                             }
                         }
                     }
@@ -720,16 +849,120 @@ fun SettingsScreen(
                             modifier = Modifier.tvFocusable()
                         ) {
                             Text(
-                                text = "Hapus Semua Slide (${slides.size})",
+                                text = "Hapus Semua (${slides.size})",
                                 style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = Color(0xFFEF4444)),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )
                         }
                     }
                 }
+
+                if (slides.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        slides.forEachIndexed { index, slide ->
+                            Surface(
+                                onClick = {},
+                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                                colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .background(colorScheme.surface, RoundedCornerShape(4.dp))
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "#${index + 1} ${if (slide.type == SlideType.IMAGE) "GAMBAR" else "TEKS"}",
+                                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = AccentEmerald, fontWeight = FontWeight.Bold)
+                                            )
+                                        }
+                                        Text(
+                                            text = slide.title.ifBlank { "(Tanpa Judul)" },
+                                            style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                        )
+                                        Text(
+                                            text = "(${slide.durationSeconds} detik)",
+                                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                                        )
+                                    }
+
+                                    Surface(
+                                        onClick = { onDeleteSlide(slide.id) },
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(
+                                            containerColor = colorScheme.surface,
+                                            focusedContainerColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Hapus slide",
+                                                tint = Color(0xFFEF4444),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Hapus",
+                                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = Color(0xFFEF4444))
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Overlay: TV D-pad Storage File Picker
+        if (activePickerKind != null) {
+            StorageFilePickerScreen(
+                kind = activePickerKind!!,
+                title = when (activePickerKind) {
+                    ImportKind.MOSQUE_LOGO -> "Pilih Logo Masjid (USB / TV)"
+                    ImportKind.CUSTOM_ADHAN -> "Pilih Audio Adhan (USB / TV)"
+                    ImportKind.SLIDE_IMAGE -> "Pilih Gambar Slide Pengumuman (USB / TV)"
+                    else -> "Pilih File Media"
+                },
+                onFileImported = { fileName ->
+                    when (activePickerKind) {
+                        ImportKind.MOSQUE_LOGO -> onSetCustomLogo(fileName)
+                        ImportKind.CUSTOM_ADHAN -> {
+                            val prayer = pickerTargetPrayer
+                            if (prayer != null) {
+                                onSetCustomAdhan(prayer, fileName, "Adhan Kustom (${fileName.take(15)})")
+                            }
+                        }
+                        ImportKind.SLIDE_IMAGE -> {
+                            onAddImageSlide("Pengumuman Masjid", fileName, 15)
+                        }
+                        null -> {}
+                    }
+                    activePickerKind = null
+                    pickerTargetPrayer = null
+                },
+                onDismiss = {
+                    activePickerKind = null
+                    pickerTargetPrayer = null
+                }
+            )
         }
     }
 }

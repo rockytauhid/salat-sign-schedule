@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.salatsign.tv.BuildConfig
 import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.AdhanAudioOption
+import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
@@ -15,6 +16,7 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.SlideContainer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.data.repository.ContentRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -140,6 +142,60 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val current = contentRepository.slidesFlow.value
             contentRepository.replaceAll(current.revision, emptyList())
         }
+    }
+
+    fun deleteSlide(slideId: String) {
+        viewModelScope.launch {
+            contentRepository.deleteSlide(slideId)
+        }
+    }
+
+    fun addTextSlide(title: String, body: String, durationSeconds: Int) {
+        viewModelScope.launch {
+            val slide = AnnouncementSlide(
+                id = "slide_${System.currentTimeMillis()}",
+                type = SlideType.TEXT,
+                title = title.take(ContentRepository.MAX_TITLE_LENGTH),
+                body = body.take(ContentRepository.MAX_BODY_LENGTH),
+                durationSeconds = durationSeconds.coerceIn(
+                    ContentRepository.MIN_DURATION_SECONDS,
+                    ContentRepository.MAX_DURATION_SECONDS
+                )
+            )
+            contentRepository.addSlide(slide)
+        }
+    }
+
+    fun addImageSlide(title: String, imageFileName: String, durationSeconds: Int) {
+        viewModelScope.launch {
+            val slide = AnnouncementSlide(
+                id = "slide_${System.currentTimeMillis()}",
+                type = SlideType.IMAGE,
+                title = title.take(ContentRepository.MAX_TITLE_LENGTH),
+                imageFile = imageFileName,
+                durationSeconds = durationSeconds.coerceIn(
+                    ContentRepository.MIN_DURATION_SECONDS,
+                    ContentRepository.MAX_DURATION_SECONDS
+                )
+            )
+            contentRepository.addSlide(slide)
+        }
+    }
+
+    fun setCustomLogo(relativeFileName: String) {
+        viewModelScope.launch {
+            repository.setMosqueIconPreset(MosqueIconPreset.CUSTOM)
+            repository.updateMosqueBranding(settings.value.mosqueName, settings.value.mosqueSubtitle, relativeFileName)
+        }
+    }
+
+    fun setCustomAdhan(prayer: Prayer, relativeFileName: String, displayName: String) {
+        val option = AdhanAudioOption(
+            type = AdhanAudioType.CUSTOM_FILE,
+            displayName = displayName,
+            customUri = relativeFileName
+        )
+        setAdhanAudio(prayer, option)
     }
 
     fun completeSetup() {
