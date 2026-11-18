@@ -264,4 +264,28 @@
     <!-- Home Adhan Hint -->
     <string name="home_adhan_silent_hint">No adhan audio installed: import one from USB or storage in Settings.</string>
     <string name="home_adhan_silent_hint_dismiss">Dismiss</string>
+
+    <!-- Jumu'ah (Friday) Schedule (Mosque Mode only) -->
+    <string name="settings_section_jumuah">Jumu\'ah (Friday) Schedule</string>
+    <string name="settings_jumuah_desc">Configure Friday prayer sittings and timings. Applied in Mosque Mode only.</string>
+    <string name="settings_jumuah_mode_title">Jumu\'ah Calculation Mode</string>
+    <string name="settings_jumuah_mode_fixed">Fixed Clock Time</string>
+    <string name="settings_jumuah_mode_fixed_desc">Mosque holds Jumu\'ah at fixed wall-clock times year-round (e.g. 1:00 pm).</string>
+    <string name="settings_jumuah_mode_after_zuhr">After Zuhr Offset</string>
+    <string name="settings_jumuah_mode_after_zuhr_desc">Jumu\'ah starts N minutes after calculated Zuhr time.</string>
+    <string name="settings_jumuah_sittings_count_title">Number of Sittings</string>
+    <string name="settings_jumuah_sittings_1">1 Sitting</string>
+    <string name="settings_jumuah_sittings_2">2 Sittings</string>
+    <string name="settings_jumuah_sittings_3">3 Sittings</string>
+    <string name="settings_jumuah_sitting_n">Sitting %1$d</string>
+    <string name="settings_jumuah_zuhr_begins">Zuhr begins %1$s</string>
+    <string name="settings_jumuah_friday_adhan_timing_title">Friday Adhan Alert Timing</string>
+    <string name="settings_jumuah_adhan_at_zuhr">At Zuhr Time</string>
+    <string name="settings_jumuah_adhan_at_zuhr_desc">Call adhan at calculated astronomical Zuhr time (Default).</string>
+    <string name="settings_jumuah_adhan_at_jumuah">At First Jumu\'ah Sitting</string>
+    <string name="settings_jumuah_adhan_at_jumuah_desc">Call adhan at the start of the first Jumu\'ah sitting.</string>
+    <string name="settings_jumuah_warning_before_zuhr">Warning: Sitting %1$s is before Zuhr (%2$s) on %3$s</string>
+    <string name="settings_jumuah_warning_after_asr">Invalid: Sitting %1$s is on or after Asr (%2$s) on %3$s</string>
+    <string name="wizard_step_jumuah_title">Step %1$d: Friday Jumu\'ah Schedule</string>
+    <string name="wizard_btn_skip_jumuah">Skip (Configure later in Settings)</string>
 </resources>

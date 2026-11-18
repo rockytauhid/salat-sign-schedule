@@ -21,6 +21,16 @@ enum class ThemeMode(val displayName: String) {
     AUTO_DAY_NIGHT("Otomatis (Siang Terang / Malam Gelap)")
 }
 
+enum class JumuahMode {
+    FIXED,
+    AFTER_ZUHR
+}
+
+enum class FridayAdhanTiming {
+    AT_ZUHR,
+    AT_JUMUAH
+}
+
 enum class MosqueIconPreset(val displayName: String) {
     DOME_CRESCENT("Kubah & Bulan Sabit"),
     MINARET("Menara Masjid"),
@@ -132,6 +142,10 @@ data class AppSettings(
     val mosqueModeAdhanEnabled: Boolean = false,
     val mosqueModeRemindersEnabled: Boolean = false,
     val showStrikeHighlight: Boolean = true,
+    // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+    val jumuahMode: JumuahMode = JumuahMode.FIXED,
+    val jumuahTimes: List<String> = emptyList(),
+    val fridayAdhanTiming: FridayAdhanTiming = FridayAdhanTiming.AT_ZUHR,
     // Localization & Display Options
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val is24HourFormat: Boolean = true,

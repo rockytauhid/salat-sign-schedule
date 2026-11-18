@@ -7,6 +7,8 @@ import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
@@ -66,4 +68,7 @@ interface ISettingsRepository {
     suspend fun setAppLanguage(language: AppLanguage)
     suspend fun set24HourFormat(enabled: Boolean)
     suspend fun setShowArabicPrayerNames(enabled: Boolean)
+    suspend fun setJumuahMode(mode: JumuahMode)
+    suspend fun setJumuahTimes(times: List<String>)
+    suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming)
 }

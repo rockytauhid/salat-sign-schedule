@@ -19,6 +19,8 @@ import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
@@ -80,6 +82,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val MOSQUE_ICON_PRESET = stringPreferencesKey("mosque_icon_preset")
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
+
+        // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+        val JUMUAH_MODE = stringPreferencesKey("jumuah_mode")
+        val JUMUAH_TIMES = stringPreferencesKey("jumuah_times")
+        val FRIDAY_ADHAN_TIMING = stringPreferencesKey("friday_adhan_timing")
 
         // Security / Admin PIN keys
         val HOME_MODE_PIN_REQUIRED = booleanPreferencesKey("home_mode_pin_required")
@@ -162,6 +169,13 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
 
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
 
+            val jumuahModeStr = preferences[PreferencesKeys.JUMUAH_MODE] ?: JumuahMode.FIXED.name
+            val jumuahMode = runCatching { JumuahMode.valueOf(jumuahModeStr) }.getOrDefault(JumuahMode.FIXED)
+            val jumuahTimesRaw = preferences[PreferencesKeys.JUMUAH_TIMES] ?: ""
+            val jumuahTimes = if (jumuahTimesRaw.isBlank()) emptyList() else jumuahTimesRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            val fridayAdhanTimingStr = preferences[PreferencesKeys.FRIDAY_ADHAN_TIMING] ?: FridayAdhanTiming.AT_ZUHR.name
+            val fridayAdhanTiming = runCatching { FridayAdhanTiming.valueOf(fridayAdhanTimingStr) }.getOrDefault(FridayAdhanTiming.AT_ZUHR)
+
             val homeModePinRequired = preferences[PreferencesKeys.HOME_MODE_PIN_REQUIRED] ?: false
             val hasCustomPin = preferences[PreferencesKeys.HAS_CUSTOM_PIN] ?: false
             val pinSaltHex = preferences[PreferencesKeys.PIN_SALT_HEX] ?: ""
@@ -203,6 +217,9 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 mosqueModeAdhanEnabled = mosqueModeAdhanEnabled,
                 mosqueModeRemindersEnabled = mosqueModeRemindersEnabled,
                 showStrikeHighlight = showStrikeHighlight,
+                jumuahMode = jumuahMode,
+                jumuahTimes = jumuahTimes,
+                fridayAdhanTiming = fridayAdhanTiming,
                 appLanguage = appLanguage,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
@@ -499,6 +516,24 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setShowArabicPrayerNames(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] = enabled
+        }
+    }
+
+    override suspend fun setJumuahMode(mode: JumuahMode) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.JUMUAH_MODE] = mode.name
+        }
+    }
+
+    override suspend fun setJumuahTimes(times: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.JUMUAH_TIMES] = times.take(3).joinToString(",")
+        }
+    }
+
+    override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.FRIDAY_ADHAN_TIMING] = timing.name
         }
     }
 }

@@ -13,7 +13,9 @@ data class PrayerTimeItem(
     val isNext: Boolean = false,
     val isActive: Boolean = false,
     val isFriday: Boolean = false,
-    val iqamahMinutesAfter: Int = 0
+    val iqamahMinutesAfter: Int = 0,
+    val jumuahSittings: List<LocalTime> = emptyList(),
+    val secondaryTimeNote: String? = null
 ) {
     val formattedTime: String
         get() = time?.format(TimeFormatter24) ?: "--:--"

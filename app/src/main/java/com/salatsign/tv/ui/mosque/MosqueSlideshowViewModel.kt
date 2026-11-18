@@ -95,12 +95,16 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                     referenceZoned = nowZoned,
                     hijriOffsetDays = settings.hijriOffsetDays,
                     hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
-                    iqamahOffsets = settings.iqamahOffsets()
+                    iqamahOffsets = settings.iqamahOffsets(),
+                    isMosqueMode = settings.isMosqueMode,
+                    jumuahMode = settings.jumuahMode,
+                    jumuahTimes = settings.jumuahTimes,
+                    is24HourFormat = settings.is24HourFormat
                 )
 
                 // Check if currently within exact prayer strike window (5 minutes)
                 val strikingPrayer = if (settings.showStrikeHighlight) {
-                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5)
+                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5, isMosqueMode = settings.isMosqueMode)
                 } else null
 
                 if (strikingPrayer != null) {
@@ -157,12 +161,16 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                             referenceZoned = slideNowZoned,
                             hijriOffsetDays = slideSettings.hijriOffsetDays,
                             hijriChangeAtMidnight = slideSettings.hijriChangeAtMidnight,
-                            iqamahOffsets = slideSettings.iqamahOffsets()
+                            iqamahOffsets = slideSettings.iqamahOffsets(),
+                            isMosqueMode = slideSettings.isMosqueMode,
+                            jumuahMode = slideSettings.jumuahMode,
+                            jumuahTimes = slideSettings.jumuahTimes,
+                            is24HourFormat = slideSettings.is24HourFormat
                         )
 
                         // Check strike at the start of this slide
                         val startStrike = if (slideSettings.showStrikeHighlight) {
-                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5)
+                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5, isMosqueMode = slideSettings.isMosqueMode)
                         } else null
 
                         if (startStrike != null) {
@@ -222,7 +230,11 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             referenceZoned = nowZoned,
             hijriOffsetDays = settings.hijriOffsetDays,
             hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
-            iqamahOffsets = settings.iqamahOffsets()
+            iqamahOffsets = settings.iqamahOffsets(),
+            isMosqueMode = settings.isMosqueMode,
+            jumuahMode = settings.jumuahMode,
+            jumuahTimes = settings.jumuahTimes,
+            is24HourFormat = settings.is24HourFormat
         )
 
         // If interrupted active prayer is present, override isActive flag

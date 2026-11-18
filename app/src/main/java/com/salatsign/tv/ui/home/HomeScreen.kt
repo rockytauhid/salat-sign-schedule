@@ -164,11 +164,7 @@ fun NextPrayerSpotlightCard(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
-        stringResource(R.string.prayer_jumuah)
-    } else {
-        stringResource(nextPrayer.prayer.labelRes())
-    }
+    val prayerLabel = stringResource(nextPrayer.prayer.labelRes())
 
     Card(
         onClick = {},
@@ -368,6 +364,7 @@ fun PrayerCardsRow(
     prayers: List<PrayerTimeItem>,
     is24HourFormat: Boolean = true,
     showArabicPrayerNames: Boolean = true,
+    isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -379,6 +376,7 @@ fun PrayerCardsRow(
                 item = item,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
+                isMosqueMode = isMosqueMode,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
@@ -392,10 +390,11 @@ fun PrayerCard(
     item: PrayerTimeItem,
     is24HourFormat: Boolean = true,
     showArabicPrayerNames: Boolean = true,
+    isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (item.prayer == Prayer.ZUHUR && item.isFriday) {
+    val prayerLabel = if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
         stringResource(R.string.prayer_jumuah)
     } else {
         stringResource(item.prayer.labelRes())
@@ -460,6 +459,29 @@ fun PrayerCard(
                     TvTypography.InactivePrayerTime.copy(color = colorScheme.onSurface)
                 }
             )
+
+            // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for Mosque Mode
+            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
+                if (item.secondaryTimeNote != null) {
+                    Text(
+                        text = item.secondaryTimeNote,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 11.sp,
+                            color = AccentGold
+                        )
+                    )
+                }
+                if (item.jumuahSittings.size > 1) {
+                    val s2 = item.jumuahSittings[1].format(if (is24HourFormat) PrayerTimeItem.TimeFormatter24 else PrayerTimeItem.TimeFormatter12)
+                    Text(
+                        text = stringResource(R.string.settings_jumuah_sitting_n, 2) + ": " + s2,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 10.sp,
+                            color = colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+            }
 
             // Iqamah indicator if configured
             val formattedIqamah = item.formattedIqamahTime(is24HourFormat)

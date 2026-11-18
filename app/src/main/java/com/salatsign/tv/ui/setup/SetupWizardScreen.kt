@@ -62,6 +62,8 @@ import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
@@ -85,6 +87,7 @@ fun SetupWizardScreen(
     onSelectMosqueName: (String) -> Unit,
     onSelectMosqueIcon: (MosqueIconPreset) -> Unit,
     onSetAdminPin: (String) -> Unit = {},
+    onSetJumuahConfig: (JumuahMode, List<String>) -> Unit = { _, _ -> },
     onCompleteSetup: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
@@ -94,7 +97,7 @@ fun SetupWizardScreen(
     val colorScheme = MaterialTheme.colorScheme
 
     val includeLanguageStep = AppLanguage.isMultiLanguageShipped
-    val maxSteps = if (settings.isMosqueMode) (if (includeLanguageStep) 6 else 5) else (if (includeLanguageStep) 5 else 4)
+    val maxSteps = if (settings.isMosqueMode) (if (includeLanguageStep) 7 else 6) else (if (includeLanguageStep) 5 else 4)
     val context = LocalContext.current
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -681,6 +684,120 @@ fun SetupWizardScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    7 -> {
+                        // Step 7: Friday Jumu'ah Prayer Schedule (Only if Mosque Mode)
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = stringResource(R.string.wizard_step_jumuah_title, if (includeLanguageStep) 7 else 6),
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                            )
+
+                            Text(
+                                text = stringResource(R.string.settings_jumuah_desc),
+                                style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                // Preset 1: 1 Sitting at 1:00 PM
+                                val is1Pm = (settings.jumuahMode == JumuahMode.FIXED && settings.jumuahTimes == listOf("13:00"))
+                                Card(
+                                    onClick = { onSetJumuahConfig(JumuahMode.FIXED, listOf("13:00")) },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (is1Pm) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .focusRequester(initialFocusRequester)
+                                        .then(
+                                            if (is1Pm) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.settings_jumuah_sittings_1),
+                                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = if (is1Pm) AccentEmerald else colorScheme.onSurface)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "1:00 pm (Fixed)",
+                                            style = TvTypography.ActivePrayerTime.copy(fontSize = 22.sp, color = AccentEmerald)
+                                        )
+                                    }
+                                }
+
+                                // Preset 2: 2 Sittings at 12:30 PM & 1:30 PM
+                                val is2Sittings = (settings.jumuahMode == JumuahMode.FIXED && settings.jumuahTimes == listOf("12:30", "13:30"))
+                                Card(
+                                    onClick = { onSetJumuahConfig(JumuahMode.FIXED, listOf("12:30", "13:30")) },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (is2Sittings) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (is2Sittings) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.settings_jumuah_sittings_2),
+                                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = if (is2Sittings) AccentEmerald else colorScheme.onSurface)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "12:30 & 1:30 pm",
+                                            style = TvTypography.ActivePrayerTime.copy(fontSize = 22.sp, color = AccentEmerald)
+                                        )
+                                    }
+                                }
+
+                                // Preset 3: 45 min after calculated Zuhr
+                                val isAfterZuhr = (settings.jumuahMode == JumuahMode.AFTER_ZUHR && settings.jumuahTimes == listOf("45"))
+                                Card(
+                                    onClick = { onSetJumuahConfig(JumuahMode.AFTER_ZUHR, listOf("45")) },
+                                    colors = CardDefaults.colors(
+                                        containerColor = if (isAfterZuhr) colorScheme.surfaceVariant else colorScheme.surface
+                                    ),
+                                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .tvFocusable()
+                                        .then(
+                                            if (isAfterZuhr) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
+                                            else Modifier
+                                        )
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.settings_jumuah_mode_after_zuhr),
+                                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = if (isAfterZuhr) AccentEmerald else colorScheme.onSurface)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "+45 min",
+                                            style = TvTypography.ActivePrayerTime.copy(fontSize = 22.sp, color = AccentEmerald)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.wizard_btn_skip_jumuah),
+                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.6f))
+                            )
                         }
                     }
                 }

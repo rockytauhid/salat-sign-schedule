@@ -267,6 +267,10 @@ fun MainContent(
             onSelectMosqueName = { settingsViewModel.setMosqueName(it) },
             onSelectMosqueIcon = { settingsViewModel.setMosqueIconPreset(it) },
             onSetAdminPin = { settingsViewModel.setCustomPin(it) },
+            onSetJumuahConfig = { mode, times ->
+                settingsViewModel.setJumuahMode(mode)
+                settingsViewModel.setJumuahTimes(times)
+            },
             onCompleteSetup = { settingsViewModel.completeSetup() }
         )
     } else if (isSettingsOpen) {
@@ -309,6 +313,9 @@ fun MainContent(
             onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
             onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
             onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
+            onSetJumuahMode = { settingsViewModel.setJumuahMode(it) },
+            onSetJumuahTimes = { settingsViewModel.setJumuahTimes(it) },
+            onSetFridayAdhanTiming = { settingsViewModel.setFridayAdhanTiming(it) },
             onRestartSetupWizard = {
                 onCloseSettings()
                 settingsViewModel.restartSetupWizard()

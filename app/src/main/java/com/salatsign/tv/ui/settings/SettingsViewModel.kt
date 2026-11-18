@@ -354,4 +354,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.setShowArabicPrayerNames(enabled)
         }
     }
+
+    fun setJumuahMode(mode: com.salatsign.tv.data.model.JumuahMode) {
+        viewModelScope.launch {
+            repository.setJumuahMode(mode)
+            val updated = settings.value.copy(jumuahMode = mode)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setJumuahTimes(times: List<String>) {
+        viewModelScope.launch {
+            repository.setJumuahTimes(times)
+            val updated = settings.value.copy(jumuahTimes = times)
+            scheduler.scheduleNext(updated)
+        }
+    }
+
+    fun setFridayAdhanTiming(timing: com.salatsign.tv.data.model.FridayAdhanTiming) {
+        viewModelScope.launch {
+            repository.setFridayAdhanTiming(timing)
+            val updated = settings.value.copy(fridayAdhanTiming = timing)
+            scheduler.scheduleNext(updated)
+        }
+    }
 }
