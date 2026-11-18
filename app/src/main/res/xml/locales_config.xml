@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="en-AU" />
-    <locale android:name="in" />
-    <locale android:name="ar" />
 </locale-config>

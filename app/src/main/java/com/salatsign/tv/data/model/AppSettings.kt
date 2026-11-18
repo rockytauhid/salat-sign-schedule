@@ -7,7 +7,12 @@ enum class AppLanguage {
     SYSTEM,
     EN,
     ID,
-    AR
+    AR;
+
+    companion object {
+        val ShippedLanguages: List<AppLanguage> = listOf(EN) // Scoped to English only for launch release (F3)
+        val isMultiLanguageShipped: Boolean get() = ShippedLanguages.size > 1
+    }
 }
 
 enum class ThemeMode(val displayName: String) {

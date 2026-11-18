@@ -93,7 +93,8 @@ fun SetupWizardScreen(
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
 
-    val maxSteps = if (settings.isMosqueMode) 6 else 5
+    val includeLanguageStep = AppLanguage.isMultiLanguageShipped
+    val maxSteps = if (settings.isMosqueMode) (if (includeLanguageStep) 6 else 5) else (if (includeLanguageStep) 5 else 4)
     val context = LocalContext.current
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -186,7 +187,8 @@ fun SetupWizardScreen(
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                when (currentStep) {
+                val stepKey = if (includeLanguageStep) currentStep else currentStep + 1
+                when (stepKey) {
                     1 -> {
                         // Step 1: Language Chooser
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {

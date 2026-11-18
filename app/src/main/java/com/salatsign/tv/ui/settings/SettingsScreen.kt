@@ -365,47 +365,49 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Display Language Selector
-            Text(
-                text = stringResource(R.string.settings_section_language),
-                style = TvTypography.CardTitle.copy(color = AccentGold)
-            )
+            // Section: Display Language Selector (shown only when multiple languages ship - F3)
+            if (AppLanguage.isMultiLanguageShipped) {
+                Text(
+                    text = stringResource(R.string.settings_section_language),
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                for (lang in AppLanguage.entries) {
-                    val isSelected = (settings.appLanguage == lang)
-                    Card(
-                        onClick = { onSetAppLanguage(lang) },
-                        colors = CardDefaults.colors(
-                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
-                        ),
-                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
-                            .then(
-                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                else Modifier
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    for (lang in AppLanguage.entries) {
+                        val isSelected = (settings.appLanguage == lang)
+                        Card(
+                            onClick = { onSetAppLanguage(lang) },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                    else Modifier
+                                )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Language,
-                                contentDescription = null,
-                                tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(lang.labelRes()),
-                                style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                            )
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = null,
+                                    tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(lang.labelRes()),
+                                    style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                )
+                            }
                         }
                     }
                 }
