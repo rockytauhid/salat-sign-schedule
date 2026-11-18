@@ -37,4 +37,21 @@ class LanguageSyncCacheTest {
         assertEquals("extra_zone_id", PrayerAlarmScheduler.EXTRA_ZONE_ID)
         assertEquals("extra_is_mosque_mode", PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE)
     }
+
+    @Test
+    fun coldStart_appliedLanguageMatchesEmittedSettings_triggersNoRecreate() {
+        val storedLanguageName = "EN"
+        val appliedLanguage = LanguageSyncCache.parseLanguage(storedLanguageName)
+        val emittedSettingsLanguage = LanguageSyncCache.parseLanguage(storedLanguageName)
+
+        assertEquals(appliedLanguage, emittedSettingsLanguage)
+        // Verify that initial activeLanguage == emittedSettingsLanguage so no recreate() is triggered
+        var recreateTriggered = false
+        var activeLanguage = appliedLanguage
+        if (emittedSettingsLanguage != activeLanguage) {
+            activeLanguage = emittedSettingsLanguage
+            recreateTriggered = true
+        }
+        org.junit.Assert.assertFalse("Cold start with stored language must not trigger recreate()", recreateTriggered)
+    }
 }

@@ -74,11 +74,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val appliedLanguage = LanguageSyncCache.getLanguage(this)
+
         setContent {
             val settings by settingsViewModel.settings.collectAsState()
             val homeUiState by homeViewModel.uiState.collectAsState()
 
-            var activeLanguage by remember { mutableStateOf(settings.appLanguage) }
+            var activeLanguage by remember { mutableStateOf(appliedLanguage) }
             LaunchedEffect(settings.appLanguage) {
                 if (settings.appLanguage != activeLanguage) {
                     activeLanguage = settings.appLanguage
