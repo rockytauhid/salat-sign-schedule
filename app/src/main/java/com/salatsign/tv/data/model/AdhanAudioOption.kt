@@ -12,21 +12,21 @@ enum class AdhanAudioType {
 
 data class AdhanAudioOption(
     val type: AdhanAudioType = AdhanAudioType.SILENT,
-    val displayName: String = "Hening / Nonaktif",
+    val displayName: String = "",
     val customUri: String? = null
 ) {
     companion object {
         val DefaultStandard = AdhanAudioOption(
             type = AdhanAudioType.DEFAULT_STANDARD,
-            displayName = "Adhan Standar"
+            displayName = ""
         )
         val DefaultSubuh = AdhanAudioOption(
             type = AdhanAudioType.DEFAULT_SUBUH,
-            displayName = "Adhan Subuh (Khusus)"
+            displayName = ""
         )
         val Silent = AdhanAudioOption(
             type = AdhanAudioType.SILENT,
-            displayName = "Hening / Nonaktif"
+            displayName = ""
         )
     }
 }

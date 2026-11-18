@@ -94,6 +94,7 @@ import com.salatsign.tv.engine.JumuahWarningReason
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
+import com.salatsign.tv.ui.common.displayLabel
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
@@ -1085,7 +1086,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = stringResource(currentOption.labelRes()),
+                                    text = currentOption.displayLabel(),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,

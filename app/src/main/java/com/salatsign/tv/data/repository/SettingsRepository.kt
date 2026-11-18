@@ -407,7 +407,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.adhanTypeKey(prayer)] = option.type.name
-            prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
+            if (option.type == AdhanAudioType.CUSTOM_FILE && option.displayName.isNotBlank()) {
+                prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
+            } else {
+                prefs.remove(PreferencesKeys.adhanNameKey(prayer))
+            }
             if (option.customUri != null) {
                 prefs[PreferencesKeys.adhanUriKey(prayer)] = option.customUri
             } else {

@@ -3,6 +3,8 @@
 
 package com.salatsign.tv.ui.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
@@ -63,6 +65,15 @@ fun AdhanAudioType.labelRes(): Int {
 }
 
 fun AdhanAudioOption.labelRes(): Int = type.labelRes()
+
+@Composable
+fun AdhanAudioOption.displayLabel(): String {
+    return if (type == AdhanAudioType.CUSTOM_FILE && displayName.isNotBlank()) {
+        displayName
+    } else {
+        stringResource(labelRes())
+    }
+}
 
 fun AppLanguage.labelRes(): Int {
     return when (this) {
