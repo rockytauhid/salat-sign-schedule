@@ -77,6 +77,9 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                                         putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayerName)
                                         putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE, adhanType)
                                         putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI, adhanUri)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_LANGUAGE, settings.appLanguage.name)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_ZONE_ID, settings.zoneId)
+                                        putExtra(PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE, settings.isMosqueMode)
                                     }
                                     ContextCompat.startForegroundService(context, serviceIntent)
                                 } else {

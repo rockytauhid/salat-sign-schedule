@@ -29,6 +29,9 @@ class PrayerAlarmScheduler(private val context: Context) {
         const val EXTRA_ADHAN_TYPE = "extra_adhan_type"
         const val EXTRA_ADHAN_URI = "extra_adhan_uri"
         const val EXTRA_SCHEDULED_AT_EPOCH_MILLIS = "extra_scheduled_at_epoch_millis"
+        const val EXTRA_LANGUAGE = "extra_language"
+        const val EXTRA_ZONE_ID = "extra_zone_id"
+        const val EXTRA_IS_MOSQUE_MODE = "extra_is_mosque_mode"
 
         const val REQUEST_CODE_ADHAN = 100
         const val REQUEST_CODE_REMINDER = 200

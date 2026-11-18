@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.data.repository.LanguageSyncCache
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.service.AdhanPlaybackService
 import com.salatsign.tv.service.PrayerAlarmScheduler
@@ -42,9 +43,7 @@ import com.salatsign.tv.ui.setup.SetupWizardScreen
 import com.salatsign.tv.ui.theme.SalatSignTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.LocalTime
 
 class MainActivity : ComponentActivity() {
@@ -58,11 +57,7 @@ class MainActivity : ComponentActivity() {
     private val isPinDialogOpen = mutableStateOf(false)
 
     override fun attachBaseContext(newBase: Context) {
-        val language = runCatching {
-            runBlocking {
-                SettingsRepository(newBase).appSettingsFlow.first().appLanguage
-            }
-        }.getOrDefault(AppLanguage.SYSTEM)
+        val language = LanguageSyncCache.getLanguage(newBase)
         super.attachBaseContext(LocaleHelper.wrap(newBase, language))
     }
 

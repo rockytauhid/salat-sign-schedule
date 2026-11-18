@@ -147,7 +147,10 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val showStrikeHighlight = preferences[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] ?: true
 
             val appLanguageStr = preferences[PreferencesKeys.APP_LANGUAGE] ?: AppLanguage.SYSTEM.name
-            val appLanguage = runCatching { AppLanguage.valueOf(appLanguageStr) }.getOrDefault(AppLanguage.SYSTEM)
+            val appLanguage = LanguageSyncCache.parseLanguage(appLanguageStr)
+            if (LanguageSyncCache.getLanguage(context) != appLanguage) {
+                LanguageSyncCache.setLanguage(context, appLanguage)
+            }
             val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: true
             val showArabicPrayerNames = preferences[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] ?: true
 
@@ -506,6 +509,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     }
 
     override suspend fun setAppLanguage(language: AppLanguage) {
+        LanguageSyncCache.setLanguage(context, language)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.APP_LANGUAGE] = language.name
         }
