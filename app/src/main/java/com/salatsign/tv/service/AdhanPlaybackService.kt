@@ -25,15 +25,20 @@ import com.salatsign.tv.MainActivity
 import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
+import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.ui.common.LocaleHelper
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import com.salatsign.tv.ui.common.labelRes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.time.DayOfWeek
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class AdhanPlaybackService : Service() {
 
@@ -46,7 +51,6 @@ class AdhanPlaybackService : Service() {
         private const val TAG = "AdhanPlaybackService"
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "channel_adhan_playback"
-        const val CHANNEL_NAME = "Pemutaran Adhan"
 
         private val _isPlaying = MutableStateFlow(false)
         val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -80,7 +84,6 @@ class AdhanPlaybackService : Service() {
         }
 
         val prayerName = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME) ?: "SUBUH"
-        val prayerDisplayName = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_DISPLAY_NAME) ?: "Waktu Shalat"
         val adhanTypeStr = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE)
         val customUriStr = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI)
 
@@ -91,12 +94,15 @@ class AdhanPlaybackService : Service() {
             if (prayer == Prayer.SUBUH) AdhanAudioType.DEFAULT_SUBUH else AdhanAudioType.DEFAULT_STANDARD
         )
 
-        val language = runCatching {
+        val settings = runCatching {
             runBlocking {
-                SettingsRepository(this@AdhanPlaybackService).appSettingsFlow.first().appLanguage
+                SettingsRepository(this@AdhanPlaybackService).appSettingsFlow.first()
             }
-        }.getOrDefault(AppLanguage.SYSTEM)
-        val localizedContext = LocaleHelper.wrap(this, language)
+        }.getOrDefault(AppSettings())
+        val localizedContext = LocaleHelper.wrap(this, settings.appLanguage)
+        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+        val isFriday = ZonedDateTime.now(zone).dayOfWeek == DayOfWeek.FRIDAY
+        val prayerDisplayName = localizedContext.getString(prayer.labelRes(isFriday = isFriday && settings.isMosqueMode))
 
         createNotificationChannel(localizedContext)
         val notification = buildForegroundNotification(localizedContext, prayerDisplayName)
@@ -125,8 +131,7 @@ class AdhanPlaybackService : Service() {
             return
         }
 
-        // Code comment per remediation plan:
-        // USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
+        // Note: USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -178,7 +183,7 @@ class AdhanPlaybackService : Service() {
 
                 mp.start()
                 _isPlaying.value = true
-                Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.displayName}.")
+                Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.name}.")
             }
 
             player.setOnCompletionListener {

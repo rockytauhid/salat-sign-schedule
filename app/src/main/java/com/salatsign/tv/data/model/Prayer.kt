@@ -5,32 +5,26 @@ package com.salatsign.tv.data.model
 
 enum class Prayer(
     val id: String,
-    val displayName: String,
     val arabicName: String
 ) {
     SUBUH(
         id = "subuh",
-        displayName = "Fajr",
         arabicName = "الفجر"
     ),
     ZUHUR(
         id = "zuhur",
-        displayName = "Dhuhr",
         arabicName = "الظهر"
     ),
     ASHR(
         id = "ashr",
-        displayName = "Asr",
         arabicName = "العصر"
     ),
     MAGRIB(
         id = "magrib",
-        displayName = "Maghrib",
         arabicName = "المغرب"
     ),
     ISYA(
         id = "isya",
-        displayName = "Isha",
         arabicName = "العشاء"
     );
 
