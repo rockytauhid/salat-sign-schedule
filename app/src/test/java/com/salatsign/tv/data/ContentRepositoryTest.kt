@@ -212,4 +212,56 @@ class ContentRepositoryTest {
         val resValid = runCatching { repository.validate(validSlide) }
         assertTrue(resValid.isSuccess)
     }
+
+    @Test
+    fun deleteSlide_removesSlideAndDeletesOrphanImage() = runBlocking {
+        val slide1 = AnnouncementSlide(id = "s1", title = "Slide 1", imageFile = "slide_one.jpg")
+        val slide2 = AnnouncementSlide(id = "s2", title = "Slide 2", imageFile = "slide_two.jpg")
+
+        val replaceRes = repository.replaceAll(0, listOf(slide1, slide2))
+        assertTrue(replaceRes.isSuccess)
+
+        val img1 = File(repository.imagesDir, "slide_one.jpg").apply { writeText("dummy1") }
+        val img2 = File(repository.imagesDir, "slide_two.jpg").apply { writeText("dummy2") }
+        assertTrue(img1.exists())
+        assertTrue(img2.exists())
+
+        // Delete slide 1
+        val deleteRes = repository.deleteSlide("s1")
+        assertTrue(deleteRes.isSuccess)
+
+        // img1 should be deleted by orphan cleanup, img2 should still exist
+        assertFalse("Orphaned slide_one.jpg should be deleted", img1.exists())
+        assertTrue("Referenced slide_two.jpg must remain", img2.exists())
+    }
+
+    @Test
+    fun replaceAll_clearingSlides_deletesAllOrphanImages() = runBlocking {
+        val img = File(repository.imagesDir, "temp_slide.jpg").apply { writeText("dummy") }
+        val slide = AnnouncementSlide(id = "s_temp", title = "Temp", imageFile = "temp_slide.jpg")
+        val addRes = repository.addSlide(slide)
+        assertTrue(addRes.isSuccess)
+        assertTrue(img.exists())
+
+        // Replace all with empty list (clearSlides)
+        val clearRes = repository.replaceAll(addRes.getOrThrow().revision, emptyList())
+        assertTrue(clearRes.isSuccess)
+
+        assertFalse("Cleared slide image should be cleaned up", img.exists())
+    }
+
+    @Test
+    fun orphanCleanup_doesNotDeleteLogoFile() = runBlocking {
+        val logoDir = File(repository.contentDir, "logo").apply { mkdirs() }
+        File(logoDir, "mosque_logo.png").apply { writeText("logo_content") }
+        val imgLogoInImages = File(repository.imagesDir, "mosque_logo.png").apply { writeText("logo_in_images") }
+
+        val slide = AnnouncementSlide(id = "s3", title = "Slide without logo", imageFile = "other.jpg")
+        File(repository.imagesDir, "other.jpg").apply { writeText("other") }
+
+        repository.addSlide(slide)
+
+        // mosque_logo.png must not be deleted by slide orphan cleanup
+        assertTrue("Logo file in imagesDir must be protected", imgLogoInImages.exists())
+    }
 }

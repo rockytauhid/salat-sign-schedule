@@ -4,6 +4,7 @@
 package com.salatsign.tv.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -29,6 +30,7 @@ import com.salatsign.tv.security.PinHasher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import java.io.File
 import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "salatsign_preferences")
@@ -408,6 +410,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     }
 
     override suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {
+        var referencedAudio: Set<String> = emptySet()
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.adhanTypeKey(prayer)] = option.type.name
             if (option.type == AdhanAudioType.CUSTOM_FILE && option.displayName.isNotBlank()) {
@@ -420,6 +423,24 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             } else {
                 prefs.remove(PreferencesKeys.adhanUriKey(prayer))
             }
+
+            referencedAudio = Prayer.entries.mapNotNull { p ->
+                prefs[PreferencesKeys.adhanUriKey(p)]
+            }.toSet()
+        }
+        cleanupOrphanAudio(referencedAudio)
+    }
+
+    private fun cleanupOrphanAudio(referencedAudio: Set<String>) {
+        val audioDir = File(File(context.filesDir, "content"), "audio")
+        if (!audioDir.exists() || !audioDir.isDirectory) return
+        audioDir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in referencedAudio) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w("SettingsRepository", "Failed to delete orphaned adhan audio: ${file.name}")
+                }
+            }
         }
     }
 
@@ -431,6 +452,20 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 prefs[PreferencesKeys.MOSQUE_LOGO_URI] = logoUri
             } else {
                 prefs.remove(PreferencesKeys.MOSQUE_LOGO_URI)
+            }
+        }
+        cleanupOrphanLogos(logoUri)
+    }
+
+    private fun cleanupOrphanLogos(activeLogoUri: String?) {
+        val logoDir = File(File(context.filesDir, "content"), "logo")
+        if (!logoDir.exists() || !logoDir.isDirectory) return
+        logoDir.listFiles()?.forEach { file ->
+            if (file.isFile && (activeLogoUri == null || file.name != activeLogoUri)) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w("SettingsRepository", "Failed to delete orphaned logo: ${file.name}")
+                }
             }
         }
     }

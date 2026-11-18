@@ -231,7 +231,24 @@ class ContentRepository(
             Files.move(tempFile.toPath(), slidesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
 
+        // 4. Clean up orphaned slide image files (excluding any active logo file)
+        cleanupOrphanImages(container)
+
         _slidesFlow.value = container
+    }
+
+    private fun cleanupOrphanImages(container: SlideContainer) {
+        if (!imagesDir.exists() || !imagesDir.isDirectory) return
+        val referencedImages = container.slides.mapNotNull { it.imageFile }.toSet()
+        val logoFiles = File(contentDir, "logo").listFiles()?.filter { it.isFile }?.map { it.name }?.toSet() ?: emptySet()
+        imagesDir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in referencedImages && file.name !in logoFiles) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w(TAG, "Failed to delete orphaned slide image: ${file.name}")
+                }
+            }
+        }
     }
 
     fun readContainerSafely(): SlideContainer {
