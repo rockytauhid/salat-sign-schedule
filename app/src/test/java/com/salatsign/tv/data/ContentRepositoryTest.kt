@@ -264,4 +264,59 @@ class ContentRepositoryTest {
         // mosque_logo.png must not be deleted by slide orphan cleanup
         assertTrue("Logo file in imagesDir must be protected", imgLogoInImages.exists())
     }
+
+    @Test
+    fun updateSlide_unknownId_returnsFailureWithoutBumpingRevision() = runBlocking {
+        val slide1 = AnnouncementSlide(id = "s1", title = "Existing Slide")
+        repository.addSlide(slide1)
+
+        val initialRev = repository.slidesFlow.value.revision
+        val updateRes = repository.updateSlide(AnnouncementSlide(id = "non_existent", title = "Non-existent"))
+
+        assertTrue("Update unknown slide must return failure", updateRes.isFailure)
+        assertTrue(updateRes.exceptionOrNull() is NoSuchElementException)
+        assertEquals("Revision must not be bumped on failure", initialRev, repository.slidesFlow.value.revision)
+    }
+
+    @Test
+    fun deleteSlide_unknownId_returnsFailureWithoutBumpingRevision() = runBlocking {
+        val slide1 = AnnouncementSlide(id = "s1", title = "Existing Slide")
+        repository.addSlide(slide1)
+
+        val initialRev = repository.slidesFlow.value.revision
+        val deleteRes = repository.deleteSlide("non_existent_id")
+
+        assertTrue("Delete unknown slide must return failure", deleteRes.isFailure)
+        assertTrue(deleteRes.exceptionOrNull() is NoSuchElementException)
+        assertEquals("Revision must not be bumped on failure", initialRev, repository.slidesFlow.value.revision)
+    }
+
+    @Test
+    fun corruptSlidesFile_doesNotOverwriteGoodBackupOnNextWrite() = runBlocking {
+        // 1. Establish a valid backup with revision 1
+        val slide1 = AnnouncementSlide(id = "s1", title = "Good Slide 1")
+        repository.addSlide(slide1) // Rev 1
+        val slide2 = AnnouncementSlide(id = "s2", title = "Good Slide 2")
+        repository.addSlide(slide2) // Rev 2, backup contains Rev 1
+
+        val slidesFile = File(repository.contentDir, "slides.json")
+        val backupFile = File(repository.contentDir, "slides.json.bak")
+        val backupContentBefore = backupFile.readText()
+        assertTrue(backupContentBefore.contains("\"revision\": 1"))
+
+        // 2. Corrupt slides.json
+        slidesFile.writeText("{ corrupted_json_content: true ")
+
+        // 3. Write a new container (e.g. from app recovering and writing)
+        val freshRepo = ContentRepository(baseDir)
+        assertEquals("Should have recovered from Rev 1 backup", 1, freshRepo.slidesFlow.value.revision)
+
+        val addResult = freshRepo.addSlide(AnnouncementSlide(id = "s3", title = "Slide 3"))
+        assertTrue(addResult.isSuccess)
+
+        // 4. Verify that the corrupt file was NOT copied over backupFile
+        val backupContentAfter = backupFile.readText()
+        assertFalse("Corrupt file must not overwrite backup", backupContentAfter.contains("corrupted_json_content"))
+        assertTrue("Good backup must be preserved", backupContentAfter.contains("\"revision\": 1"))
+    }
 }
