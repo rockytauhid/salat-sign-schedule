@@ -119,6 +119,12 @@ class AdhanPlaybackService : Service() {
     private fun playAdhan(prayer: Prayer, type: AdhanAudioType, customUriStr: String?) {
         releaseAudioResources()
 
+        if (type == AdhanAudioType.SILENT) {
+            Log.d(TAG, "Adhan type is SILENT. Stopping service.")
+            stopSelf()
+            return
+        }
+
         // Code comment per remediation plan:
         // USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
         val audioAttributes = AudioAttributes.Builder()
@@ -163,7 +169,7 @@ class AdhanPlaybackService : Service() {
             }
 
             if (!customLoaded) {
-                setRawDataSource(player, prayer, type)
+                setRawDataSource(player, type)
             }
 
             player.setOnPreparedListener { mp ->
@@ -198,11 +204,11 @@ class AdhanPlaybackService : Service() {
         }
     }
 
-    private fun setRawDataSource(player: MediaPlayer, prayer: Prayer, type: AdhanAudioType) {
-        val rawResId = if (type == AdhanAudioType.DEFAULT_SUBUH || prayer == Prayer.SUBUH) {
-            R.raw.adhan_subuh
-        } else {
-            R.raw.adhan_default
+    private fun setRawDataSource(player: MediaPlayer, type: AdhanAudioType) {
+        val rawResId = AdhanAudioResolver.resolveRawResource(type)
+        if (rawResId == null) {
+            Log.w(TAG, "No raw audio resource resolved for type: $type")
+            return
         }
 
         val afd = resources.openRawResourceFd(rawResId)

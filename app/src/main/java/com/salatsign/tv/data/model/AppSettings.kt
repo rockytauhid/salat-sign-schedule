@@ -104,11 +104,12 @@ data class AppSettings(
     val hijriOffsetDays: Int = 0,
     val hijriChangeAtMidnight: Boolean = false, // default false: advances at Maghrib
     val prePrayerReminderEnabled: Boolean = true,
-    val adhanSubuh: AdhanAudioOption = AdhanAudioOption.DefaultSubuh,
-    val adhanZuhur: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanAshr: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanMagrib: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanIsya: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
+    val adhanSubuh: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanZuhur: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanAshr: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanMagrib: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanIsya: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanHintDismissed: Boolean = false,
     // Per-prayer offsets (-30..+30 mins)
     val offsetSubuh: Int = 0,
     val offsetSunrise: Int = 0,
@@ -155,6 +156,13 @@ data class AppSettings(
             Prayer.ISYA -> adhanIsya
         }
     }
+
+    fun hasConfiguredAudibleAdhan(): Boolean =
+        adhanSubuh.type != AdhanAudioType.SILENT ||
+        adhanZuhur.type != AdhanAudioType.SILENT ||
+        adhanAshr.type != AdhanAudioType.SILENT ||
+        adhanMagrib.type != AdhanAudioType.SILENT ||
+        adhanIsya.type != AdhanAudioType.SILENT
 
     fun offsetFor(prayer: Prayer): Int {
         return when (prayer) {

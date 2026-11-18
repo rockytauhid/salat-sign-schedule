@@ -253,4 +253,8 @@
     <!-- About & Credit -->
     <string name="about_credit">SalatSign بواسطة Rocky Adam Tauhid</string>
     <string name="about_license">مفتوح المصدر بموجب رخصة GPL-3.0-or-later</string>
+
+    <!-- Home Adhan Hint -->
+    <string name="home_adhan_silent_hint">لم يتم تثبيت ملف أذان: يمكنك استيراد الأذان من وحدة USB عبر الإعدادات.</string>
+    <string name="home_adhan_silent_hint_dismiss">إغلاق</string>
 </resources>

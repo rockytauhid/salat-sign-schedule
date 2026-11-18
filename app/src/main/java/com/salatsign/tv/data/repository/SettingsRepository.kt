@@ -89,6 +89,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val PIN_FAILED_ATTEMPTS = intPreferencesKey("pin_failed_attempts")
         val PIN_LOCKED_UNTIL_EPOCH_MILLIS = longPreferencesKey("pin_locked_until_epoch_millis")
         val DEFAULT_PIN_PROMPT_DISMISSED = booleanPreferencesKey("default_pin_prompt_dismissed")
+        val ADHAN_HINT_DISMISSED = booleanPreferencesKey("adhan_hint_dismissed")
 
         // Localization & Display Option keys
         val APP_LANGUAGE = stringPreferencesKey("app_language")
@@ -143,11 +144,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: true
             val showArabicPrayerNames = preferences[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] ?: true
 
-            val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.DefaultSubuh)
-            val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.DefaultStandard)
-            val adhanAshr = readAdhanOption(preferences, Prayer.ASHR, AdhanAudioOption.DefaultStandard)
-            val adhanMagrib = readAdhanOption(preferences, Prayer.MAGRIB, AdhanAudioOption.DefaultStandard)
-            val adhanIsya = readAdhanOption(preferences, Prayer.ISYA, AdhanAudioOption.DefaultStandard)
+            val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.Silent)
+            val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.Silent)
+            val adhanAshr = readAdhanOption(preferences, Prayer.ASHR, AdhanAudioOption.Silent)
+            val adhanMagrib = readAdhanOption(preferences, Prayer.MAGRIB, AdhanAudioOption.Silent)
+            val adhanIsya = readAdhanOption(preferences, Prayer.ISYA, AdhanAudioOption.Silent)
+            val adhanHintDismissed = preferences[PreferencesKeys.ADHAN_HINT_DISMISSED] ?: false
 
             val mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: ""
             val mosqueSubtitle = preferences[PreferencesKeys.MOSQUE_SUBTITLE] ?: ""
@@ -216,7 +218,8 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 pinHashHex = pinHashHex,
                 pinFailedAttempts = pinFailedAttempts,
                 pinLockedUntilEpochMillis = pinLockedUntil,
-                defaultPinPromptDismissed = defaultPinPromptDismissed
+                defaultPinPromptDismissed = defaultPinPromptDismissed,
+                adhanHintDismissed = adhanHintDismissed
             )
         }
 
@@ -472,6 +475,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun dismissDefaultPinPrompt() {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] = true
+        }
+    }
+
+    override suspend fun dismissAdhanHint() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ADHAN_HINT_DISMISSED] = true
         }
     }
 

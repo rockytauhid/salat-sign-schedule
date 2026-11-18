@@ -328,7 +328,8 @@ fun MainContent(
             onPreviousDay = { homeViewModel.previousDay() },
             onNextDay = { homeViewModel.nextDay() },
             onTodayClick = { homeViewModel.resetToToday() },
-            onOpenSettings = onRequestOpenSettings
+            onOpenSettings = onRequestOpenSettings,
+            onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
         )
     }
 

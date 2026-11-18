@@ -62,6 +62,7 @@ interface ISettingsRepository {
     suspend fun recordPinSuccess()
     suspend fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long)
     suspend fun dismissDefaultPinPrompt()
+    suspend fun dismissAdhanHint()
     suspend fun setAppLanguage(language: AppLanguage)
     suspend fun set24HourFormat(enabled: Boolean)
     suspend fun setShowArabicPrayerNames(enabled: Boolean)

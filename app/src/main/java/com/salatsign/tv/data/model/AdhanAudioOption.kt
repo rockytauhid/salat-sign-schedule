@@ -11,8 +11,8 @@ enum class AdhanAudioType {
 }
 
 data class AdhanAudioOption(
-    val type: AdhanAudioType = AdhanAudioType.DEFAULT_STANDARD,
-    val displayName: String = "Adhan Standar",
+    val type: AdhanAudioType = AdhanAudioType.SILENT,
+    val displayName: String = "Hening / Nonaktif",
     val customUri: String? = null
 ) {
     companion object {

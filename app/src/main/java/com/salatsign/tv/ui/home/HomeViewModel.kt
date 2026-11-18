@@ -95,4 +95,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun resetToToday() {
         _selectedDate.value = null
     }
+
+    fun dismissAdhanHint() {
+        viewModelScope.launch {
+            settingsRepository.dismissAdhanHint()
+        }
+    }
 }
