@@ -133,6 +133,13 @@
     <string name="storage_empty_folder">لا توجد ملفات مدعومة في هذا المجلد.</string>
     <string name="storage_empty_hint">تأكد من توصيل ذاكرة USB أو نسخ الملفات إلى الذاكرة الداخلية.</string>
     <string name="storage_import_failed">فشل استيراد الملف</string>
+    <string name="storage_mediastore_title">مكتبة الوسائط</string>
+    <string name="storage_permission_rationale">مطلوب إذن الوصول إلى التخزين لتصفح واستيراد الملفات من وحدة USB والذاكرة المحلية.</string>
+    <string name="storage_permission_denied">تم رفض إذن التخزين. لا يمكن تصفح الملفات الخارجية بدون إذن.</string>
+    <string name="storage_grant_permission">منح الإذن</string>
+    <string name="storage_system_picker">أداة اختيار النظام</string>
+    <string name="storage_items_count">%1$d عناصر</string>
+    <string name="storage_item_single">عنصر واحد</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">الإعدادات</string>

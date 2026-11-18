@@ -7,6 +7,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -191,6 +192,26 @@ class AssetImporter(
 
     fun importCustomAdhan(stream: InputStream, originalName: String?): ImportResult {
         return importAudio(stream.readBytes(), originalName ?: "adhan.mp3")
+    }
+
+    fun importFromUri(
+        context: Context,
+        uri: Uri,
+        kind: ImportKind,
+        displayName: String? = null
+    ): ImportResult {
+        return try {
+            val stream = context.contentResolver.openInputStream(uri)
+                ?: return ImportResult(success = false, errorMessage = "Cannot open input stream from URI")
+            val fileName = displayName ?: uri.lastPathSegment ?: "imported_file"
+            when (kind) {
+                ImportKind.SLIDE_IMAGE -> importSlideImage(stream, fileName)
+                ImportKind.MOSQUE_LOGO -> importMosqueLogo(stream, fileName)
+                ImportKind.CUSTOM_ADHAN -> importCustomAdhan(stream, fileName)
+            }
+        } catch (e: Exception) {
+            ImportResult(success = false, errorMessage = e.message ?: "Failed to import from URI")
+        }
     }
 
     private fun importImage(
