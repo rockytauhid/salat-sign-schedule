@@ -111,6 +111,7 @@
     <string name="pin_subtitle_digits">Masukkan 4 hingga 8 digit angka</string>
     <string name="pin_subtitle_repeat">Masukkan PIN yang sama sekali lagi</string>
     <string name="pin_err_format">PIN harus 4-8 digit angka</string>
+    <string name="pin_err_reset_required">Data PIN rusak dan pengaturan terkunci. Untuk mereset, hapus data aplikasi di Pengaturan Android TV → Aplikasi → SalatSign → Hapus data.</string>
     <string name="pin_err_incorrect_remaining">PIN salah. Sisa percobaan: %1$d</string>
     <string name="pin_err_locked_sec">Terlalu banyak percobaan. Terkunci %1$d detik.</string>
     <string name="pin_err_locked_retry">PIN Terkunci. Coba lagi dalam %1$d detik.</string>

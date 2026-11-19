@@ -111,6 +111,7 @@
     <string name="pin_subtitle_digits">أدخل من 4 إلى 8 أرقام</string>
     <string name="pin_subtitle_repeat">أعد إدخال الرمز للتأكيد</string>
     <string name="pin_err_format">يجب أن يتكون الرمز من 4 إلى 8 أرقام</string>
+    <string name="pin_err_reset_required">بيانات رمز PIN تالفة والإعدادات مقفلة. لإعادة التعيين، امسح بيانات التطبيق من إعدادات Android TV ← التطبيقات ← SalatSign ← مسح البيانات.</string>
     <string name="pin_err_incorrect_remaining">رمز غير صحيح. المحاولات المتبقية: %1$d</string>
     <string name="pin_err_locked_sec">تم قفل الإدخال لكثرة المحاولات. انتظر %1$d ثانية.</string>
     <string name="pin_err_locked_retry">الرمز مقفل. حاول مرة أخرى بعد %1$d ثانية.</string>

@@ -111,6 +111,7 @@
     <string name="pin_subtitle_digits">Enter 4 to 8 digits</string>
     <string name="pin_subtitle_repeat">Re-enter the same PIN</string>
     <string name="pin_err_format">PIN must be 4–8 digits</string>
+    <string name="pin_err_reset_required">PIN storage is corrupted and settings are locked. To reset, clear app data in Android TV Settings → Apps → SalatSign → Clear data.</string>
     <string name="pin_err_incorrect_remaining">Incorrect PIN. Attempts remaining: %1$d</string>
     <string name="pin_err_locked_sec">Too many failed attempts. Locked for %1$d seconds.</string>
     <string name="pin_err_locked_retry">PIN locked. Try again in %1$d seconds.</string>
