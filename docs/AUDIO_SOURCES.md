@@ -44,7 +44,7 @@ Every audio asset bundled with the application **must** be listed here with veri
 
 ## Licensing Requirements & Acceptance Criteria (Decision D15)
 
-In accordance with `SALATSIGN_REMEDIATION_PLAN.md`:
+All bundled adhan audio files must satisfy the following licensing policy — accepted licenses are CC0, public domain, CC BY, or a signed release from the performer; NonCommercial/NoDerivatives and site-specific licenses are not accepted:
 
 ### Accepted Licenses:
 1. **CC0 1.0 Universal / Public Domain**
