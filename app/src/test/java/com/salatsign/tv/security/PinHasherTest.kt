@@ -194,17 +194,46 @@ class PinHasherTest {
     }
 
     @Test
-    fun verifyPin_corruptedHashFallsBackToDefaultPin() {
-        val result = PinHasher.verifyPin(
+    fun verifyPin_corruptedOrEmptyCustomPin_returnsResetRequiredAndNeverAcceptsDefault() {
+        val emptyHashResult = PinHasher.verifyPin(
             enteredPin = "0000",
             hasCustomPin = true,
-            saltHex = "corrupted",
+            saltHex = "00112233445566778899aabbccddeeff",
             hashHex = "",
             nowEpochMillis = 1_000_000L,
             currentFailedAttempts = 0,
             lockedUntilEpochMillis = 0L
         )
+        assertTrue("Empty hash must return ResetRequired", emptyHashResult is PinVerifyResult.ResetRequired)
 
-        assertTrue(result is PinVerifyResult.Success)
+        val corruptHexResult = PinHasher.verifyPin(
+            enteredPin = "0000",
+            hasCustomPin = true,
+            saltHex = "zzzz_corrupted_hex",
+            hashHex = "also_not_hex",
+            nowEpochMillis = 1_000_000L,
+            currentFailedAttempts = 0,
+            lockedUntilEpochMillis = 0L
+        )
+        assertTrue("Corrupt non-hex salt/hash must return ResetRequired", corruptHexResult is PinVerifyResult.ResetRequired)
+
+        assertTrue(PinHasher.isStoredPinCorrupted(true, "", ""))
+        assertTrue(PinHasher.isStoredPinCorrupted(true, "not_hex!", "not_hex!"))
+        assertFalse(PinHasher.isStoredPinCorrupted(false, "", ""))
+    }
+
+    @Test
+    fun verifyPin_invalidFormat_returnsErrorCode() {
+        val result = PinHasher.verifyPin(
+            enteredPin = "12",
+            hasCustomPin = false,
+            saltHex = "",
+            hashHex = "",
+            nowEpochMillis = 1_000_000L,
+            currentFailedAttempts = 0,
+            lockedUntilEpochMillis = 0L
+        )
+        assertTrue(result is PinVerifyResult.InvalidFormat)
+        assertEquals(PinErrorCode.INVALID_FORMAT, (result as PinVerifyResult.InvalidFormat).errorCode)
     }
 }

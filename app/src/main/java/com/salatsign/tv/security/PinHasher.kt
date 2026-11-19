@@ -10,11 +10,17 @@ import java.security.spec.KeySpec
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
+enum class PinErrorCode {
+    INVALID_FORMAT,
+    RESET_REQUIRED
+}
+
 sealed interface PinVerifyResult {
     data object Success : PinVerifyResult
     data class Incorrect(val attemptsLeftBeforeLockout: Int, val totalFailedAttempts: Int) : PinVerifyResult
     data class LockedOut(val remainingSeconds: Int) : PinVerifyResult
-    data class InvalidFormat(val message: String) : PinVerifyResult
+    data class InvalidFormat(val errorCode: PinErrorCode = PinErrorCode.INVALID_FORMAT) : PinVerifyResult
+    data object ResetRequired : PinVerifyResult
 }
 
 data class LockoutState(
@@ -67,12 +73,25 @@ object PinHasher {
     }
 
     fun hexToBytes(hex: String): ByteArray {
-        if (hex.length % 2 != 0) return ByteArray(0)
-        return hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        if (hex.isBlank() || hex.length % 2 != 0) return ByteArray(0)
+        return runCatching {
+            hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        }.getOrDefault(ByteArray(0))
+    }
+
+    /**
+     * Returns true if a custom PIN is supposedly configured, but its stored salt or hash
+     * is missing or corrupted (non-hex / empty). Such state requires an app-data reset (F12).
+     */
+    fun isStoredPinCorrupted(hasCustomPin: Boolean, saltHex: String, hashHex: String): Boolean {
+        if (!hasCustomPin) return false
+        val salt = hexToBytes(saltHex)
+        val hash = hexToBytes(hashHex)
+        return salt.isEmpty() || hash.isEmpty()
     }
 
     fun createHashedPin(pin: String): HashedPin {
-        require(validatePinFormat(pin)) { "PIN format tidak valid (harus 4-8 digit angka)" }
+        require(validatePinFormat(pin)) { "Invalid PIN format (must be $MIN_PIN_LENGTH-$MAX_PIN_LENGTH digits)" }
         val salt = generateSalt()
         val hash = hashPin(pin, salt)
         return HashedPin(
@@ -113,30 +132,30 @@ object PinHasher {
         currentFailedAttempts: Int,
         lockedUntilEpochMillis: Long
     ): PinVerifyResult {
-        // 1. Check if currently locked out
+        // 1. Check if stored custom PIN is corrupted (F12: never silently fall back to "0000")
+        if (isStoredPinCorrupted(hasCustomPin, saltHex, hashHex)) {
+            return PinVerifyResult.ResetRequired
+        }
+
+        // 2. Check if currently locked out
         if (nowEpochMillis < lockedUntilEpochMillis) {
             val remainingSec = ((lockedUntilEpochMillis - nowEpochMillis + 999) / 1000).toInt()
             return PinVerifyResult.LockedOut(remainingSec)
         }
 
-        // 2. Validate input format
+        // 3. Validate input format
         if (!validatePinFormat(enteredPin)) {
-            return PinVerifyResult.InvalidFormat("PIN harus terdiri dari 4 hingga 8 digit angka")
+            return PinVerifyResult.InvalidFormat(PinErrorCode.INVALID_FORMAT)
         }
 
-        // 3. Match against effective PIN
+        // 4. Match against effective PIN
         val matches = if (!hasCustomPin) {
             enteredPin == DEFAULT_PIN
         } else {
             val salt = hexToBytes(saltHex)
-            if (salt.isEmpty() || hashHex.isBlank()) {
-                // Corrupted hash fallback to default
-                enteredPin == DEFAULT_PIN
-            } else {
-                val computedHash = hashPin(enteredPin, salt)
-                val expectedHash = hexToBytes(hashHex)
-                MessageDigest.isEqual(computedHash, expectedHash)
-            }
+            val expectedHash = hexToBytes(hashHex)
+            val computedHash = hashPin(enteredPin, salt)
+            MessageDigest.isEqual(computedHash, expectedHash)
         }
 
         return if (matches) {

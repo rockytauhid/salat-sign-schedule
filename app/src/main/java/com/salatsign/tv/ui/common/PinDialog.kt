@@ -85,11 +85,21 @@ fun PinDialog(
     val colorScheme = MaterialTheme.colorScheme
     val initialFocusRequester = remember { FocusRequester() }
 
+    val isResetRequired = remember(mode, settings.hasCustomPin, settings.pinSaltHex, settings.pinHashHex) {
+        mode == PinDialogMode.VERIFY && PinHasher.isStoredPinCorrupted(
+            hasCustomPin = settings.hasCustomPin,
+            saltHex = settings.pinSaltHex,
+            hashHex = settings.pinHashHex
+        )
+    }
+
     var enteredPin by remember { mutableStateOf("") }
     var setPinStep by remember { mutableStateOf(SetPinStep.ENTER_NEW) }
     var firstEnteredPin by remember { mutableStateOf("") }
-    var statusMessage by remember { mutableStateOf<String?>(null) }
-    var isError by remember { mutableStateOf(false) }
+    var statusMessage by remember(isResetRequired) {
+        mutableStateOf(if (isResetRequired) context.getString(R.string.pin_err_reset_required) else null)
+    }
+    var isError by remember(isResetRequired) { mutableStateOf(isResetRequired) }
 
     // Lockout countdown timer
     var lockoutSeconds by remember(settings.pinLockedUntilEpochMillis) {
@@ -110,7 +120,7 @@ fun PinDialog(
     }
 
     fun submitPin() {
-        if (lockoutSeconds > 0) return
+        if (isResetRequired || lockoutSeconds > 0) return
 
         if (!PinHasher.validatePinFormat(enteredPin)) {
             isError = true
@@ -158,7 +168,12 @@ fun PinDialog(
                     }
                     is PinVerifyResult.InvalidFormat -> {
                         isError = true
-                        statusMessage = result.message
+                        statusMessage = context.getString(R.string.pin_err_format)
+                    }
+                    is PinVerifyResult.ResetRequired -> {
+                        enteredPin = ""
+                        isError = true
+                        statusMessage = context.getString(R.string.pin_err_reset_required)
                     }
                 }
             }
