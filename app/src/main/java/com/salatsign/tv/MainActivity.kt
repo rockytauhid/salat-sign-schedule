@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.data.repository.LanguageSyncCache
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.service.AdhanPlaybackService
 import com.salatsign.tv.service.PrayerAlarmScheduler
@@ -42,9 +43,7 @@ import com.salatsign.tv.ui.setup.SetupWizardScreen
 import com.salatsign.tv.ui.theme.SalatSignTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.LocalTime
 
 class MainActivity : ComponentActivity() {
@@ -58,11 +57,7 @@ class MainActivity : ComponentActivity() {
     private val isPinDialogOpen = mutableStateOf(false)
 
     override fun attachBaseContext(newBase: Context) {
-        val language = runCatching {
-            runBlocking {
-                SettingsRepository(newBase).appSettingsFlow.first().appLanguage
-            }
-        }.getOrDefault(AppLanguage.SYSTEM)
+        val language = LanguageSyncCache.getLanguage(newBase)
         super.attachBaseContext(LocaleHelper.wrap(newBase, language))
     }
 
@@ -79,11 +74,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val appliedLanguage = LanguageSyncCache.getLanguage(this)
+
         setContent {
             val settings by settingsViewModel.settings.collectAsState()
             val homeUiState by homeViewModel.uiState.collectAsState()
 
-            var activeLanguage by remember { mutableStateOf(settings.appLanguage) }
+            var activeLanguage by remember { mutableStateOf(appliedLanguage) }
             LaunchedEffect(settings.appLanguage) {
                 if (settings.appLanguage != activeLanguage) {
                     activeLanguage = settings.appLanguage
@@ -267,6 +264,10 @@ fun MainContent(
             onSelectMosqueName = { settingsViewModel.setMosqueName(it) },
             onSelectMosqueIcon = { settingsViewModel.setMosqueIconPreset(it) },
             onSetAdminPin = { settingsViewModel.setCustomPin(it) },
+            onSetJumuahConfig = { mode, times ->
+                settingsViewModel.setJumuahMode(mode)
+                settingsViewModel.setJumuahTimes(times)
+            },
             onCompleteSetup = { settingsViewModel.completeSetup() }
         )
     } else if (isSettingsOpen) {
@@ -309,6 +310,9 @@ fun MainContent(
             onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
             onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
             onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
+            onSetJumuahMode = { settingsViewModel.setJumuahMode(it) },
+            onSetJumuahTimes = { settingsViewModel.setJumuahTimes(it) },
+            onSetFridayAdhanTiming = { settingsViewModel.setFridayAdhanTiming(it) },
             onRestartSetupWizard = {
                 onCloseSettings()
                 settingsViewModel.restartSetupWizard()
@@ -328,7 +332,8 @@ fun MainContent(
             onPreviousDay = { homeViewModel.previousDay() },
             onNextDay = { homeViewModel.nextDay() },
             onTodayClick = { homeViewModel.resetToToday() },
-            onOpenSettings = onRequestOpenSettings
+            onOpenSettings = onRequestOpenSettings,
+            onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
         )
     }
 

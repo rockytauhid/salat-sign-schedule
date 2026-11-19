@@ -11,7 +11,9 @@ import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimesDay
+import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.PrayerCalculationEngine
+import com.salatsign.tv.engine.PrayerDayCache
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +65,22 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
     private val _tickerTime = MutableStateFlow(LocalTime.now())
     private var slideshowLoopJob: Job? = null
+    private val prayerDayCache = PrayerDayCache()
+
+    private fun getPrayerTimesDay(settings: AppSettings, nowZoned: ZonedDateTime): PrayerTimesDay {
+        val key = DailyPrayerCacheKey(
+            date = nowZoned.toLocalDate(),
+            config = settings.prayerConfig(),
+            hijriOffsetDays = settings.hijriOffsetDays,
+            hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
+            iqamahOffsets = settings.iqamahOffsets(),
+            isMosqueMode = settings.isMosqueMode,
+            jumuahMode = settings.jumuahMode,
+            jumuahTimes = settings.jumuahTimes,
+            is24HourFormat = settings.is24HourFormat
+        )
+        return prayerDayCache.getOrCompute(key, nowZoned)
+    }
 
     init {
         // 1-second ticker for prayer strike monitoring and live clock
@@ -85,22 +103,13 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 val settings = settingsState.value
                 val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                 val nowZoned = ZonedDateTime.now(zone)
-                val today = nowZoned.toLocalDate()
                 val now = nowZoned.toLocalTime()
-                val config = settings.prayerConfig()
 
-                val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
-                    date = today,
-                    config = config,
-                    referenceZoned = nowZoned,
-                    hijriOffsetDays = settings.hijriOffsetDays,
-                    hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
-                    iqamahOffsets = settings.iqamahOffsets()
-                )
+                val prayerTimes = getPrayerTimesDay(settings, nowZoned)
 
                 // Check if currently within exact prayer strike window (5 minutes)
                 val strikingPrayer = if (settings.showStrikeHighlight) {
-                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5)
+                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5, isMosqueMode = settings.isMosqueMode)
                 } else null
 
                 if (strikingPrayer != null) {
@@ -147,22 +156,13 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         val slideSettings = settingsState.value
                         val slideZone = runCatching { ZoneId.of(slideSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                         val slideNowZoned = ZonedDateTime.now(slideZone)
-                        val slideToday = slideNowZoned.toLocalDate()
                         val slideNow = slideNowZoned.toLocalTime()
-                        val slideConfig = slideSettings.prayerConfig()
 
-                        val slidePrayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
-                            date = slideToday,
-                            config = slideConfig,
-                            referenceZoned = slideNowZoned,
-                            hijriOffsetDays = slideSettings.hijriOffsetDays,
-                            hijriChangeAtMidnight = slideSettings.hijriChangeAtMidnight,
-                            iqamahOffsets = slideSettings.iqamahOffsets()
-                        )
+                        val slidePrayerTimes = getPrayerTimesDay(slideSettings, slideNowZoned)
 
                         // Check strike at the start of this slide
                         val startStrike = if (slideSettings.showStrikeHighlight) {
-                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5)
+                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5, isMosqueMode = slideSettings.isMosqueMode)
                         } else null
 
                         if (startStrike != null) {
@@ -213,17 +213,8 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     ) { currentSlide, settings, _, activePrayer ->
         val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
         val nowZoned = ZonedDateTime.now(zone)
-        val today = nowZoned.toLocalDate()
-        val config = settings.prayerConfig()
 
-        val prayerTimes = PrayerCalculationEngine.calculatePrayerTimesDay(
-            date = today,
-            config = config,
-            referenceZoned = nowZoned,
-            hijriOffsetDays = settings.hijriOffsetDays,
-            hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
-            iqamahOffsets = settings.iqamahOffsets()
-        )
+        val prayerTimes = getPrayerTimesDay(settings, nowZoned)
 
         // If interrupted active prayer is present, override isActive flag
         val updatedPrayers = if (activePrayer != null) {

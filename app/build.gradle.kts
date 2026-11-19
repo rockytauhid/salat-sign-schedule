@@ -21,6 +21,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    androidResources {
+        localeFilters += listOf("en")
+    }
+
     val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
         it.contains("Release", ignoreCase = true)
     }

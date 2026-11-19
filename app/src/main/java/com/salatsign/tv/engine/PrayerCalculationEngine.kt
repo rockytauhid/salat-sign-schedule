@@ -12,6 +12,8 @@ import com.batoulapps.adhan.PrayerAdjustments
 import com.batoulapps.adhan.PrayerTimes
 import com.batoulapps.adhan.data.DateComponents
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig
 import com.salatsign.tv.data.model.PrayerEvent
@@ -92,8 +94,34 @@ object PrayerCalculationEngine {
         referenceZoned: ZonedDateTime = ZonedDateTime.now(config.zoneId),
         hijriOffsetDays: Int = 0,
         hijriChangeAtMidnight: Boolean = false,
-        iqamahOffsets: Map<Prayer, Int> = emptyMap()
+        iqamahOffsets: Map<Prayer, Int> = emptyMap(),
+        isMosqueMode: Boolean = false,
+        jumuahMode: JumuahMode = JumuahMode.FIXED,
+        jumuahTimes: List<String> = emptyList(),
+        is24HourFormat: Boolean = true
     ): PrayerTimesDay {
+        val key = DailyPrayerCacheKey(
+            date = date,
+            config = config,
+            hijriOffsetDays = hijriOffsetDays,
+            hijriChangeAtMidnight = hijriChangeAtMidnight,
+            iqamahOffsets = iqamahOffsets,
+            isMosqueMode = isMosqueMode,
+            jumuahMode = jumuahMode,
+            jumuahTimes = jumuahTimes,
+            is24HourFormat = is24HourFormat
+        )
+        val cached = computeCachedDayTimes(key)
+        return evaluateForReferenceTime(cached, key, referenceZoned)
+    }
+
+    /**
+     * Computes the expensive daily astronomical prayer times, tomorrow's Subuh, Jumu'ah sittings,
+     * and formatted Hijri/Gregorian dates once per (date + config) key (F10).
+     */
+    fun computeCachedDayTimes(key: DailyPrayerCacheKey): CachedDayTimes {
+        val date = key.date
+        val config = key.config
         val coordinates = Coordinates(config.latitude, config.longitude)
         val dateComponents = DateComponents(date.year, date.monthValue, date.dayOfMonth)
         val parameters = getCalculationParameters(config)
@@ -107,15 +135,93 @@ object PrayerCalculationEngine {
         val magribTime = dateToLocalTime(prayerTimes.maghrib, config.zoneId)
         val isyaTime = dateToLocalTime(prayerTimes.isha, config.zoneId)
 
+        val tomorrow = date.plusDays(1)
+        val tomorrowComponents = DateComponents(tomorrow.year, tomorrow.monthValue, tomorrow.dayOfMonth)
+        val tomorrowTimes = PrayerTimes(coordinates, tomorrowComponents, parameters)
+        val tomorrowSubuh = dateToLocalTime(tomorrowTimes.fajr, config.zoneId)
+
+        val isFriday = (date.dayOfWeek == DayOfWeek.FRIDAY)
+
+        // Jumu'ah resolution for Friday in Mosque Mode (D16)
+        val jumuahSittings: List<LocalTime>
+        val effectiveZuhurTime: LocalTime?
+        val secondaryJumuahNote: String?
+
+        if (key.isMosqueMode && isFriday && zuhurTime != null) {
+            val zuhurZoned = ZonedDateTime.of(date, zuhurTime, config.zoneId)
+            val resolvedZonedSittings = JumuahCalculator.resolveSittings(date, config, key.jumuahMode, key.jumuahTimes, zuhurZoned)
+            jumuahSittings = resolvedZonedSittings.map { it.toLocalTime() }
+            effectiveZuhurTime = jumuahSittings.first()
+            if (key.jumuahTimes.isNotEmpty()) {
+                val formattedZuhr = zuhurTime.format(if (key.is24HourFormat) PrayerTimeItem.TimeFormatter24 else PrayerTimeItem.TimeFormatter12)
+                secondaryJumuahNote = "Zuhr begins $formattedZuhr"
+            } else {
+                secondaryJumuahNote = null
+            }
+        } else {
+            jumuahSittings = emptyList()
+            effectiveZuhurTime = zuhurTime
+            secondaryJumuahNote = null
+        }
+
+        val maghribZoned = if (magribTime != null) ZonedDateTime.of(date, magribTime, config.zoneId) else null
+        val hijriBeforeMaghrib = HijriCalendarEngine.formatHijriDate(
+            date = date,
+            offsetDays = key.hijriOffsetDays,
+            changeAtMidnight = true
+        )
+        val hijriAfterMaghrib = HijriCalendarEngine.formatHijriDate(
+            date = date.plusDays(1),
+            offsetDays = key.hijriOffsetDays,
+            changeAtMidnight = true
+        )
+        val gregorianFormatted = HijriCalendarEngine.formatGregorianDate(date)
+
+        return CachedDayTimes(
+            date = date,
+            isFriday = isFriday,
+            subuhTime = subuhTime,
+            sunriseTime = sunriseTime,
+            effectiveZuhurTime = effectiveZuhurTime,
+            ashrTime = ashrTime,
+            magribTime = magribTime,
+            isyaTime = isyaTime,
+            tomorrowSubuh = tomorrowSubuh,
+            jumuahSittings = jumuahSittings,
+            secondaryJumuahNote = secondaryJumuahNote,
+            maghribZoned = maghribZoned,
+            hijriBeforeMaghrib = hijriBeforeMaghrib,
+            hijriAfterMaghrib = hijriAfterMaghrib,
+            gregorianFormatted = gregorianFormatted
+        )
+    }
+
+    /**
+     * Cheap per-second evaluation of next prayer, active prayer, countdown, and Maghrib Hijri rollover
+     * using precomputed [CachedDayTimes] (F10).
+     */
+    fun evaluateForReferenceTime(
+        cached: CachedDayTimes,
+        key: DailyPrayerCacheKey,
+        referenceZoned: ZonedDateTime
+    ): PrayerTimesDay {
+        val date = cached.date
+        val isFriday = cached.isFriday
+        val subuhTime = cached.subuhTime
+        val effectiveZuhurTime = cached.effectiveZuhurTime
+        val ashrTime = cached.ashrTime
+        val magribTime = cached.magribTime
+        val isyaTime = cached.isyaTime
+        val jumuahSittings = cached.jumuahSittings
+
         val rawList = listOf(
             Prayer.SUBUH to subuhTime,
-            Prayer.ZUHUR to zuhurTime,
+            Prayer.ZUHUR to effectiveZuhurTime,
             Prayer.ASHR to ashrTime,
             Prayer.MAGRIB to magribTime,
             Prayer.ISYA to isyaTime
         )
 
-        val isFriday = (date.dayOfWeek == DayOfWeek.FRIDAY)
         val referenceDate = referenceZoned.toLocalDate()
         val referenceTime = referenceZoned.toLocalTime()
         val isToday = (date == referenceDate)
@@ -128,27 +234,52 @@ object PrayerCalculationEngine {
             val nonNullPrayers = rawList.filter { it.second != null }
 
             // 1. Next Prayer Today
-            val upcoming = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
-            if (upcoming != null) {
-                identifiedNextPrayer = upcoming.first
-                secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcoming.second).coerceAtLeast(0)
+            if (key.isMosqueMode && isFriday && jumuahSittings.isNotEmpty()) {
+                if (effectiveZuhurTime != null && referenceTime.isBefore(effectiveZuhurTime)) {
+                    val upcomingBefore = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
+                    if (upcomingBefore != null) {
+                        identifiedNextPrayer = upcomingBefore.first
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcomingBefore.second).coerceAtLeast(0)
+                    }
+                } else if (jumuahSittings.size > 1 && referenceTime.isBefore(jumuahSittings.last())) {
+                    val nextSitting = jumuahSittings.firstOrNull { it.isAfter(referenceTime) }
+                    if (nextSitting != null) {
+                        identifiedNextPrayer = Prayer.ZUHUR
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, nextSitting).coerceAtLeast(0)
+                    }
+                } else {
+                    val afterJumuahPrayers = listOf(
+                        Prayer.ASHR to ashrTime,
+                        Prayer.MAGRIB to magribTime,
+                        Prayer.ISYA to isyaTime
+                    ).filter { it.second != null }
+
+                    val upcomingAfter = afterJumuahPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
+                    if (upcomingAfter != null) {
+                        identifiedNextPrayer = upcomingAfter.first
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcomingAfter.second).coerceAtLeast(0)
+                    } else if (cached.tomorrowSubuh != null) {
+                        identifiedNextPrayer = Prayer.SUBUH
+                        val secondsUntilMidnight = ChronoUnit.SECONDS.between(referenceTime, LocalTime.MAX) + 1
+                        val secondsFromMidnight = cached.tomorrowSubuh.toSecondOfDay().toLong()
+                        secondsUntilNext = (secondsUntilMidnight + secondsFromMidnight).coerceAtLeast(0)
+                    }
+                }
             } else {
-                // If all valid prayers today have passed (or after Isya), next is tomorrow's first available prayer (Subuh)
-                val tomorrow = date.plusDays(1)
-                val tomorrowComponents = DateComponents(tomorrow.year, tomorrow.monthValue, tomorrow.dayOfMonth)
-                val tomorrowTimes = PrayerTimes(coordinates, tomorrowComponents, parameters)
-                val tomorrowSubuh = dateToLocalTime(tomorrowTimes.fajr, config.zoneId)
-                if (tomorrowSubuh != null) {
+                val upcoming = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
+                if (upcoming != null) {
+                    identifiedNextPrayer = upcoming.first
+                    secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcoming.second).coerceAtLeast(0)
+                } else if (cached.tomorrowSubuh != null) {
+                    // If all valid prayers today have passed (or after Isya), next is tomorrow's first available prayer (Subuh)
                     identifiedNextPrayer = Prayer.SUBUH
                     val secondsUntilMidnight = ChronoUnit.SECONDS.between(referenceTime, LocalTime.MAX) + 1
-                    val secondsFromMidnight = tomorrowSubuh.toSecondOfDay().toLong()
+                    val secondsFromMidnight = cached.tomorrowSubuh.toSecondOfDay().toLong()
                     secondsUntilNext = (secondsUntilMidnight + secondsFromMidnight).coerceAtLeast(0)
                 }
             }
 
             // 2. Active Prayer Semantics (P4.3):
-            // A prayer is active from its time until the next prayer's time.
-            // Isya stays active until Subuh, including after midnight.
             if (subuhTime != null && referenceTime.isBefore(subuhTime)) {
                 // Between midnight and Subuh: yesterday's Isya is active
                 identifiedActivePrayer = Prayer.ISYA
@@ -169,25 +300,23 @@ object PrayerCalculationEngine {
         }
 
         val prayerItems = rawList.map { (prayer, time) ->
+            val isZuhurOnFridayMosque = key.isMosqueMode && isFriday && (prayer == Prayer.ZUHUR)
             PrayerTimeItem(
                 prayer = prayer,
                 time = time,
                 isNext = isToday && (prayer == identifiedNextPrayer),
                 isActive = isToday && (prayer == identifiedActivePrayer),
                 isFriday = isFriday,
-                iqamahMinutesAfter = iqamahOffsets[prayer] ?: 0
+                iqamahMinutesAfter = if (isZuhurOnFridayMosque) 0 else (key.iqamahOffsets[prayer] ?: 0),
+                jumuahSittings = if (isZuhurOnFridayMosque) jumuahSittings else emptyList(),
+                secondaryTimeNote = if (isZuhurOnFridayMosque) cached.secondaryJumuahNote else null
             )
         }
 
-        val maghribZoned = if (magribTime != null) ZonedDateTime.of(date, magribTime, config.zoneId) else null
-        val hijriFormatted = HijriCalendarEngine.formatHijriDate(
-            date = date,
-            offsetDays = hijriOffsetDays,
-            now = referenceZoned,
-            maghribTime = maghribZoned,
-            changeAtMidnight = hijriChangeAtMidnight
-        )
-        val gregorianFormatted = HijriCalendarEngine.formatGregorianDate(date)
+        val useAfterMaghrib = !key.hijriChangeAtMidnight &&
+            cached.maghribZoned != null &&
+            !referenceZoned.isBefore(cached.maghribZoned)
+        val hijriFormatted = if (useAfterMaghrib) cached.hijriAfterMaghrib else cached.hijriBeforeMaghrib
 
         val nextItem = prayerItems.firstOrNull { it.prayer == identifiedNextPrayer }
         val activeItem = prayerItems.firstOrNull { it.prayer == identifiedActivePrayer }
@@ -195,9 +324,9 @@ object PrayerCalculationEngine {
         return PrayerTimesDay(
             date = date,
             hijriDate = hijriFormatted,
-            gregorianDate = gregorianFormatted,
+            gregorianDate = cached.gregorianFormatted,
             prayers = prayerItems,
-            sunrise = sunriseTime,
+            sunrise = cached.sunriseTime,
             nextPrayer = nextItem,
             activePrayer = activeItem,
             secondsUntilNext = secondsUntilNext
@@ -239,9 +368,22 @@ object PrayerCalculationEngine {
     fun getPrayerAtExactTimeStrike(
         todayPrayerTimes: PrayerTimesDay,
         currentTime: LocalTime = LocalTime.now(),
-        windowMinutes: Long = 5
+        windowMinutes: Long = 5,
+        isMosqueMode: Boolean = false
     ): Prayer? {
+        val zuhurItem = todayPrayerTimes.prayers.firstOrNull { it.prayer == Prayer.ZUHUR }
+        if (isMosqueMode && zuhurItem != null && zuhurItem.isFriday && zuhurItem.jumuahSittings.isNotEmpty()) {
+            for (sitting in zuhurItem.jumuahSittings) {
+                val diffSeconds = ChronoUnit.SECONDS.between(sitting, currentTime)
+                if (diffSeconds in 0..(windowMinutes * 60)) {
+                    return Prayer.ZUHUR
+                }
+            }
+        }
         for (item in todayPrayerTimes.prayers) {
+            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday && item.jumuahSittings.isNotEmpty()) {
+                continue
+            }
             val prayerTime = item.time ?: continue
             val diffSeconds = ChronoUnit.SECONDS.between(prayerTime, currentTime)
             if (diffSeconds in 0..(windowMinutes * 60)) {
@@ -253,11 +395,13 @@ object PrayerCalculationEngine {
 
     /**
      * Calculates all valid prayer events for a given calendar date as ZonedDateTime instances.
+     * Respects Friday Mosque Mode Adhan timing (AT_ZUHR vs AT_JUMUAH).
      * Null times are omitted (P4.2).
      */
     fun getDayPrayerEvents(
         date: LocalDate,
-        config: PrayerConfig
+        config: PrayerConfig,
+        settings: AppSettings? = null
     ): List<PrayerEvent> {
         val coordinates = Coordinates(config.latitude, config.longitude)
         val dateComponents = DateComponents(date.year, date.monthValue, date.dayOfMonth)
@@ -267,7 +411,19 @@ object PrayerCalculationEngine {
 
         val events = mutableListOf<PrayerEvent>()
         dateToZonedDateTime(prayerTimes.fajr, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.SUBUH, it)) }
-        dateToZonedDateTime(prayerTimes.dhuhr, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.ZUHUR, it)) }
+
+        val zuhurZoned = dateToZonedDateTime(prayerTimes.dhuhr, date, config.zoneId)
+        if (zuhurZoned != null) {
+            val isFriday = (date.dayOfWeek == DayOfWeek.FRIDAY)
+            val zuhurEventTime = if (settings != null && settings.isMosqueMode && isFriday && settings.fridayAdhanTiming == FridayAdhanTiming.AT_JUMUAH) {
+                val sittings = JumuahCalculator.resolveSittings(date, config, settings.jumuahMode, settings.jumuahTimes, zuhurZoned)
+                sittings.first()
+            } else {
+                zuhurZoned
+            }
+            events.add(PrayerEvent(Prayer.ZUHUR, zuhurEventTime))
+        }
+
         dateToZonedDateTime(prayerTimes.asr, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.ASHR, it)) }
         dateToZonedDateTime(prayerTimes.maghrib, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.MAGRIB, it)) }
         dateToZonedDateTime(prayerTimes.isha, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.ISYA, it)) }
@@ -296,13 +452,14 @@ object PrayerCalculationEngine {
      */
     fun nextPrayerEvent(
         now: ZonedDateTime,
-        config: PrayerConfig
+        config: PrayerConfig,
+        settings: AppSettings? = null
     ): PrayerEvent? {
         val today = now.toLocalDate()
         val tomorrow = today.plusDays(1)
 
-        val todayEvents = getDayPrayerEvents(today, config)
-        val tomorrowEvents = getDayPrayerEvents(tomorrow, config)
+        val todayEvents = getDayPrayerEvents(today, config, settings)
+        val tomorrowEvents = getDayPrayerEvents(tomorrow, config, settings)
 
         val allEvents = todayEvents + tomorrowEvents
         return allEvents.firstOrNull { it.at.isAfter(now) }
@@ -311,7 +468,7 @@ object PrayerCalculationEngine {
     fun nextPrayerEvent(
         now: ZonedDateTime,
         settings: AppSettings
-    ): PrayerEvent? = nextPrayerEvent(now, PrayerConfig.fromAppSettings(settings))
+    ): PrayerEvent? = nextPrayerEvent(now, PrayerConfig.fromAppSettings(settings), settings)
 
     fun nextPrayerEvent(
         now: ZonedDateTime,
@@ -333,13 +490,14 @@ object PrayerCalculationEngine {
      */
     fun nextReminderEvent(
         now: ZonedDateTime,
-        config: PrayerConfig
+        config: PrayerConfig,
+        settings: AppSettings? = null
     ): PrayerReminderEvent? {
         val today = now.toLocalDate()
         val tomorrow = today.plusDays(1)
 
-        val todayEvents = getDayPrayerEvents(today, config)
-        val tomorrowEvents = getDayPrayerEvents(tomorrow, config)
+        val todayEvents = getDayPrayerEvents(today, config, settings)
+        val tomorrowEvents = getDayPrayerEvents(tomorrow, config, settings)
 
         val allReminders = (todayEvents + tomorrowEvents).map {
             PrayerReminderEvent(
@@ -355,7 +513,7 @@ object PrayerCalculationEngine {
     fun nextReminderEvent(
         now: ZonedDateTime,
         settings: AppSettings
-    ): PrayerReminderEvent? = nextReminderEvent(now, PrayerConfig.fromAppSettings(settings))
+    ): PrayerReminderEvent? = nextReminderEvent(now, PrayerConfig.fromAppSettings(settings), settings)
 
     fun nextReminderEvent(
         now: ZonedDateTime,

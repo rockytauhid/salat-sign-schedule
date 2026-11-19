@@ -1,5 +1,11 @@
 # SalatSign — Terminology & Localization Glossary
 
+> [!NOTE]
+> **Localization Release Status:**
+> - **English (en-AU):** Approved and shipped as the primary source of truth for the launch release.
+> - **Indonesian (id/in):** Translated in `values-in/` (retained in repository, marked **not shipped**). Requires owner review (Human Task H5) using `docs/i18n/review-id.csv` before shipping.
+> - **Arabic (ar):** Drafted in `values-ar/` (retained in repository, marked **not shipped**). Requires a native Arabic reviewer before shipping.
+
 This glossary documents standard Islamic and application terminology used across SalatSign in English (en-AU), Indonesian (id/in), and Arabic (ar).
 
 ---

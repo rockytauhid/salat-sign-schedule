@@ -7,13 +7,28 @@ enum class AppLanguage {
     SYSTEM,
     EN,
     ID,
-    AR
+    AR;
+
+    companion object {
+        val ShippedLanguages: List<AppLanguage> = listOf(EN) // Scoped to English only for launch release (F3)
+        val isMultiLanguageShipped: Boolean get() = ShippedLanguages.size > 1
+    }
 }
 
 enum class ThemeMode(val displayName: String) {
     ALWAYS_DARK("Mode Gelap (OLED/Malam)"),
     ALWAYS_LIGHT("Mode Terang (Siang)"),
     AUTO_DAY_NIGHT("Otomatis (Siang Terang / Malam Gelap)")
+}
+
+enum class JumuahMode {
+    FIXED,
+    AFTER_ZUHR
+}
+
+enum class FridayAdhanTiming {
+    AT_ZUHR,
+    AT_JUMUAH
 }
 
 enum class MosqueIconPreset(val displayName: String) {
@@ -104,11 +119,12 @@ data class AppSettings(
     val hijriOffsetDays: Int = 0,
     val hijriChangeAtMidnight: Boolean = false, // default false: advances at Maghrib
     val prePrayerReminderEnabled: Boolean = true,
-    val adhanSubuh: AdhanAudioOption = AdhanAudioOption.DefaultSubuh,
-    val adhanZuhur: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanAshr: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanMagrib: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
-    val adhanIsya: AdhanAudioOption = AdhanAudioOption.DefaultStandard,
+    val adhanSubuh: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanZuhur: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanAshr: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanMagrib: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanIsya: AdhanAudioOption = AdhanAudioOption.Silent,
+    val adhanHintDismissed: Boolean = false,
     // Per-prayer offsets (-30..+30 mins)
     val offsetSubuh: Int = 0,
     val offsetSunrise: Int = 0,
@@ -126,6 +142,10 @@ data class AppSettings(
     val mosqueModeAdhanEnabled: Boolean = false,
     val mosqueModeRemindersEnabled: Boolean = false,
     val showStrikeHighlight: Boolean = true,
+    // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+    val jumuahMode: JumuahMode = JumuahMode.FIXED,
+    val jumuahTimes: List<String> = emptyList(),
+    val fridayAdhanTiming: FridayAdhanTiming = FridayAdhanTiming.AT_ZUHR,
     // Localization & Display Options
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val is24HourFormat: Boolean = true,
@@ -155,6 +175,13 @@ data class AppSettings(
             Prayer.ISYA -> adhanIsya
         }
     }
+
+    fun hasConfiguredAudibleAdhan(): Boolean =
+        adhanSubuh.type != AdhanAudioType.SILENT ||
+        adhanZuhur.type != AdhanAudioType.SILENT ||
+        adhanAshr.type != AdhanAudioType.SILENT ||
+        adhanMagrib.type != AdhanAudioType.SILENT ||
+        adhanIsya.type != AdhanAudioType.SILENT
 
     fun offsetFor(prayer: Prayer): Int {
         return when (prayer) {

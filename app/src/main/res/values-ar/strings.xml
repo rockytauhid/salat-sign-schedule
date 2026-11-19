@@ -133,6 +133,13 @@
     <string name="storage_empty_folder">لا توجد ملفات مدعومة في هذا المجلد.</string>
     <string name="storage_empty_hint">تأكد من توصيل ذاكرة USB أو نسخ الملفات إلى الذاكرة الداخلية.</string>
     <string name="storage_import_failed">فشل استيراد الملف</string>
+    <string name="storage_mediastore_title">مكتبة الوسائط</string>
+    <string name="storage_permission_rationale">مطلوب إذن الوصول إلى التخزين لتصفح واستيراد الملفات من وحدة USB والذاكرة المحلية.</string>
+    <string name="storage_permission_denied">تم رفض إذن التخزين. لا يمكن تصفح الملفات الخارجية بدون إذن.</string>
+    <string name="storage_grant_permission">منح الإذن</string>
+    <string name="storage_system_picker">أداة اختيار النظام</string>
+    <string name="storage_items_count">%1$d عناصر</string>
+    <string name="storage_item_single">عنصر واحد</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">الإعدادات</string>
@@ -253,4 +260,32 @@
     <!-- About & Credit -->
     <string name="about_credit">SalatSign بواسطة Rocky Adam Tauhid</string>
     <string name="about_license">مفتوح المصدر بموجب رخصة GPL-3.0-or-later</string>
+
+    <!-- Home Adhan Hint -->
+    <string name="home_adhan_silent_hint">لم يتم تثبيت ملف أذان: يمكنك استيراد الأذان من وحدة USB عبر الإعدادات.</string>
+    <string name="home_adhan_silent_hint_dismiss">إغلاق</string>
+
+    <!-- Jumu'ah (Friday) Schedule -->
+    <string name="settings_section_jumuah">جدول صلاة الجمعة</string>
+    <string name="settings_jumuah_desc">ضبط فترات ومواعيد صلاة الجمعة. يطبق في وضع المسجد فقط.</string>
+    <string name="settings_jumuah_mode_title">طريقة حساب وقت الجمعة</string>
+    <string name="settings_jumuah_mode_fixed">وقت ثابت على مدار العام</string>
+    <string name="settings_jumuah_mode_fixed_desc">يقيم المسجد صلاة الجمعة في وقت محدد على مدار العام (مثلاً 1:00 م).</string>
+    <string name="settings_jumuah_mode_after_zuhr">بعد دخول وقت الظهر</string>
+    <string name="settings_jumuah_mode_after_zuhr_desc">تبدأ الجمعة بعد عدد محدد من الدقائق من دخول وقت الظهر الفلكي.</string>
+    <string name="settings_jumuah_sittings_count_title">عدد فترات الصلاة</string>
+    <string name="settings_jumuah_sittings_1">فترة واحدة</string>
+    <string name="settings_jumuah_sittings_2">فترتان</string>
+    <string name="settings_jumuah_sittings_3">3 فترات</string>
+    <string name="settings_jumuah_sitting_n">الفترة %1$d</string>
+    <string name="settings_jumuah_zuhr_begins">يبدأ الظهر %1$s</string>
+    <string name="settings_jumuah_friday_adhan_timing_title">توقيت أذان يوم الجمعة</string>
+    <string name="settings_jumuah_adhan_at_zuhr">عند وقت الظهر</string>
+    <string name="settings_jumuah_adhan_at_zuhr_desc">رفع الأذان عند دخول وقت الظهر الفلكي (افتراضي).</string>
+    <string name="settings_jumuah_adhan_at_jumuah">عند أول فترة للجمعة</string>
+    <string name="settings_jumuah_adhan_at_jumuah_desc">رفع الأذان عند بداية الفترة الأولى لصلاة الجمعة.</string>
+    <string name="settings_jumuah_warning_before_zuhr">تنبيه: الفترة %1$s قبل وقت الظهر (%2$s) في %3$s</string>
+    <string name="settings_jumuah_warning_after_asr">غير صالح: الفترة %1$s توافق أو بعد العصر (%2$s) في %3$s</string>
+    <string name="wizard_step_jumuah_title">الخطوة %1$d: جدول صلاة الجمعة</string>
+    <string name="wizard_btn_skip_jumuah">تخطي (يمكن ضبطه في الإعدادات)</string>
 </resources>

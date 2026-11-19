@@ -31,7 +31,7 @@
 
 ### 3. Home Mode Highlights
 - **Cross-App Adhan Audio:** Exact prayer times trigger `AdhanPlaybackService` (`ForegroundService`) using `AudioAttributes.USAGE_ALARM` with `CONTENT_TYPE_SONIFICATION`, ensuring the Adhan is clearly heard even while streaming video or using other TV apps.
-- **Per-Prayer Audio Selector:** Choose between dedicated Subuh Adhan, Standard Adhan, Silent mode, or pick custom local `.mp3`/`.ogg` audio files from USB/storage.
+- **Per-Prayer Audio Selector:** Ships silent by default (bundled audio pending licensed recordings); configure per prayer or import custom local audio files (.mp3, .ogg) from USB or TV storage.
 - **15-Minute Pre-Prayer Heads-Up:** Optional system notification 15 minutes before prayer.
 - **Interactive D-Pad Date Traversal:** Browse past and future prayer schedules with Left/Right remote buttons, plus a dedicated "Hari Ini" (Today) shortcut.
 

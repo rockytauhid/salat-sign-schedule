@@ -133,6 +133,13 @@
     <string name="storage_empty_folder">Tidak ada file media yang didukung di folder ini.</string>
     <string name="storage_empty_hint">Pastikan USB flashdisk terpasang atau salin file ke folder Download / Internal.</string>
     <string name="storage_import_failed">Gagal mengimpor file</string>
+    <string name="storage_mediastore_title">Pustaka Media</string>
+    <string name="storage_permission_rationale">Izin penyimpanan diperlukan untuk menelusuri dan mengimpor file dari USB dan memori TV.</string>
+    <string name="storage_permission_denied">Izin penyimpanan ditolak. Tidak dapat menelusuri memori eksternal tanpa izin.</string>
+    <string name="storage_grant_permission">Berikan Izin</string>
+    <string name="storage_system_picker">Pemilih Sistem</string>
+    <string name="storage_items_count">%1$d item</string>
+    <string name="storage_item_single">1 item</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Pengaturan</string>
@@ -253,4 +260,32 @@
     <!-- About & Credit -->
     <string name="about_credit">SalatSign oleh Rocky Adam Tauhid</string>
     <string name="about_license">Sumber terbuka di bawah GPL-3.0-or-later</string>
+
+    <!-- Home Adhan Hint -->
+    <string name="home_adhan_silent_hint">Belum ada audio adhan terpasang: impor file audio dari USB di Pengaturan.</string>
+    <string name="home_adhan_silent_hint_dismiss">Tutup</string>
+
+    <!-- Jumu'ah (Friday) Schedule -->
+    <string name="settings_section_jumuah">Jadwal Shalat Jumat</string>
+    <string name="settings_jumuah_desc">Atur sesi dan waktu shalat Jumat. Hanya berlaku di Mode Masjid.</string>
+    <string name="settings_jumuah_mode_title">Metode Waktu Shalat Jumat</string>
+    <string name="settings_jumuah_mode_fixed">Waktu Jam Tetap</string>
+    <string name="settings_jumuah_mode_fixed_desc">Masjid menyelenggarakan shalat Jumat pada jam dinding tetap sepanjang tahun (mis. 13:00).</string>
+    <string name="settings_jumuah_mode_after_zuhr">Setelah Waktu Zuhur</string>
+    <string name="settings_jumuah_mode_after_zuhr_desc">Shalat Jumat dimulai N menit setelah waktu masuk Zuhur astronomis.</string>
+    <string name="settings_jumuah_sittings_count_title">Jumlah Sesi / Gelombang</string>
+    <string name="settings_jumuah_sittings_1">1 Sesi</string>
+    <string name="settings_jumuah_sittings_2">2 Sesi</string>
+    <string name="settings_jumuah_sittings_3">3 Sesi</string>
+    <string name="settings_jumuah_sitting_n">Sesi %1$d</string>
+    <string name="settings_jumuah_zuhr_begins">Zuhur mulai %1$s</string>
+    <string name="settings_jumuah_friday_adhan_timing_title">Waktu Adhan Hari Jumat</string>
+    <string name="settings_jumuah_adhan_at_zuhr">Saat Waktu Zuhur</string>
+    <string name="settings_jumuah_adhan_at_zuhr_desc">Kumandangkan adhan saat waktu Zuhur astronomis masuk (Default).</string>
+    <string name="settings_jumuah_adhan_at_jumuah">Saat Sesi Pertama Jumat</string>
+    <string name="settings_jumuah_adhan_at_jumuah_desc">Kumandangkan adhan tepat saat dimulainya sesi pertama shalat Jumat.</string>
+    <string name="settings_jumuah_warning_before_zuhr">Peringatan: Sesi %1$s lebih awal dari Zuhur (%2$s) pada %3$s</string>
+    <string name="settings_jumuah_warning_after_asr">Tidak Valid: Sesi %1$s melampaui Asr (%2$s) pada %3$s</string>
+    <string name="wizard_step_jumuah_title">Langkah %1$d: Jadwal Shalat Jumat</string>
+    <string name="wizard_btn_skip_jumuah">Lewati (Dapat diatur di Pengaturan)</string>
 </resources>

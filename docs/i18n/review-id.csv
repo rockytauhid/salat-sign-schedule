@@ -1,201 +1,201 @@
 key,english,indonesian,notes,status
-prayer_subuh,Fajr,Subuh,First obligatory prayer,approved
-prayer_zuhur,Dhuhr,Zuhur,Midday prayer,approved
-prayer_ashr,Asr,Ashr,Afternoon prayer,approved
-prayer_magrib,Maghrib,Magrib,Sunset prayer,approved
-prayer_isya,Isha,Isya,Night prayer,approved
-prayer_jumuah,Jumu'ah,Jumat,Friday congregational prayer,approved
-prayer_sunrise,Sunrise,Terbit,Astronomical sunrise,approved
-prayer_iqamah,Iqamah,Iqamah,Call to stand for prayer,approved
-hijri_date_format,"%1$d %2$s %3$d %4$s","%1$d %2$s %3$d %4$s",Positional date format,approved
-hijri_year_suffix,AH,H,Year era suffix,approved
-lang_system,System Default,Default Sistem,Device locale,approved
-lang_en,English (Australia),English (Australia),English language label,approved
-lang_id,Bahasa Indonesia,Bahasa Indonesia,Indonesian language label,approved
-lang_ar,العربية,العربية,Arabic language label,approved
-theme_always_dark,Dark Theme (OLED / Night),Mode Gelap (OLED / Malam),Display theme,approved
-theme_always_light,Light Theme (Day),Mode Terang (Siang),Display theme,approved
-theme_auto_day_night,Automatic (Day Light / Night Dark),Otomatis (Siang Terang / Malam Gelap),Display theme,approved
-mosque_icon_dome_crescent,Dome & Crescent,Kubah & Bulan Sabit,Preset icon,approved
-mosque_icon_minaret,Mosque Minaret,Menara Masjid,Preset icon,approved
-mosque_icon_geometric_star,8-Point Star (Rub el Hizb),Bintang 8 (Rub el Hizb),Preset icon,approved
-mosque_icon_mihrab,Classic Mihrab,Mihrab Klasik,Preset icon,approved
-mosque_icon_custom,Custom Logo / USB,Logo Kustom / USB,Preset icon,approved
-mosque_font_modern_sans,Modern Sans Bold,Modern Sans Bold,Preset font,approved
-mosque_font_traditional_serif,Traditional Serif,Klasik Tradisional,Preset font,approved
-mosque_font_elegant_display,Elegant Display,Elegan Kaligrafi,Preset font,approved
-mosque_font_clean_tech,Clean Minimalist,Minimalis Bersih,Preset font,approved
-adhan_standard,Standard Adhan,Adhan Standar,Audio option,approved
-adhan_subuh_special,Fajr Adhan (Special),Adhan Subuh (Khusus),Audio option,approved
-adhan_custom_file,Custom Audio / USB,Audio Kustom / USB,Audio option,approved
-adhan_silent,Silent / Disabled,Hening / Nonaktif,Audio option,approved
-btn_close,Close,Tutup,Standard button,approved
-btn_cancel,Cancel,Batal,Standard button,approved
-btn_save,Save,Simpan,Standard button,approved
-btn_delete,Delete,Hapus,Standard button,approved
-btn_done,Done,Selesai,Standard button,approved
-btn_back,Back,Kembali,Standard button,approved
-btn_next,Next,Lanjut (Berikutnya),Standard button,approved
-btn_finish,Finish & Launch App,Selesai & Buka Aplikasi,Wizard finish,approved
-btn_skip,Skip Setup (Default),Lewati Setup (Default),Wizard skip,approved
-btn_change_pin,Change PIN,Ubah PIN,PIN button,approved
-btn_change_pin_now,Change PIN Now,Ganti PIN Sekarang,PIN button,approved
-btn_keep_default_pin,Keep Default PIN,Gunakan Default,PIN button,approved
-btn_reset_pin,Reset to Default PIN (0000),Reset ke PIN Default (0000),PIN reset,approved
-header_nav_prev_day,Previous Day,Hari Sebelumnya,Date navigation,approved
-header_nav_prev_day_short,Prev,H-1,Date navigation short,approved
-header_nav_today,Today,Hari Ini,Date navigation,approved
-header_nav_next_day,Next Day,Hari Berikutnya,Date navigation,approved
-header_nav_next_day_short,Next,H+1,Date navigation short,approved
-header_settings,Settings,Pengaturan,Header icon button,approved
-home_badge_next_prayer,NEXT PRAYER,SHALAT BERIKUTNYA,Home badge,approved
-home_countdown_to_adhan,Until Adhan: %1$s,Menuju Adhan: %1$s,Ticking countdown,approved
-home_sunrise,Sunrise: %1$s,Syuruq: %1$s,Sunrise badge,approved
-home_reminder_active,15m Reminder On,Pengingat 15m Aktif,Reminder badge,approved
-home_reminder_inactive,Reminder Off,Pengingat Nonaktif,Reminder badge,approved
-home_archive_future_schedule,Prayer Timetable Archive / Future,Jadwal Shalat Arsip / Masa Datang,Archive header,approved
-home_iqamah_time,Iqamah %1$s,Iqamah %1$s,Iqamah time,approved
-home_badge_active_prayer,PRAYER TIME,WAKTU SHALAT,Active prayer badge,approved
-home_badge_next,NEXT,SELANJUTNYA,Next prayer badge,approved
-mosque_strike_title,PRAYER TIME HAS ARRIVED,WAKTU SHALAT TELAH TIBA,Strike title,approved
-mosque_strike_prayer_name,%1$s Prayer,Shalat %1$s,Strike prayer,approved
-mosque_strike_admonition,Straighten and close the rows. Please silence mobile phones.,Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.,Congregation notice,approved
-mosque_iqamah_prefix,Iqamah: %1$s,Iqamah: %1$s,Mosque iqamah,approved
-mosque_next_prayer_badge,APPROACHING NEXT PRAYER,MENUJU SHALAT BERIKUTNYA,Signage badge,approved
-mosque_countdown_to_prayer,Until Prayer Time: %1$s,Menuju Waktu Shalat: %1$s,Signage countdown,approved
-mosque_default_name,Grand Mosque,Masjid Raya,Fallback name,approved
-mosque_default_subtitle,Straighten and close the prayer rows,Luruskan dan Rapatkan Shaf,Fallback subtitle,approved
-notif_channel_adhan_name,Adhan Playback,Pemutaran Adhan,Notification channel,approved
-notif_channel_adhan_desc,Prayer time adhan audio alert notification,Notifikasi pemutaran suara Adhan waktu shalat,Notification channel,approved
-notif_channel_reminder_name,Prayer Reminder,Pengingat Shalat,Notification channel,approved
-notif_channel_reminder_desc,Notification 15 minutes before prayer time,Notifikasi 15 menit menjelang waktu shalat,Notification channel,approved
-notif_adhan_title,Time for %1$s Prayer,Waktu Shalat %1$s Telah Tiba,Foreground alert title,approved
-notif_adhan_text,Playing %1$s Adhan...,Mengumandangkan Adhan %1$s...,Foreground alert text,approved
-notif_adhan_stop_action,Stop Adhan,Hentikan Adhan,Notification action,approved
-notif_reminder_title,15 Minutes Until %1$s,15 Menit Menjelang %1$s,Reminder notification,approved
-notif_reminder_text,Prayer time for %1$s is approaching soon. Prepare for worship.,Waktu shalat %1$s akan segera tiba. Siapkan diri untuk beribadah.,Reminder notification,approved
-pin_title_verify,Enter Admin PIN,Masukkan PIN Admin,Dialog title,approved
-pin_title_set_new,Set New Admin PIN,Atur PIN Admin Baru,Dialog title,approved
-pin_title_confirm_new,Confirm New PIN,Konfirmasi PIN Baru,Dialog title,approved
-pin_subtitle_default,Default PIN: 0000,Gunakan PIN bawaan: 0000,Dialog subtitle,approved
-pin_subtitle_enter,Enter 4–8 digit admin PIN,Masukkan 4-8 digit PIN admin,Dialog subtitle,approved
-pin_subtitle_digits,Enter 4 to 8 digits,Masukkan 4 hingga 8 digit angka,Dialog subtitle,approved
-pin_subtitle_repeat,Re-enter the same PIN,Masukkan PIN yang sama sekali lagi,Dialog subtitle,approved
-pin_err_format,PIN must be 4–8 digits,PIN harus 4-8 digit angka,Error message,approved
-pin_err_incorrect_remaining,Incorrect PIN. Attempts remaining: %1$d,PIN salah. Sisa percobaan: %1$d,Error message,approved
-pin_err_locked_sec,Too many failed attempts. Locked for %1$d seconds.,Terlalu banyak percobaan. Terkunci %1$d detik.,Error message,approved
-pin_err_locked_retry,PIN locked. Try again in %1$d seconds.,PIN Terkunci. Coba lagi dalam %1$d detik.,Error message,approved
-pin_err_locked_banner,PIN Locked! Try again in %1$d seconds,PIN Terkunci! Coba lagi dalam %1$d detik,Status banner,approved
-pin_msg_confirm_new,Re-enter new PIN to confirm,Ulangi PIN baru untuk konfirmasi,Status message,approved
-pin_err_mismatch,PINs do not match. Please try again.,PIN tidak cocok. Silakan masukkan kembali.,Error message,approved
-storage_internal,Internal Storage,Penyimpanan Internal,Drive name,approved
-storage_usb,USB Flash Drive (%1$s),USB Flashdisk (%1$s),Drive name,approved
-storage_external,External Drive (%1$s),Drive Eksternal (%1$s),Drive name,approved
-storage_title_slide_image,Import Slide Poster (USB/TV),Tambah Slide Gambar (USB/TV),Picker title,approved
-storage_title_mosque_logo,Import Mosque Logo (USB/TV),Pilih Logo Masjid dari USB Flashdisk,Picker title,approved
-storage_title_custom_adhan,Import Custom Adhan (USB/TV),Pilih Audio Adhan dari USB Flashdisk,Picker title,approved
-storage_hint_slide_image,Supports JPG, PNG, WEBP (Max Full HD 1080p resolution),Mendukung JPG, PNG, WEBP (Maksimal resolusi Full HD 1080p),Picker hint,approved
-storage_hint_mosque_logo,Supports JPG, PNG (Max 512x512 resolution),Mendukung JPG, PNG (Maksimal resolusi 512x512),Picker hint,approved
-storage_hint_custom_adhan,Supports MP3, WAV, M4A, OGG (Max 10MB / 10 minutes),Mendukung MP3, WAV, M4A, OGG (Maksimal 10MB / 10 menit),Picker hint,approved
-storage_location_prefix,Location: %1$s,Lokasi: %1$s,Directory path,approved
-storage_parent_folder,.. [Parent Folder],.. [Folder Atas],Parent folder navigation,approved
-storage_empty_folder,No supported media files in this folder.,Tidak ada file media yang didukung di folder ini.,Empty state,approved
-storage_empty_hint,Ensure USB flash drive is connected or copy files to Internal storage.,Pastikan USB flashdisk terpasang atau salin file ke folder Download / Internal.,Empty state hint,approved
-storage_import_failed,Failed to import file,Gagal mengimpor file,Error message,approved
-settings_title,Settings,Pengaturan,Screen title,approved
-settings_subtitle_home,Home Mode Configuration (Interactive),Konfigurasi Penggunaan Mode Rumah (Personal),Subtitle,approved
-settings_subtitle_mosque,Mosque Mode Configuration (Digital Signage),Konfigurasi Penggunaan Mode Masjid (Digital Signage),Subtitle,approved
-settings_open_wizard,Launch Setup Wizard,Buka Setup Wizard,Header button,approved
-settings_pin_warning_title,Security Warning: Default PIN (0000) In Use,Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan,Banner title,approved
-settings_pin_warning_desc,The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.,Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.,Banner desc,approved
-settings_mode_active_mosque,Active Mode: MOSQUE MODE (Digital Signage),Mode Aktif: MODE MASJID (Digital Signage),Mode title,approved
-settings_mode_active_home,Active Mode: HOME MODE (Personal),Mode Aktif: MODE RUMAH (Personal),Mode title,approved
-settings_mode_switch_to_home,Click to switch to Home Mode (Personal),Klik tombol ini untuk beralih ke Mode Rumah (Personal),Mode toggle,approved
-settings_mode_switch_to_mosque,Click to switch to Mosque Mode (Digital Signage),Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage),Mode toggle,approved
-settings_section_language,Display Language,Bahasa Tampilan,Section,approved
-settings_section_theme,Display Theme (Dark / Light),Pilihan Tema Tampilan (Dark / Light),Section,approved
-settings_section_calc_method,Prayer Calculation Method,Metode Perhitungan Waktu Shalat,Section,approved
-settings_section_madhab,Asr Prayer Madhab,Mazhab untuk Waktu Ashr,Section,approved
-settings_madhab_standard,Standard (Shafi'i, Maliki, Hanbali),Standar (Syafi'i, Maliki, Hanbali),Madhab option,approved
-settings_madhab_standard_desc,Shadow 1x object length (majority of Southeast Asia, Middle East).,Bayangan 1x panjang objek (mayoritas Muslim Indonesia, Malaysia, Asia Tenggara).,Madhab desc,approved
-settings_madhab_hanafi,Hanafi,Hanafi,Madhab option,approved
-settings_madhab_hanafi_desc,Shadow 2x object length (Asr starts ~45–60 minutes later).,Bayangan 2x panjang objek (Ashr dimulai sekitar 45-60 menit lebih lambat).,Madhab desc,approved
-settings_section_high_latitude,High-Latitude Rule (Polar / High Latitudes),Aturan Garis Lintang Tinggi (High-Latitude),Section,approved
-settings_high_latitude_none,Automatic (None),Otomatis (None),Option,approved
-settings_high_latitude_motn,Middle of the Night,Tengah Malam (Middle of Night),Option,approved
-settings_high_latitude_sotn,Seventh of the Night,Sepertujuh Malam (1/7 of Night),Option,approved
-settings_high_latitude_angle,Twilight Angle,Sudut Fajar/Senja (Angle),Option,approved
-settings_section_offsets,Prayer Time Offsets (Minutes),Koreksi Waktu Shalat (Menit),Section,approved
-settings_offset_sunrise,Sunrise Offset (Minutes),Koreksi Waktu Syuruq (Terbit),Section,approved
-settings_section_iqamah,Iqamah Schedule (Minutes After Adhan),Jadwal Iqamah (Menit Setelah Adhan),Section,approved
-settings_iqamah_disabled,Disabled (0m),Nonaktif (0m),Option,approved
-settings_iqamah_minutes,%1$d min,%1$d mnt,Format,approved
-settings_section_location,City Location & Timezone,Pilihan Lokasi Kota & Zona Waktu,Section,approved
-settings_current_zone,Timezone: %1$s,Zona: %1$s,Format,approved
-settings_section_hijri_offset,Hijri Calendar Day Offset,Koreksi Penanggalan Hijriyah,Section,approved
-settings_section_hijri_rollover,Hijri Date Rollover Time,Pergantian Tanggal Hijriyah,Section,approved
-settings_hijri_rollover_magrib,At Sunset / Maghrib (Traditional Islamic standard),Saat Terbenam / Magrib (Tradisional Islam),Option,approved
-settings_hijri_rollover_midnight,At Midnight 00:00 (Civil calendar sync),Saat Tengah Malam 00:00 (Sinkron Kalender Masehi),Option,approved
-settings_section_home_reminders,15-Minute Pre-Prayer Reminder,Pengingat 15 Menit Sebelum Shalat,Section,approved
-settings_reminder_toggle_on,15-Minute Pre-Prayer Reminder: ACTIVE,Pengingat 15 Menit Sebelum Shalat: AKTIF,Toggle state,approved
-settings_reminder_toggle_off,15-Minute Pre-Prayer Reminder: DISABLED,Pengingat 15 Menit Sebelum Shalat: NONAKTIF,Toggle state,approved
-settings_reminder_toggle_desc,Display a notification on the TV 15 minutes before prayer time.,Menampilkan notifikasi di layar TV 15 menit menjelang waktu adhan tiba.,Description,approved
-settings_section_home_adhan,Adhan Audio per Prayer Time,Pilihan Suara Adhan per Waktu Shalat,Section,approved
-settings_btn_usb_file,USB / File,USB / File,Button,approved
-settings_section_mosque_audio,Mosque Mode Audio & Highlights,Audio & Highlight Mode Masjid,Section,approved
-settings_mosque_adhan_toggle,Mosque Mode Adhan Audio,Suara Adhan di Mode Masjid,Section,approved
-settings_mosque_adhan_on,Mosque Mode Adhan Audio: ACTIVE,Suara Adhan di Mode Masjid: AKTIF,Toggle state,approved
-settings_mosque_adhan_off,Mosque Mode Adhan Audio: SILENT (Default),Suara Adhan di Mode Masjid: HENING (Default),Toggle state,approved
-settings_mosque_adhan_desc,Play audible Adhan through TV speakers during Mosque digital signage.,Memutar suara Adhan melalui speaker TV saat digital signage aktif di masjid.,Description,approved
-settings_mosque_reminders_toggle,Mosque Mode Pre-Prayer Notifications,Notifikasi Pengingat di Mode Masjid,Section,approved
-settings_mosque_reminders_on,Mosque Mode Pre-Prayer Notifications: ACTIVE,Notifikasi Pengingat di Mode Masjid: AKTIF,Toggle state,approved
-settings_mosque_reminders_off,Mosque Mode Pre-Prayer Notifications: DISABLED (Default),Notifikasi Pengingat di Mode Masjid: NONAKTIF (Default),Toggle state,approved
-settings_mosque_strike_toggle,Exact-Time Visual Highlight Strike,Highlight Visual Tepat Waktu Shalat,Section,approved
-settings_mosque_strike_on,Visual Highlight Strike: ACTIVE (Default),Highlight Visual: AKTIF (Default),Toggle state,approved
-settings_mosque_strike_off,Visual Highlight Strike: DISABLED,Highlight Visual: NONAKTIF,Toggle state,approved
-settings_mosque_strike_desc,Interrupt announcement slideshow with a pulsing visual highlight at prayer time.,Menginterupsi slideshow pengumuman dengan banner visual berkedip saat waktu shalat tiba.,Description,approved
-settings_section_mosque_symbol,Mosque Icon / Emblem Preset,Pilihan Ikon / Simbol Masjid,Section,approved
-settings_btn_import_logo_usb,Select Mosque Logo from USB Drive,Pilih Logo Masjid dari USB Flashdisk,Button,approved
-settings_custom_logo_active,Custom Mosque Logo Active,Logo Masjid Kustom Aktif,Badge,approved
-settings_section_mosque_font,Mosque Name Font Style,Gaya Font Nama Masjid,Section,approved
-settings_section_mosque_identity,Mosque Name & Subtitle,Nama & Subtitle Identitas Masjid,Section,approved
-settings_custom_name_saved,Custom Name Active: %1$s,Nama Kustom Aktif: %1$s,Status,approved
-settings_custom_subtitle_saved,Custom Subtitle Active: %1$s,Subtitle Kustom Aktif: %1$s,Status,approved
-settings_section_schedule_duration,Prayer Schedule Display Duration,Durasi Tampilan Jadwal Shalat,Section,approved
-settings_section_slides,Announcement Slides (%1$d of %2$d Slides),Daftar Slide Pengumuman (%1$d dari %2$d Slide),Section,approved
-settings_btn_add_image_slide,Add Image Slide (USB/TV),Tambah Slide Gambar (USB/TV),Button,approved
-settings_btn_add_text_slide,Add Text Announcement Slide,Tambah Slide Pengumuman Teks,Button,approved
-settings_btn_clear_slides,Clear All Slides,Hapus Semua Slide,Button,approved
-settings_no_slides_title,No announcement slides yet,Belum ada slide pengumuman,Empty state,approved
-settings_no_slides_desc,Add image slides from USB flash drive or create text announcement slides.,Tambahkan slide poster gambar dari flashdisk atau buat pengumuman teks.,Empty state hint,approved
-settings_section_security,Admin PIN & Security Settings,Pengaturan PIN & Keamanan Admin,Section,approved
-settings_home_pin_toggle,Protect Settings with PIN in Home Mode,Lindungi Pengaturan dengan PIN di Mode Rumah,Section,approved
-settings_home_pin_on,Home Mode PIN Protection: ACTIVE,Perlindungan PIN Mode Rumah: AKTIF,Toggle state,approved
-settings_home_pin_off,Home Mode PIN Protection: DISABLED,Perlindungan PIN Mode Rumah: NONAKTIF,Toggle state,approved
-settings_home_pin_desc,Require PIN to open settings in Home Mode (always required in Mosque Mode).,Wajibkan PIN untuk membuka menu pengaturan di Mode Rumah (Mode Masjid selalu mewajibkan PIN).,Description,approved
-settings_custom_pin_active,Custom PIN Active (Hashed & Secured),PIN Kustom Aktif (Aman & Terenkripsi),Badge,approved
-settings_custom_pin_desc,Settings are protected with your custom PIN.,Pengaturan masjid terlindungi dengan PIN kustom Anda.,Description,approved
-settings_using_default_pin,Using Default PIN (0000),Masih Menggunakan PIN Bawaan (0000),Badge,approved
-settings_btn_change_admin_pin,Change Admin PIN,Ubah PIN Admin,Button,approved
-settings_time_format_toggle,12 / 24-Hour Time Format,Format Waktu 12 / 24 Jam,Section,approved
-settings_time_format_12,12-Hour (AM/PM),12 Jam (AM/PM),Option,approved
-settings_time_format_24,24-Hour (00:00),24 Jam (00:00),Option,approved
-settings_arabic_names_toggle,Show Arabic Prayer Names,Tampilkan Nama Shalat Bahasa Arab,Section,approved
-wizard_welcome,Welcome to SalatSign,Selamat Datang di SalatSign,Wizard header,approved
-wizard_step_indicator,Android TV Initial Setup Guide (Step %1$d of %2$d),Panduan Konfigurasi Awal Android TV (Langkah %1$d dari %2$d),Wizard subtitle,approved
-wizard_step_lang_title,Step 1: Select Display Language,Langkah 1: Pilih Bahasa Tampilan,Wizard step,approved
-wizard_step_location_title,Step %1$d: Select City Location & Timezone (Currently: %2$s),Langkah %1$d: Pilih Lokasi Kota & Zona Waktu (Saat ini: %2$s),Wizard step,approved
-wizard_step_method_title,Step %1$d: Prayer Calculation Method & Madhab,Langkah %1$d: Metode Perhitungan & Mazhab Waktu Shalat,Wizard step,approved
-wizard_step_mode_title,Step %1$d: Choose Application Usage Mode,Langkah %1$d: Pilih Mode Penggunaan Aplikasi,Wizard step,approved
-wizard_step_pin_title,Step %1$d: Admin Security PIN (TV Protection),Langkah %1$d: PIN Keamanan Admin (Pengaman TV),Wizard step,approved
-wizard_step_mosque_title,Step %1$d: Your Mosque Identity & Emblem,Langkah %1$d: Identitas & Simbol Masjid Anda,Wizard step,approved
-wizard_mode_home_title,HOME / PERSONAL MODE,MODE RUMAH (Personal),Mode title,approved
-wizard_mode_home_desc,Interactive prayer times with D-pad calendar navigation 15m reminders and customizable Adhan alerts.,Jadwal shalat interaktif keluarga dengan navigasi kalender remote TV pengingat 15 menit dan suara adhan.,Mode desc,approved
-wizard_mode_mosque_title,MOSQUE MODE (Digital Signage),MODE MASJID (Digital Signage),Mode title,approved
-wizard_mode_mosque_desc,Silent white-label public signage with prayer schedule custom mosque logo and announcement slideshow.,Tampilan layar digital signage masjid publik tanpa logo aplikasi slideshow jadwal & poster pengumuman.,Mode desc,approved
-wizard_mosque_silent_note,Mosque mode is silent by default. You can turn on adhan sound in Settings.,Mode masjid hening secara default. Anda dapat mengaktifkan suara adhan di Pengaturan.,Mode note,approved
-wizard_pin_default_title,Use Default PIN (0000),Gunakan PIN Bawaan (0000),Option title,approved
-wizard_pin_default_desc,Default PIN is 0000. You can change it at any time in Settings.,PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.,Option desc,approved
-wizard_pin_custom_title,Set New Custom PIN (4–8 Digits),Atur PIN Kustom Baru (4-8 Digit),Option title,approved
-wizard_pin_custom_desc,Highly recommended for TV displays so PIN cannot be easily guessed.,Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.,Option desc,approved
-wizard_pin_custom_active,Custom PIN Active (Saved),PIN Kustom Aktif (Tersimpan),Status,approved
+prayer_subuh,Fajr,Subuh,First obligatory prayer,pending
+prayer_zuhur,Dhuhr,Zuhur,Midday prayer,pending
+prayer_ashr,Asr,Ashr,Afternoon prayer,pending
+prayer_magrib,Maghrib,Magrib,Sunset prayer,pending
+prayer_isya,Isha,Isya,Night prayer,pending
+prayer_jumuah,Jumu'ah,Jumat,Friday congregational prayer,pending
+prayer_sunrise,Sunrise,Terbit,Astronomical sunrise,pending
+prayer_iqamah,Iqamah,Iqamah,Call to stand for prayer,pending
+hijri_date_format,"%1$d %2$s %3$d %4$s","%1$d %2$s %3$d %4$s",Positional date format,pending
+hijri_year_suffix,AH,H,Year era suffix,pending
+lang_system,System Default,Default Sistem,Device locale,pending
+lang_en,English (Australia),English (Australia),English language label,pending
+lang_id,Bahasa Indonesia,Bahasa Indonesia,Indonesian language label,pending
+lang_ar,العربية,العربية,Arabic language label,pending
+theme_always_dark,Dark Theme (OLED / Night),Mode Gelap (OLED / Malam),Display theme,pending
+theme_always_light,Light Theme (Day),Mode Terang (Siang),Display theme,pending
+theme_auto_day_night,Automatic (Day Light / Night Dark),Otomatis (Siang Terang / Malam Gelap),Display theme,pending
+mosque_icon_dome_crescent,Dome & Crescent,Kubah & Bulan Sabit,Preset icon,pending
+mosque_icon_minaret,Mosque Minaret,Menara Masjid,Preset icon,pending
+mosque_icon_geometric_star,8-Point Star (Rub el Hizb),Bintang 8 (Rub el Hizb),Preset icon,pending
+mosque_icon_mihrab,Classic Mihrab,Mihrab Klasik,Preset icon,pending
+mosque_icon_custom,Custom Logo / USB,Logo Kustom / USB,Preset icon,pending
+mosque_font_modern_sans,Modern Sans Bold,Modern Sans Bold,Preset font,pending
+mosque_font_traditional_serif,Traditional Serif,Klasik Tradisional,Preset font,pending
+mosque_font_elegant_display,Elegant Display,Elegan Kaligrafi,Preset font,pending
+mosque_font_clean_tech,Clean Minimalist,Minimalis Bersih,Preset font,pending
+adhan_standard,Standard Adhan,Adhan Standar,Audio option,pending
+adhan_subuh_special,Fajr Adhan (Special),Adhan Subuh (Khusus),Audio option,pending
+adhan_custom_file,Custom Audio / USB,Audio Kustom / USB,Audio option,pending
+adhan_silent,Silent / Disabled,Hening / Nonaktif,Audio option,pending
+btn_close,Close,Tutup,Standard button,pending
+btn_cancel,Cancel,Batal,Standard button,pending
+btn_save,Save,Simpan,Standard button,pending
+btn_delete,Delete,Hapus,Standard button,pending
+btn_done,Done,Selesai,Standard button,pending
+btn_back,Back,Kembali,Standard button,pending
+btn_next,Next,Lanjut (Berikutnya),Standard button,pending
+btn_finish,Finish & Launch App,Selesai & Buka Aplikasi,Wizard finish,pending
+btn_skip,Skip Setup (Default),Lewati Setup (Default),Wizard skip,pending
+btn_change_pin,Change PIN,Ubah PIN,PIN button,pending
+btn_change_pin_now,Change PIN Now,Ganti PIN Sekarang,PIN button,pending
+btn_keep_default_pin,Keep Default PIN,Gunakan Default,PIN button,pending
+btn_reset_pin,Reset to Default PIN (0000),Reset ke PIN Default (0000),PIN reset,pending
+header_nav_prev_day,Previous Day,Hari Sebelumnya,Date navigation,pending
+header_nav_prev_day_short,Prev,H-1,Date navigation short,pending
+header_nav_today,Today,Hari Ini,Date navigation,pending
+header_nav_next_day,Next Day,Hari Berikutnya,Date navigation,pending
+header_nav_next_day_short,Next,H+1,Date navigation short,pending
+header_settings,Settings,Pengaturan,Header icon button,pending
+home_badge_next_prayer,NEXT PRAYER,SHALAT BERIKUTNYA,Home badge,pending
+home_countdown_to_adhan,Until Adhan: %1$s,Menuju Adhan: %1$s,Ticking countdown,pending
+home_sunrise,Sunrise: %1$s,Syuruq: %1$s,Sunrise badge,pending
+home_reminder_active,15m Reminder On,Pengingat 15m Aktif,Reminder badge,pending
+home_reminder_inactive,Reminder Off,Pengingat Nonaktif,Reminder badge,pending
+home_archive_future_schedule,Prayer Timetable Archive / Future,Jadwal Shalat Arsip / Masa Datang,Archive header,pending
+home_iqamah_time,Iqamah %1$s,Iqamah %1$s,Iqamah time,pending
+home_badge_active_prayer,PRAYER TIME,WAKTU SHALAT,Active prayer badge,pending
+home_badge_next,NEXT,SELANJUTNYA,Next prayer badge,pending
+mosque_strike_title,PRAYER TIME HAS ARRIVED,WAKTU SHALAT TELAH TIBA,Strike title,pending
+mosque_strike_prayer_name,%1$s Prayer,Shalat %1$s,Strike prayer,pending
+mosque_strike_admonition,Straighten and close the rows. Please silence mobile phones.,Luruskan dan rapatkan shaf. Harap menonaktifkan nada dering ponsel.,Congregation notice,pending
+mosque_iqamah_prefix,Iqamah: %1$s,Iqamah: %1$s,Mosque iqamah,pending
+mosque_next_prayer_badge,APPROACHING NEXT PRAYER,MENUJU SHALAT BERIKUTNYA,Signage badge,pending
+mosque_countdown_to_prayer,Until Prayer Time: %1$s,Menuju Waktu Shalat: %1$s,Signage countdown,pending
+mosque_default_name,Grand Mosque,Masjid Raya,Fallback name,pending
+mosque_default_subtitle,Straighten and close the prayer rows,Luruskan dan Rapatkan Shaf,Fallback subtitle,pending
+notif_channel_adhan_name,Adhan Playback,Pemutaran Adhan,Notification channel,pending
+notif_channel_adhan_desc,Prayer time adhan audio alert notification,Notifikasi pemutaran suara Adhan waktu shalat,Notification channel,pending
+notif_channel_reminder_name,Prayer Reminder,Pengingat Shalat,Notification channel,pending
+notif_channel_reminder_desc,Notification 15 minutes before prayer time,Notifikasi 15 menit menjelang waktu shalat,Notification channel,pending
+notif_adhan_title,Time for %1$s Prayer,Waktu Shalat %1$s Telah Tiba,Foreground alert title,pending
+notif_adhan_text,Playing %1$s Adhan...,Mengumandangkan Adhan %1$s...,Foreground alert text,pending
+notif_adhan_stop_action,Stop Adhan,Hentikan Adhan,Notification action,pending
+notif_reminder_title,15 Minutes Until %1$s,15 Menit Menjelang %1$s,Reminder notification,pending
+notif_reminder_text,Prayer time for %1$s is approaching soon. Prepare for worship.,Waktu shalat %1$s akan segera tiba. Siapkan diri untuk beribadah.,Reminder notification,pending
+pin_title_verify,Enter Admin PIN,Masukkan PIN Admin,Dialog title,pending
+pin_title_set_new,Set New Admin PIN,Atur PIN Admin Baru,Dialog title,pending
+pin_title_confirm_new,Confirm New PIN,Konfirmasi PIN Baru,Dialog title,pending
+pin_subtitle_default,Default PIN: 0000,Gunakan PIN bawaan: 0000,Dialog subtitle,pending
+pin_subtitle_enter,Enter 4–8 digit admin PIN,Masukkan 4-8 digit PIN admin,Dialog subtitle,pending
+pin_subtitle_digits,Enter 4 to 8 digits,Masukkan 4 hingga 8 digit angka,Dialog subtitle,pending
+pin_subtitle_repeat,Re-enter the same PIN,Masukkan PIN yang sama sekali lagi,Dialog subtitle,pending
+pin_err_format,PIN must be 4–8 digits,PIN harus 4-8 digit angka,Error message,pending
+pin_err_incorrect_remaining,Incorrect PIN. Attempts remaining: %1$d,PIN salah. Sisa percobaan: %1$d,Error message,pending
+pin_err_locked_sec,Too many failed attempts. Locked for %1$d seconds.,Terlalu banyak percobaan. Terkunci %1$d detik.,Error message,pending
+pin_err_locked_retry,PIN locked. Try again in %1$d seconds.,PIN Terkunci. Coba lagi dalam %1$d detik.,Error message,pending
+pin_err_locked_banner,PIN Locked! Try again in %1$d seconds,PIN Terkunci! Coba lagi dalam %1$d detik,Status banner,pending
+pin_msg_confirm_new,Re-enter new PIN to confirm,Ulangi PIN baru untuk konfirmasi,Status message,pending
+pin_err_mismatch,PINs do not match. Please try again.,PIN tidak cocok. Silakan masukkan kembali.,Error message,pending
+storage_internal,Internal Storage,Penyimpanan Internal,Drive name,pending
+storage_usb,USB Flash Drive (%1$s),USB Flashdisk (%1$s),Drive name,pending
+storage_external,External Drive (%1$s),Drive Eksternal (%1$s),Drive name,pending
+storage_title_slide_image,Import Slide Poster (USB/TV),Tambah Slide Gambar (USB/TV),Picker title,pending
+storage_title_mosque_logo,Import Mosque Logo (USB/TV),Pilih Logo Masjid dari USB Flashdisk,Picker title,pending
+storage_title_custom_adhan,Import Custom Adhan (USB/TV),Pilih Audio Adhan dari USB Flashdisk,Picker title,pending
+storage_hint_slide_image,Supports JPG, PNG, WEBP (Max Full HD 1080p resolution),Mendukung JPG, PNG, WEBP (Maksimal resolusi Full HD 1080p),Picker hint,pending
+storage_hint_mosque_logo,Supports JPG, PNG (Max 512x512 resolution),Mendukung JPG, PNG (Maksimal resolusi 512x512),Picker hint,pending
+storage_hint_custom_adhan,Supports MP3, WAV, M4A, OGG (Max 10MB / 10 minutes),Mendukung MP3, WAV, M4A, OGG (Maksimal 10MB / 10 menit),Picker hint,pending
+storage_location_prefix,Location: %1$s,Lokasi: %1$s,Directory path,pending
+storage_parent_folder,.. [Parent Folder],.. [Folder Atas],Parent folder navigation,pending
+storage_empty_folder,No supported media files in this folder.,Tidak ada file media yang didukung di folder ini.,Empty state,pending
+storage_empty_hint,Ensure USB flash drive is connected or copy files to Internal storage.,Pastikan USB flashdisk terpasang atau salin file ke folder Download / Internal.,Empty state hint,pending
+storage_import_failed,Failed to import file,Gagal mengimpor file,Error message,pending
+settings_title,Settings,Pengaturan,Screen title,pending
+settings_subtitle_home,Home Mode Configuration (Interactive),Konfigurasi Penggunaan Mode Rumah (Personal),Subtitle,pending
+settings_subtitle_mosque,Mosque Mode Configuration (Digital Signage),Konfigurasi Penggunaan Mode Masjid (Digital Signage),Subtitle,pending
+settings_open_wizard,Launch Setup Wizard,Buka Setup Wizard,Header button,pending
+settings_pin_warning_title,Security Warning: Default PIN (0000) In Use,Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan,Banner title,pending
+settings_pin_warning_desc,The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.,Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.,Banner desc,pending
+settings_mode_active_mosque,Active Mode: MOSQUE MODE (Digital Signage),Mode Aktif: MODE MASJID (Digital Signage),Mode title,pending
+settings_mode_active_home,Active Mode: HOME MODE (Personal),Mode Aktif: MODE RUMAH (Personal),Mode title,pending
+settings_mode_switch_to_home,Click to switch to Home Mode (Personal),Klik tombol ini untuk beralih ke Mode Rumah (Personal),Mode toggle,pending
+settings_mode_switch_to_mosque,Click to switch to Mosque Mode (Digital Signage),Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage),Mode toggle,pending
+settings_section_language,Display Language,Bahasa Tampilan,Section,pending
+settings_section_theme,Display Theme (Dark / Light),Pilihan Tema Tampilan (Dark / Light),Section,pending
+settings_section_calc_method,Prayer Calculation Method,Metode Perhitungan Waktu Shalat,Section,pending
+settings_section_madhab,Asr Prayer Madhab,Mazhab untuk Waktu Ashr,Section,pending
+settings_madhab_standard,Standard (Shafi'i, Maliki, Hanbali),Standar (Syafi'i, Maliki, Hanbali),Madhab option,pending
+settings_madhab_standard_desc,Shadow 1x object length (majority of Southeast Asia, Middle East).,Bayangan 1x panjang objek (mayoritas Muslim Indonesia, Malaysia, Asia Tenggara).,Madhab desc,pending
+settings_madhab_hanafi,Hanafi,Hanafi,Madhab option,pending
+settings_madhab_hanafi_desc,Shadow 2x object length (Asr starts ~45–60 minutes later).,Bayangan 2x panjang objek (Ashr dimulai sekitar 45-60 menit lebih lambat).,Madhab desc,pending
+settings_section_high_latitude,High-Latitude Rule (Polar / High Latitudes),Aturan Garis Lintang Tinggi (High-Latitude),Section,pending
+settings_high_latitude_none,Automatic (None),Otomatis (None),Option,pending
+settings_high_latitude_motn,Middle of the Night,Tengah Malam (Middle of Night),Option,pending
+settings_high_latitude_sotn,Seventh of the Night,Sepertujuh Malam (1/7 of Night),Option,pending
+settings_high_latitude_angle,Twilight Angle,Sudut Fajar/Senja (Angle),Option,pending
+settings_section_offsets,Prayer Time Offsets (Minutes),Koreksi Waktu Shalat (Menit),Section,pending
+settings_offset_sunrise,Sunrise Offset (Minutes),Koreksi Waktu Syuruq (Terbit),Section,pending
+settings_section_iqamah,Iqamah Schedule (Minutes After Adhan),Jadwal Iqamah (Menit Setelah Adhan),Section,pending
+settings_iqamah_disabled,Disabled (0m),Nonaktif (0m),Option,pending
+settings_iqamah_minutes,%1$d min,%1$d mnt,Format,pending
+settings_section_location,City Location & Timezone,Pilihan Lokasi Kota & Zona Waktu,Section,pending
+settings_current_zone,Timezone: %1$s,Zona: %1$s,Format,pending
+settings_section_hijri_offset,Hijri Calendar Day Offset,Koreksi Penanggalan Hijriyah,Section,pending
+settings_section_hijri_rollover,Hijri Date Rollover Time,Pergantian Tanggal Hijriyah,Section,pending
+settings_hijri_rollover_magrib,At Sunset / Maghrib (Traditional Islamic standard),Saat Terbenam / Magrib (Tradisional Islam),Option,pending
+settings_hijri_rollover_midnight,At Midnight 00:00 (Civil calendar sync),Saat Tengah Malam 00:00 (Sinkron Kalender Masehi),Option,pending
+settings_section_home_reminders,15-Minute Pre-Prayer Reminder,Pengingat 15 Menit Sebelum Shalat,Section,pending
+settings_reminder_toggle_on,15-Minute Pre-Prayer Reminder: ACTIVE,Pengingat 15 Menit Sebelum Shalat: AKTIF,Toggle state,pending
+settings_reminder_toggle_off,15-Minute Pre-Prayer Reminder: DISABLED,Pengingat 15 Menit Sebelum Shalat: NONAKTIF,Toggle state,pending
+settings_reminder_toggle_desc,Display a notification on the TV 15 minutes before prayer time.,Menampilkan notifikasi di layar TV 15 menit menjelang waktu adhan tiba.,Description,pending
+settings_section_home_adhan,Adhan Audio per Prayer Time,Pilihan Suara Adhan per Waktu Shalat,Section,pending
+settings_btn_usb_file,USB / File,USB / File,Button,pending
+settings_section_mosque_audio,Mosque Mode Audio & Highlights,Audio & Highlight Mode Masjid,Section,pending
+settings_mosque_adhan_toggle,Mosque Mode Adhan Audio,Suara Adhan di Mode Masjid,Section,pending
+settings_mosque_adhan_on,Mosque Mode Adhan Audio: ACTIVE,Suara Adhan di Mode Masjid: AKTIF,Toggle state,pending
+settings_mosque_adhan_off,Mosque Mode Adhan Audio: SILENT (Default),Suara Adhan di Mode Masjid: HENING (Default),Toggle state,pending
+settings_mosque_adhan_desc,Play audible Adhan through TV speakers during Mosque digital signage.,Memutar suara Adhan melalui speaker TV saat digital signage aktif di masjid.,Description,pending
+settings_mosque_reminders_toggle,Mosque Mode Pre-Prayer Notifications,Notifikasi Pengingat di Mode Masjid,Section,pending
+settings_mosque_reminders_on,Mosque Mode Pre-Prayer Notifications: ACTIVE,Notifikasi Pengingat di Mode Masjid: AKTIF,Toggle state,pending
+settings_mosque_reminders_off,Mosque Mode Pre-Prayer Notifications: DISABLED (Default),Notifikasi Pengingat di Mode Masjid: NONAKTIF (Default),Toggle state,pending
+settings_mosque_strike_toggle,Exact-Time Visual Highlight Strike,Highlight Visual Tepat Waktu Shalat,Section,pending
+settings_mosque_strike_on,Visual Highlight Strike: ACTIVE (Default),Highlight Visual: AKTIF (Default),Toggle state,pending
+settings_mosque_strike_off,Visual Highlight Strike: DISABLED,Highlight Visual: NONAKTIF,Toggle state,pending
+settings_mosque_strike_desc,Interrupt announcement slideshow with a pulsing visual highlight at prayer time.,Menginterupsi slideshow pengumuman dengan banner visual berkedip saat waktu shalat tiba.,Description,pending
+settings_section_mosque_symbol,Mosque Icon / Emblem Preset,Pilihan Ikon / Simbol Masjid,Section,pending
+settings_btn_import_logo_usb,Select Mosque Logo from USB Drive,Pilih Logo Masjid dari USB Flashdisk,Button,pending
+settings_custom_logo_active,Custom Mosque Logo Active,Logo Masjid Kustom Aktif,Badge,pending
+settings_section_mosque_font,Mosque Name Font Style,Gaya Font Nama Masjid,Section,pending
+settings_section_mosque_identity,Mosque Name & Subtitle,Nama & Subtitle Identitas Masjid,Section,pending
+settings_custom_name_saved,Custom Name Active: %1$s,Nama Kustom Aktif: %1$s,Status,pending
+settings_custom_subtitle_saved,Custom Subtitle Active: %1$s,Subtitle Kustom Aktif: %1$s,Status,pending
+settings_section_schedule_duration,Prayer Schedule Display Duration,Durasi Tampilan Jadwal Shalat,Section,pending
+settings_section_slides,Announcement Slides (%1$d of %2$d Slides),Daftar Slide Pengumuman (%1$d dari %2$d Slide),Section,pending
+settings_btn_add_image_slide,Add Image Slide (USB/TV),Tambah Slide Gambar (USB/TV),Button,pending
+settings_btn_add_text_slide,Add Text Announcement Slide,Tambah Slide Pengumuman Teks,Button,pending
+settings_btn_clear_slides,Clear All Slides,Hapus Semua Slide,Button,pending
+settings_no_slides_title,No announcement slides yet,Belum ada slide pengumuman,Empty state,pending
+settings_no_slides_desc,Add image slides from USB flash drive or create text announcement slides.,Tambahkan slide poster gambar dari flashdisk atau buat pengumuman teks.,Empty state hint,pending
+settings_section_security,Admin PIN & Security Settings,Pengaturan PIN & Keamanan Admin,Section,pending
+settings_home_pin_toggle,Protect Settings with PIN in Home Mode,Lindungi Pengaturan dengan PIN di Mode Rumah,Section,pending
+settings_home_pin_on,Home Mode PIN Protection: ACTIVE,Perlindungan PIN Mode Rumah: AKTIF,Toggle state,pending
+settings_home_pin_off,Home Mode PIN Protection: DISABLED,Perlindungan PIN Mode Rumah: NONAKTIF,Toggle state,pending
+settings_home_pin_desc,Require PIN to open settings in Home Mode (always required in Mosque Mode).,Wajibkan PIN untuk membuka menu pengaturan di Mode Rumah (Mode Masjid selalu mewajibkan PIN).,Description,pending
+settings_custom_pin_active,Custom PIN Active (Hashed & Secured),PIN Kustom Aktif (Aman & Terenkripsi),Badge,pending
+settings_custom_pin_desc,Settings are protected with your custom PIN.,Pengaturan masjid terlindungi dengan PIN kustom Anda.,Description,pending
+settings_using_default_pin,Using Default PIN (0000),Masih Menggunakan PIN Bawaan (0000),Badge,pending
+settings_btn_change_admin_pin,Change Admin PIN,Ubah PIN Admin,Button,pending
+settings_time_format_toggle,12 / 24-Hour Time Format,Format Waktu 12 / 24 Jam,Section,pending
+settings_time_format_12,12-Hour (AM/PM),12 Jam (AM/PM),Option,pending
+settings_time_format_24,24-Hour (00:00),24 Jam (00:00),Option,pending
+settings_arabic_names_toggle,Show Arabic Prayer Names,Tampilkan Nama Shalat Bahasa Arab,Section,pending
+wizard_welcome,Welcome to SalatSign,Selamat Datang di SalatSign,Wizard header,pending
+wizard_step_indicator,Android TV Initial Setup Guide (Step %1$d of %2$d),Panduan Konfigurasi Awal Android TV (Langkah %1$d dari %2$d),Wizard subtitle,pending
+wizard_step_lang_title,Step 1: Select Display Language,Langkah 1: Pilih Bahasa Tampilan,Wizard step,pending
+wizard_step_location_title,Step %1$d: Select City Location & Timezone (Currently: %2$s),Langkah %1$d: Pilih Lokasi Kota & Zona Waktu (Saat ini: %2$s),Wizard step,pending
+wizard_step_method_title,Step %1$d: Prayer Calculation Method & Madhab,Langkah %1$d: Metode Perhitungan & Mazhab Waktu Shalat,Wizard step,pending
+wizard_step_mode_title,Step %1$d: Choose Application Usage Mode,Langkah %1$d: Pilih Mode Penggunaan Aplikasi,Wizard step,pending
+wizard_step_pin_title,Step %1$d: Admin Security PIN (TV Protection),Langkah %1$d: PIN Keamanan Admin (Pengaman TV),Wizard step,pending
+wizard_step_mosque_title,Step %1$d: Your Mosque Identity & Emblem,Langkah %1$d: Identitas & Simbol Masjid Anda,Wizard step,pending
+wizard_mode_home_title,HOME / PERSONAL MODE,MODE RUMAH (Personal),Mode title,pending
+wizard_mode_home_desc,Interactive prayer times with D-pad calendar navigation 15m reminders and customizable Adhan alerts.,Jadwal shalat interaktif keluarga dengan navigasi kalender remote TV pengingat 15 menit dan suara adhan.,Mode desc,pending
+wizard_mode_mosque_title,MOSQUE MODE (Digital Signage),MODE MASJID (Digital Signage),Mode title,pending
+wizard_mode_mosque_desc,Silent white-label public signage with prayer schedule custom mosque logo and announcement slideshow.,Tampilan layar digital signage masjid publik tanpa logo aplikasi slideshow jadwal & poster pengumuman.,Mode desc,pending
+wizard_mosque_silent_note,Mosque mode is silent by default. You can turn on adhan sound in Settings.,Mode masjid hening secara default. Anda dapat mengaktifkan suara adhan di Pengaturan.,Mode note,pending
+wizard_pin_default_title,Use Default PIN (0000),Gunakan PIN Bawaan (0000),Option title,pending
+wizard_pin_default_desc,Default PIN is 0000. You can change it at any time in Settings.,PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.,Option desc,pending
+wizard_pin_custom_title,Set New Custom PIN (4–8 Digits),Atur PIN Kustom Baru (4-8 Digit),Option title,pending
+wizard_pin_custom_desc,Highly recommended for TV displays so PIN cannot be easily guessed.,Sangat direkomendasikan untuk layar TV agar PIN tidak mudah ditebak.,Option desc,pending
+wizard_pin_custom_active,Custom PIN Active (Saved),PIN Kustom Aktif (Tersimpan),Status,pending

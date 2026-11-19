@@ -4,6 +4,7 @@
 package com.salatsign.tv.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -19,6 +20,8 @@ import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
@@ -27,6 +30,7 @@ import com.salatsign.tv.security.PinHasher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import java.io.File
 import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "salatsign_preferences")
@@ -81,6 +85,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
 
+        // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+        val JUMUAH_MODE = stringPreferencesKey("jumuah_mode")
+        val JUMUAH_TIMES = stringPreferencesKey("jumuah_times")
+        val FRIDAY_ADHAN_TIMING = stringPreferencesKey("friday_adhan_timing")
+
         // Security / Admin PIN keys
         val HOME_MODE_PIN_REQUIRED = booleanPreferencesKey("home_mode_pin_required")
         val HAS_CUSTOM_PIN = booleanPreferencesKey("has_custom_pin")
@@ -89,6 +98,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val PIN_FAILED_ATTEMPTS = intPreferencesKey("pin_failed_attempts")
         val PIN_LOCKED_UNTIL_EPOCH_MILLIS = longPreferencesKey("pin_locked_until_epoch_millis")
         val DEFAULT_PIN_PROMPT_DISMISSED = booleanPreferencesKey("default_pin_prompt_dismissed")
+        val ADHAN_HINT_DISMISSED = booleanPreferencesKey("adhan_hint_dismissed")
 
         // Localization & Display Option keys
         val APP_LANGUAGE = stringPreferencesKey("app_language")
@@ -139,15 +149,19 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val showStrikeHighlight = preferences[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] ?: true
 
             val appLanguageStr = preferences[PreferencesKeys.APP_LANGUAGE] ?: AppLanguage.SYSTEM.name
-            val appLanguage = runCatching { AppLanguage.valueOf(appLanguageStr) }.getOrDefault(AppLanguage.SYSTEM)
+            val appLanguage = LanguageSyncCache.parseLanguage(appLanguageStr)
+            if (LanguageSyncCache.getLanguage(context) != appLanguage) {
+                LanguageSyncCache.setLanguage(context, appLanguage)
+            }
             val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: true
             val showArabicPrayerNames = preferences[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] ?: true
 
-            val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.DefaultSubuh)
-            val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.DefaultStandard)
-            val adhanAshr = readAdhanOption(preferences, Prayer.ASHR, AdhanAudioOption.DefaultStandard)
-            val adhanMagrib = readAdhanOption(preferences, Prayer.MAGRIB, AdhanAudioOption.DefaultStandard)
-            val adhanIsya = readAdhanOption(preferences, Prayer.ISYA, AdhanAudioOption.DefaultStandard)
+            val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.Silent)
+            val adhanZuhur = readAdhanOption(preferences, Prayer.ZUHUR, AdhanAudioOption.Silent)
+            val adhanAshr = readAdhanOption(preferences, Prayer.ASHR, AdhanAudioOption.Silent)
+            val adhanMagrib = readAdhanOption(preferences, Prayer.MAGRIB, AdhanAudioOption.Silent)
+            val adhanIsya = readAdhanOption(preferences, Prayer.ISYA, AdhanAudioOption.Silent)
+            val adhanHintDismissed = preferences[PreferencesKeys.ADHAN_HINT_DISMISSED] ?: false
 
             val mosqueName = preferences[PreferencesKeys.MOSQUE_NAME] ?: ""
             val mosqueSubtitle = preferences[PreferencesKeys.MOSQUE_SUBTITLE] ?: ""
@@ -159,6 +173,13 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val mosqueFontPreset = runCatching { MosqueFontPreset.valueOf(fontPresetStr) }.getOrDefault(MosqueFontPreset.MODERN_SANS)
 
             val scheduleDuration = preferences[PreferencesKeys.SCHEDULE_DURATION_SECONDS] ?: 60
+
+            val jumuahModeStr = preferences[PreferencesKeys.JUMUAH_MODE] ?: JumuahMode.FIXED.name
+            val jumuahMode = runCatching { JumuahMode.valueOf(jumuahModeStr) }.getOrDefault(JumuahMode.FIXED)
+            val jumuahTimesRaw = preferences[PreferencesKeys.JUMUAH_TIMES] ?: ""
+            val jumuahTimes = if (jumuahTimesRaw.isBlank()) emptyList() else jumuahTimesRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            val fridayAdhanTimingStr = preferences[PreferencesKeys.FRIDAY_ADHAN_TIMING] ?: FridayAdhanTiming.AT_ZUHR.name
+            val fridayAdhanTiming = runCatching { FridayAdhanTiming.valueOf(fridayAdhanTimingStr) }.getOrDefault(FridayAdhanTiming.AT_ZUHR)
 
             val homeModePinRequired = preferences[PreferencesKeys.HOME_MODE_PIN_REQUIRED] ?: false
             val hasCustomPin = preferences[PreferencesKeys.HAS_CUSTOM_PIN] ?: false
@@ -201,6 +222,9 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 mosqueModeAdhanEnabled = mosqueModeAdhanEnabled,
                 mosqueModeRemindersEnabled = mosqueModeRemindersEnabled,
                 showStrikeHighlight = showStrikeHighlight,
+                jumuahMode = jumuahMode,
+                jumuahTimes = jumuahTimes,
+                fridayAdhanTiming = fridayAdhanTiming,
                 appLanguage = appLanguage,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
@@ -216,7 +240,8 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 pinHashHex = pinHashHex,
                 pinFailedAttempts = pinFailedAttempts,
                 pinLockedUntilEpochMillis = pinLockedUntil,
-                defaultPinPromptDismissed = defaultPinPromptDismissed
+                defaultPinPromptDismissed = defaultPinPromptDismissed,
+                adhanHintDismissed = adhanHintDismissed
             )
         }
 
@@ -385,13 +410,36 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     }
 
     override suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {
+        var referencedAudio: Set<String> = emptySet()
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.adhanTypeKey(prayer)] = option.type.name
-            prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
+            if (option.type == AdhanAudioType.CUSTOM_FILE && option.displayName.isNotBlank()) {
+                prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
+            } else {
+                prefs.remove(PreferencesKeys.adhanNameKey(prayer))
+            }
             if (option.customUri != null) {
                 prefs[PreferencesKeys.adhanUriKey(prayer)] = option.customUri
             } else {
                 prefs.remove(PreferencesKeys.adhanUriKey(prayer))
+            }
+
+            referencedAudio = Prayer.entries.mapNotNull { p ->
+                prefs[PreferencesKeys.adhanUriKey(p)]
+            }.toSet()
+        }
+        cleanupOrphanAudio(referencedAudio)
+    }
+
+    private fun cleanupOrphanAudio(referencedAudio: Set<String>) {
+        val audioDir = File(File(context.filesDir, "content"), "audio")
+        if (!audioDir.exists() || !audioDir.isDirectory) return
+        audioDir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in referencedAudio) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w("SettingsRepository", "Failed to delete orphaned adhan audio: ${file.name}")
+                }
             }
         }
     }
@@ -404,6 +452,20 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 prefs[PreferencesKeys.MOSQUE_LOGO_URI] = logoUri
             } else {
                 prefs.remove(PreferencesKeys.MOSQUE_LOGO_URI)
+            }
+        }
+        cleanupOrphanLogos(logoUri)
+    }
+
+    private fun cleanupOrphanLogos(activeLogoUri: String?) {
+        val logoDir = File(File(context.filesDir, "content"), "logo")
+        if (!logoDir.exists() || !logoDir.isDirectory) return
+        logoDir.listFiles()?.forEach { file ->
+            if (file.isFile && (activeLogoUri == null || file.name != activeLogoUri)) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w("SettingsRepository", "Failed to delete orphaned logo: ${file.name}")
+                }
             }
         }
     }
@@ -475,7 +537,14 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         }
     }
 
+    override suspend fun dismissAdhanHint() {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ADHAN_HINT_DISMISSED] = true
+        }
+    }
+
     override suspend fun setAppLanguage(language: AppLanguage) {
+        LanguageSyncCache.setLanguage(context, language)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.APP_LANGUAGE] = language.name
         }
@@ -490,6 +559,24 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setShowArabicPrayerNames(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] = enabled
+        }
+    }
+
+    override suspend fun setJumuahMode(mode: JumuahMode) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.JUMUAH_MODE] = mode.name
+        }
+    }
+
+    override suspend fun setJumuahTimes(times: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.JUMUAH_TIMES] = times.take(3).joinToString(",")
+        }
+    }
+
+    override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.FRIDAY_ADHAN_TIMING] = timing.name
         }
     }
 }

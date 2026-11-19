@@ -3,10 +3,14 @@
 
 package com.salatsign.tv.ui.common
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
@@ -62,11 +66,34 @@ fun AdhanAudioType.labelRes(): Int {
 
 fun AdhanAudioOption.labelRes(): Int = type.labelRes()
 
+@Composable
+fun AdhanAudioOption.displayLabel(): String {
+    return if (type == AdhanAudioType.CUSTOM_FILE && displayName.isNotBlank()) {
+        displayName
+    } else {
+        stringResource(labelRes())
+    }
+}
+
 fun AppLanguage.labelRes(): Int {
     return when (this) {
         AppLanguage.SYSTEM -> R.string.lang_system
         AppLanguage.EN -> R.string.lang_en
         AppLanguage.ID -> R.string.lang_id
         AppLanguage.AR -> R.string.lang_ar
+    }
+}
+
+fun JumuahMode.labelRes(): Int {
+    return when (this) {
+        JumuahMode.FIXED -> R.string.settings_jumuah_mode_fixed
+        JumuahMode.AFTER_ZUHR -> R.string.settings_jumuah_mode_after_zuhr
+    }
+}
+
+fun FridayAdhanTiming.labelRes(): Int {
+    return when (this) {
+        FridayAdhanTiming.AT_ZUHR -> R.string.settings_jumuah_adhan_at_zuhr
+        FridayAdhanTiming.AT_JUMUAH -> R.string.settings_jumuah_adhan_at_jumuah
     }
 }

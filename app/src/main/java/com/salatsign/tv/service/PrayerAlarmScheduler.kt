@@ -26,10 +26,12 @@ class PrayerAlarmScheduler(private val context: Context) {
         const val ACTION_STOP_ADHAN = "com.salatsign.tv.action.STOP_ADHAN"
 
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
-        const val EXTRA_PRAYER_DISPLAY_NAME = "extra_prayer_display_name"
         const val EXTRA_ADHAN_TYPE = "extra_adhan_type"
         const val EXTRA_ADHAN_URI = "extra_adhan_uri"
         const val EXTRA_SCHEDULED_AT_EPOCH_MILLIS = "extra_scheduled_at_epoch_millis"
+        const val EXTRA_LANGUAGE = "extra_language"
+        const val EXTRA_ZONE_ID = "extra_zone_id"
+        const val EXTRA_IS_MOSQUE_MODE = "extra_is_mosque_mode"
 
         const val REQUEST_CODE_ADHAN = 100
         const val REQUEST_CODE_REMINDER = 200
@@ -65,7 +67,6 @@ class PrayerAlarmScheduler(private val context: Context) {
                 val adhanIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                     action = ACTION_PLAY_ADHAN
                     putExtra(EXTRA_PRAYER_NAME, nextAdhan.prayer.name)
-                    putExtra(EXTRA_PRAYER_DISPLAY_NAME, nextAdhan.prayer.displayName)
                     putExtra(EXTRA_ADHAN_TYPE, adhanOption.type.name)
                     putExtra(EXTRA_ADHAN_URI, adhanOption.customUri)
                     putExtra(EXTRA_SCHEDULED_AT_EPOCH_MILLIS, adhanTriggerMillis)
@@ -77,7 +78,7 @@ class PrayerAlarmScheduler(private val context: Context) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 setExactAlarm(adhanTriggerMillis, adhanPendingIntent)
-                Log.d(TAG, "Scheduled next Adhan for ${nextAdhan.prayer.displayName} at ${nextAdhan.at} (epoch: $adhanTriggerMillis, type: ${adhanOption.type})")
+                Log.d(TAG, "Scheduled next Adhan for ${nextAdhan.prayer.name} at ${nextAdhan.at} (epoch: $adhanTriggerMillis, type: ${adhanOption.type})")
             } else {
                 cancelAdhanAlarm()
             }
@@ -94,7 +95,6 @@ class PrayerAlarmScheduler(private val context: Context) {
                 val reminderIntent = Intent(context, PrayerAlarmReceiver::class.java).apply {
                     action = ACTION_PRE_PRAYER_REMINDER
                     putExtra(EXTRA_PRAYER_NAME, nextReminder.prayer.name)
-                    putExtra(EXTRA_PRAYER_DISPLAY_NAME, nextReminder.prayer.displayName)
                     putExtra(EXTRA_SCHEDULED_AT_EPOCH_MILLIS, reminderTriggerMillis)
                 }
                 val reminderPendingIntent = PendingIntent.getBroadcast(
@@ -104,7 +104,7 @@ class PrayerAlarmScheduler(private val context: Context) {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 setExactAlarm(reminderTriggerMillis, reminderPendingIntent)
-                Log.d(TAG, "Scheduled next 15-min reminder for ${nextReminder.prayer.displayName} at ${nextReminder.reminderAt} (epoch: $reminderTriggerMillis)")
+                Log.d(TAG, "Scheduled next 15-min reminder for ${nextReminder.prayer.name} at ${nextReminder.reminderAt} (epoch: $reminderTriggerMillis)")
             } else {
                 cancelReminderAlarm()
             }

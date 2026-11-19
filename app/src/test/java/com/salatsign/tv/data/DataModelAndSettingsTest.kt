@@ -78,11 +78,13 @@ class DataModelAndSettingsTest {
         assertEquals(0L, settings.pinLockedUntilEpochMillis)
         assertFalse(settings.defaultPinPromptDismissed)
 
-        assertEquals(AdhanAudioType.DEFAULT_SUBUH, settings.adhanFor(Prayer.SUBUH).type)
-        assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ZUHUR).type)
-        assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ASHR).type)
-        assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.MAGRIB).type)
-        assertEquals(AdhanAudioType.DEFAULT_STANDARD, settings.adhanFor(Prayer.ISYA).type)
+        assertEquals(AdhanAudioType.SILENT, settings.adhanFor(Prayer.SUBUH).type)
+        assertEquals(AdhanAudioType.SILENT, settings.adhanFor(Prayer.ZUHUR).type)
+        assertEquals(AdhanAudioType.SILENT, settings.adhanFor(Prayer.ASHR).type)
+        assertEquals(AdhanAudioType.SILENT, settings.adhanFor(Prayer.MAGRIB).type)
+        assertEquals(AdhanAudioType.SILENT, settings.adhanFor(Prayer.ISYA).type)
+        assertFalse(settings.hasConfiguredAudibleAdhan())
+        assertFalse(settings.adhanHintDismissed)
     }
 
     @Test

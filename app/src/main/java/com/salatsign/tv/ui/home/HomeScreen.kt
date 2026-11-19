@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -34,6 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
@@ -59,7 +62,8 @@ fun HomeScreen(
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onTodayClick: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onDismissAdhanHint: () -> Unit = {}
 ) {
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
@@ -94,6 +98,15 @@ fun HomeScreen(
                 onTodayClick = onTodayClick,
                 onSettingsClick = onOpenSettings
             )
+
+            // One-time Adhan Silent hint (F1)
+            if (!uiState.settings.hasConfiguredAudibleAdhan() && !uiState.settings.adhanHintDismissed) {
+                AdhanSilentHintBanner(
+                    onOpenSettings = onOpenSettings,
+                    onDismiss = onDismissAdhanHint,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
 
             if (prayerTimes != null) {
                 // Next Prayer Spotlight Card (Significantly larger with ticking countdown)
@@ -151,11 +164,7 @@ fun NextPrayerSpotlightCard(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
-        stringResource(R.string.prayer_jumuah)
-    } else {
-        stringResource(nextPrayer.prayer.labelRes())
-    }
+    val prayerLabel = stringResource(nextPrayer.prayer.labelRes())
 
     Card(
         onClick = {},
@@ -355,6 +364,7 @@ fun PrayerCardsRow(
     prayers: List<PrayerTimeItem>,
     is24HourFormat: Boolean = true,
     showArabicPrayerNames: Boolean = true,
+    isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -366,6 +376,7 @@ fun PrayerCardsRow(
                 item = item,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
+                isMosqueMode = isMosqueMode,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
@@ -379,10 +390,11 @@ fun PrayerCard(
     item: PrayerTimeItem,
     is24HourFormat: Boolean = true,
     showArabicPrayerNames: Boolean = true,
+    isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (item.prayer == Prayer.ZUHUR && item.isFriday) {
+    val prayerLabel = if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
         stringResource(R.string.prayer_jumuah)
     } else {
         stringResource(item.prayer.labelRes())
@@ -448,6 +460,29 @@ fun PrayerCard(
                 }
             )
 
+            // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for Mosque Mode
+            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
+                if (item.secondaryTimeNote != null) {
+                    Text(
+                        text = item.secondaryTimeNote,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 11.sp,
+                            color = AccentGold
+                        )
+                    )
+                }
+                if (item.jumuahSittings.size > 1) {
+                    val s2 = item.jumuahSittings[1].format(if (is24HourFormat) PrayerTimeItem.TimeFormatter24 else PrayerTimeItem.TimeFormatter12)
+                    Text(
+                        text = stringResource(R.string.settings_jumuah_sitting_n, 2) + ": " + s2,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 10.sp,
+                            color = colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+            }
+
             // Iqamah indicator if configured
             val formattedIqamah = item.formattedIqamahTime(is24HourFormat)
             if (formattedIqamah != null) {
@@ -494,6 +529,72 @@ fun PrayerCard(
                 }
             } else {
                 Spacer(modifier = Modifier.height(18.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdhanSilentHintBanner(
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Card(
+        onClick = onOpenSettings,
+        colors = CardDefaults.colors(
+            containerColor = colorScheme.surfaceVariant,
+            focusedContainerColor = colorScheme.surface
+        ),
+        shape = CardDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        modifier = modifier
+            .fillMaxWidth()
+            .tvFocusable(shape = RoundedCornerShape(12.dp))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeOff,
+                    contentDescription = null,
+                    tint = AccentGold,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(R.string.home_adhan_silent_hint),
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                    )
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.colors(
+                    containerColor = Color.White.copy(alpha = 0.15f),
+                    focusedContainerColor = AccentGold,
+                    contentColor = Color.White,
+                    focusedContentColor = Color.Black
+                ),
+                shape = ButtonDefaults.shape(RoundedCornerShape(8.dp)),
+                modifier = Modifier.tvFocusable()
+            ) {
+                Text(
+                    text = stringResource(R.string.home_adhan_silent_hint_dismiss),
+                    style = TvTypography.ButtonText.copy(fontSize = 12.sp)
+                )
             }
         }
     }

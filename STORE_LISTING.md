@@ -34,7 +34,7 @@ Displays both the Gregorian date and the Islamic Hijriyah date simultaneously. S
 • Next Prayer Spotlight: The upcoming prayer is rendered in a prominent card with a live, real-time ticking countdown (HH:MM:SS).
 • 15-Minute Pre-Prayer Reminder: Heads-up TV notification before each prayer time.
 • Foreground Adhan Playback: Plays your chosen Adhan audio at exact prayer times, clearly audible over running apps (streaming video) or on the TV Home screen.
-• Audio Customization: Choose standard Adhan, specialized Subuh Adhan, silent mode, or load custom audio files from USB or local storage.
+• Audio Customization: Ships silent by default. Easily import your preferred Adhan audio files from USB or local storage with per-prayer controls.
 • D-Pad Remote Browsing: Easily navigate between past, present, and future prayer schedules using remote directional keys.
 
 4. Mosque & Kiosk Digital Signage Mode
@@ -63,7 +63,7 @@ Menampilkan tanggal Masehi dan Hijriyah secara bersamaan. Dilengkapi pengaturan 
 • Sorotan Shalat Berikutnya: Tampilan kartu besar dengan hitung mundur langsung (HH:MM:SS) menuju waktu shalat berikutnya.
 • Pengingat 15 Menit: Notifikasi TV 15 menit sebelum masuk waktu shalat.
 • Adhan Tepat Waktu: Memutar suara Adhan otomatis bahkan saat Anda sedang membuka aplikasi lain atau berada di layar utama TV.
-• Pilihan Suara Per-Shalat: Pilihan Adhan standar, Adhan khusus Subuh, mode hening, atau file audio dari USB/penyimpanan lokal.
+• Pilihan Suara Per-Shalat: Hening secara default. Anda dapat memuat file audio Adhan pilihan dari USB atau penyimpanan TV lokal.
 • Navigasi Remote D-Pad: Geser ke kiri/kanan untuk melihat jadwal shalat hari kemarin maupun esok hari.
 
 4. Mode Masjid (Digital Signage)
@@ -91,7 +91,7 @@ SalatSign هو تطبيق حديث لشاشات أندرويد تي في (Androi
 • العد التنازلي الحي: بطاقة بارزة للصلاة القادمة مع عد تنازلي مباشر (HH:MM:SS).
 • تنبيه مسبق: إشعار على الشاشة قبل 15 دقيقة من دخول الوقت.
 • أذان في الوقت المحدد: تشغيل صوت الأذان عبر خدمة في المقدمة فوق التطبيقات الأخرى.
-• تخصيص الصوت: اختيار أذان الفجر، أو الأذان العادي، أو الوضع الصامت، أو ملفات صوتية من الذاكرة المحلية أو USB.
+• تخصيص الصوت: صامت افتراضياً. يمكنك بسهولة تحميل ملفات الأذان المفضلة لديك من وحدة USB أو الذاكرة المحلية.
 
 4. وضع المسجد (لوحات الإعلانات الرقمية)
 • شاشة بيضاء مخصصة: إخفاء هوية التطبيق وعرض اسم المسجد وشعاره وبياناته بالكامل.

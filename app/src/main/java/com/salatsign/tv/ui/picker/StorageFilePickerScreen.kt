@@ -3,6 +3,12 @@
 
 package com.salatsign.tv.ui.picker
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -26,8 +32,10 @@ import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PermDeviceInformation
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,13 +46,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
@@ -85,28 +93,108 @@ fun StorageFilePickerScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Load available drives on launch
-    LaunchedEffect(Unit) {
-        val available = withContext(Dispatchers.IO) {
-            StorageVolumeManager.getAvailableDrives(context)
-        }
-        drives = available
-        if (available.isNotEmpty()) {
-            val defaultDrive = available.firstOrNull { it.isUsb } ?: available.first()
-            selectedDrive = defaultDrive
-            currentDir = defaultDrive.rootDir
+    // Check runtime permission for API <= 32
+    var hasStoragePermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasStoragePermission = granted
+        if (granted) {
+            errorMessage = null
+            coroutineScope.launch {
+                val available = withContext(Dispatchers.IO) {
+                    StorageVolumeManager.getAvailableDrives(context)
+                }
+                drives = available
+                if (available.isNotEmpty()) {
+                    val defaultDrive = available.firstOrNull { it.isUsb } ?: available.first()
+                    selectedDrive = defaultDrive
+                    currentDir = defaultDrive.rootDir
+                }
+            }
+        } else {
+            errorMessage = context.getString(R.string.storage_permission_denied)
         }
     }
 
-    // Load folder contents when currentDir changes
-    LaunchedEffect(currentDir, kind) {
-        val dir = currentDir
-        if (dir != null) {
+    // System file picker launcher via SAF (ACTION_OPEN_DOCUMENT)
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            isProcessing = true
+            errorMessage = null
+            coroutineScope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    importer.importFromUri(context, uri, kind)
+                }
+                isProcessing = false
+                if (result.success && result.relativeFileName != null) {
+                    onFileImported(result.relativeFileName)
+                    onDismiss()
+                } else {
+                    errorMessage = result.errorMessage ?: context.getString(R.string.storage_import_failed)
+                }
+            }
+        }
+    }
+
+    val isSystemPickerAvailable = remember {
+        val testIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = when (kind) {
+                ImportKind.SLIDE_IMAGE, ImportKind.MOSQUE_LOGO -> "image/*"
+                ImportKind.CUSTOM_ADHAN -> "audio/*"
+            }
+        }
+        testIntent.resolveActivity(context.packageManager) != null
+    }
+
+    // Request permission on launch if needed (API <= 32)
+    LaunchedEffect(Unit) {
+        if (!hasStoragePermission && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        } else {
+            val available = withContext(Dispatchers.IO) {
+                StorageVolumeManager.getAvailableDrives(context)
+            }
+            drives = available
+            if (available.isNotEmpty()) {
+                val defaultDrive = available.firstOrNull { it.isUsb } ?: available.first()
+                selectedDrive = defaultDrive
+                currentDir = defaultDrive.rootDir
+            }
+        }
+    }
+
+    // Load folder / MediaStore contents when selection changes
+    LaunchedEffect(selectedDrive, currentDir, kind, hasStoragePermission) {
+        val drive = selectedDrive
+        if (drive != null && drive.isMediaStore) {
             items = withContext(Dispatchers.IO) {
-                StorageVolumeManager.listDirectoryContents(dir, kind)
+                StorageVolumeManager.queryMediaStore(context, kind)
             }
         } else {
-            items = emptyList()
+            val dir = currentDir
+            if (dir != null) {
+                items = withContext(Dispatchers.IO) {
+                    StorageVolumeManager.listDirectoryContents(context, dir, kind)
+                }
+            } else {
+                items = emptyList()
+            }
         }
     }
 
@@ -117,13 +205,13 @@ fun StorageFilePickerScreen(
             .padding(horizontal = 48.dp, vertical = 27.dp) // 10-foot TV overscan safety
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header: Title & Close Button
+            // Header: Title, Optional System Picker Button, and Close Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         style = TvTypography.HeaderTitle.copy(fontSize = 28.sp, color = AccentEmerald)
@@ -138,32 +226,130 @@ fun StorageFilePickerScreen(
                     )
                 }
 
-                Surface(
-                    onClick = onDismiss,
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = DarkSurface,
-                        focusedContainerColor = MaterialTheme.colorScheme.error
-                    ),
-                    modifier = Modifier.tvFocusable()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    if (isSystemPickerAvailable) {
+                        Surface(
+                            onClick = {
+                                val mimes = when (kind) {
+                                    ImportKind.SLIDE_IMAGE, ImportKind.MOSQUE_LOGO -> arrayOf("image/*")
+                                    ImportKind.CUSTOM_ADHAN -> arrayOf("audio/*")
+                                }
+                                openDocumentLauncher.launch(mimes)
+                            },
+                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                            colors = ClickableSurfaceDefaults.colors(
+                                containerColor = AccentGold.copy(alpha = 0.2f),
+                                focusedContainerColor = AccentGold
+                            ),
+                            modifier = Modifier.tvFocusable()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SystemUpdateAlt,
+                                    contentDescription = stringResource(R.string.storage_system_picker),
+                                    tint = AccentGold,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.storage_system_picker),
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AccentGold
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    Surface(
+                        onClick = onDismiss,
+                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = DarkSurface,
+                            focusedContainerColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.tvFocusable()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.btn_close),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(text = stringResource(R.string.btn_cancel), style = TvTypography.BodyLabel.copy(color = MaterialTheme.colorScheme.onSurface))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.btn_close),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.btn_cancel),
+                                style = TvTypography.BodyLabel.copy(color = MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Permission Request Banner if not granted (API <= 32)
+            if (!hasStoragePermission && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+                Surface(
+                    onClick = { permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE) },
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = AccentGold.copy(alpha = 0.15f),
+                        focusedContainerColor = AccentGold
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, AccentGold, RoundedCornerShape(10.dp))
+                        .tvFocusable()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PermDeviceInformation,
+                                contentDescription = null,
+                                tint = AccentGold,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.storage_permission_rationale),
+                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.storage_grant_permission),
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentGold
+                            )
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             // Drive Selector Tabs
             if (drives.isNotEmpty()) {
@@ -193,7 +379,11 @@ fun StorageFilePickerScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Icon(
-                                    imageVector = if (drive.isUsb) Icons.Default.Usb else Icons.Default.Storage,
+                                    imageVector = when {
+                                        drive.isUsb -> Icons.Default.Usb
+                                        drive.isMediaStore -> Icons.Default.SdCard
+                                        else -> Icons.Default.Storage
+                                    },
                                     contentDescription = drive.name,
                                     tint = if (isSelected) AccentGold else MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(20.dp)
@@ -214,7 +404,7 @@ fun StorageFilePickerScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Current Directory Breadcrumb
+            // Current Directory / Location Breadcrumb
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -222,8 +412,12 @@ fun StorageFilePickerScreen(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val locationDisplay = when {
+                    selectedDrive?.isMediaStore == true -> stringResource(R.string.storage_mediastore_title)
+                    else -> currentDir?.absolutePath ?: "-"
+                }
                 Text(
-                    text = stringResource(R.string.storage_location_prefix, currentDir?.absolutePath ?: "-"),
+                    text = stringResource(R.string.storage_location_prefix, locationDisplay),
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
@@ -260,8 +454,8 @@ fun StorageFilePickerScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                // "Go to parent folder" item
-                if (!isAtRoot && currentDir?.parentFile != null) {
+                // "Go to parent folder" item (only for file system drives)
+                if (selectedDrive?.isMediaStore != true && !isAtRoot && currentDir?.parentFile != null) {
                     item {
                         Surface(
                             onClick = {
@@ -329,7 +523,7 @@ fun StorageFilePickerScreen(
                     items(items) { item ->
                         Surface(
                             onClick = {
-                                if (item.isDirectory) {
+                                if (item.isDirectory && item.file != null) {
                                     currentDir = item.file
                                     errorMessage = null
                                 } else if (!isProcessing) {
@@ -337,10 +531,16 @@ fun StorageFilePickerScreen(
                                     errorMessage = null
                                     coroutineScope.launch {
                                         val result = withContext(Dispatchers.IO) {
-                                            when (kind) {
-                                                ImportKind.SLIDE_IMAGE -> importer.importSlideImage(item.file)
-                                                ImportKind.MOSQUE_LOGO -> importer.importMosqueLogo(item.file)
-                                                ImportKind.CUSTOM_ADHAN -> importer.importCustomAdhan(item.file)
+                                            if (item.uri != null) {
+                                                importer.importFromUri(context, item.uri, kind, item.name)
+                                            } else if (item.file != null) {
+                                                when (kind) {
+                                                    ImportKind.SLIDE_IMAGE -> importer.importSlideImage(item.file)
+                                                    ImportKind.MOSQUE_LOGO -> importer.importMosqueLogo(item.file)
+                                                    ImportKind.CUSTOM_ADHAN -> importer.importCustomAdhan(item.file)
+                                                }
+                                            } else {
+                                                ImportResult(success = false, errorMessage = "No file or URI available")
                                             }
                                         }
                                         isProcessing = false

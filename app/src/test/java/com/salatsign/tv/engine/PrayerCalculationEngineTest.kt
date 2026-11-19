@@ -433,13 +433,13 @@ class PrayerCalculationEngineTest {
         assertEquals(java.time.DayOfWeek.FRIDAY, fridayDate.dayOfWeek)
         val fridayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(fridayDate, config)
         val fridayZuhur = fridayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
-        assertEquals("Jumu'ah", fridayZuhur.displayLabel)
+        assertTrue(fridayZuhur.isFriday)
 
         // 2026-11-17 is Tuesday
         val tuesdayDate = LocalDate.of(2026, 11, 17)
         val tuesdayTimes = PrayerCalculationEngine.calculatePrayerTimesDay(tuesdayDate, config)
         val tuesdayZuhur = tuesdayTimes.prayers.first { it.prayer == Prayer.ZUHUR }
-        assertEquals("Dhuhr", tuesdayZuhur.displayLabel)
+        assertFalse(tuesdayZuhur.isFriday)
     }
 
     @Test

@@ -180,6 +180,7 @@ fun MosqueScheduleView(
                     prayers = prayerTimes.prayers,
                     is24HourFormat = uiState.settings.is24HourFormat,
                     showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
+                    isMosqueMode = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1.0f)
@@ -346,6 +347,17 @@ fun MosqueNextPrayerBanner(
                         color = colorScheme.onSurface
                     )
                 )
+
+                if (nextPrayer.secondaryTimeNote != null) {
+                    Text(
+                        text = nextPrayer.secondaryTimeNote,
+                        style = TvTypography.Subtitle.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AccentGold
+                        )
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

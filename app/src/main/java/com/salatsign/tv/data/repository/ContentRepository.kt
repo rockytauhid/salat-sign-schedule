@@ -111,6 +111,11 @@ class ContentRepository(
         mutex.withLock {
             runCatching {
                 val current = _slidesFlow.value
+                val exists = current.slides.any { it.id == slide.id }
+                if (!exists) {
+                    throw NoSuchElementException("Slide with id '${slide.id}' not found")
+                }
+
                 val newSlides = current.slides.map { if (it.id == slide.id) slide else it }
                 validateAll(newSlides)
 
@@ -131,6 +136,11 @@ class ContentRepository(
         mutex.withLock {
             runCatching {
                 val current = _slidesFlow.value
+                val exists = current.slides.any { it.id == slideId }
+                if (!exists) {
+                    throw NoSuchElementException("Slide with id '$slideId' not found")
+                }
+
                 val newSlides = current.slides.filterNot { it.id == slideId }
 
                 val newContainer = SlideContainer(
@@ -209,12 +219,20 @@ class ContentRepository(
         // 1. Write to temp file
         tempFile.writeText(jsonString)
 
-        // 2. Backup current good file if it exists
+        // 2. Backup current good file if it exists and decodes successfully (F9)
         if (slidesFile.exists()) {
-            try {
-                Files.copy(slidesFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to create slides.json.bak", e)
+            val isCurrentFileValid = runCatching {
+                json.decodeFromString(SlideContainer.serializer(), slidesFile.readText())
+            }.isSuccess
+
+            if (isCurrentFileValid) {
+                try {
+                    Files.copy(slidesFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to create slides.json.bak", e)
+                }
+            } else {
+                Log.w(TAG, "slides.json is corrupt; preserving existing slides.json.bak")
             }
         }
 
@@ -231,7 +249,24 @@ class ContentRepository(
             Files.move(tempFile.toPath(), slidesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
 
+        // 4. Clean up orphaned slide image files (excluding any active logo file)
+        cleanupOrphanImages(container)
+
         _slidesFlow.value = container
+    }
+
+    private fun cleanupOrphanImages(container: SlideContainer) {
+        if (!imagesDir.exists() || !imagesDir.isDirectory) return
+        val referencedImages = container.slides.mapNotNull { it.imageFile }.toSet()
+        val logoFiles = File(contentDir, "logo").listFiles()?.filter { it.isFile }?.map { it.name }?.toSet() ?: emptySet()
+        imagesDir.listFiles()?.forEach { file ->
+            if (file.isFile && file.name !in referencedImages && file.name !in logoFiles) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    Log.w(TAG, "Failed to delete orphaned slide image: ${file.name}")
+                }
+            }
+        }
     }
 
     fun readContainerSafely(): SlideContainer {

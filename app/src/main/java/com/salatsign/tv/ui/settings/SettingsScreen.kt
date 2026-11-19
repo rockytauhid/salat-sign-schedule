@@ -81,15 +81,20 @@ import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.engine.JumuahCalculator
+import com.salatsign.tv.engine.JumuahWarningReason
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
+import com.salatsign.tv.ui.common.displayLabel
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
@@ -100,6 +105,7 @@ import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.TvTypography
 import kotlinx.coroutines.delay
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
 @Composable
@@ -141,6 +147,9 @@ fun SettingsScreen(
     onSetAppLanguage: (AppLanguage) -> Unit = {},
     onSet24HourFormat: (Boolean) -> Unit = {},
     onSetShowArabicPrayerNames: (Boolean) -> Unit = {},
+    onSetJumuahMode: (JumuahMode) -> Unit = {},
+    onSetJumuahTimes: (List<String>) -> Unit = {},
+    onSetFridayAdhanTiming: (FridayAdhanTiming) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -365,47 +374,49 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Display Language Selector
-            Text(
-                text = stringResource(R.string.settings_section_language),
-                style = TvTypography.CardTitle.copy(color = AccentGold)
-            )
+            // Section: Display Language Selector (shown only when multiple languages ship - F3)
+            if (AppLanguage.isMultiLanguageShipped) {
+                Text(
+                    text = stringResource(R.string.settings_section_language),
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                for (lang in AppLanguage.entries) {
-                    val isSelected = (settings.appLanguage == lang)
-                    Card(
-                        onClick = { onSetAppLanguage(lang) },
-                        colors = CardDefaults.colors(
-                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
-                        ),
-                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
-                            .then(
-                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                else Modifier
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    for (lang in AppLanguage.entries) {
+                        val isSelected = (settings.appLanguage == lang)
+                        Card(
+                            onClick = { onSetAppLanguage(lang) },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                    else Modifier
+                                )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Language,
-                                contentDescription = null,
-                                tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(lang.labelRes()),
-                                style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                            )
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = null,
+                                    tint = if (isSelected) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(lang.labelRes()),
+                                    style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                )
+                            }
                         }
                     }
                 }
@@ -1075,7 +1086,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = stringResource(currentOption.labelRes()),
+                                    text = currentOption.displayLabel(),
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
@@ -1333,6 +1344,303 @@ fun SettingsScreen(
                                     text = if (settings.showStrikeHighlight) stringResource(R.string.settings_mosque_strike_on) else stringResource(R.string.settings_mosque_strike_off),
                                     style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // Jumu'ah (Friday) Schedule - Mosque Mode only (D16)
+                Text(
+                    text = stringResource(R.string.settings_section_jumuah),
+                    style = TvTypography.CardTitle.copy(color = AccentGold)
+                )
+                Text(
+                    text = stringResource(R.string.settings_jumuah_desc),
+                    style = TvTypography.BodyLabel.copy(color = colorScheme.onSurface.copy(alpha = 0.7f))
+                )
+
+                // 1. Calculation Mode (FIXED vs AFTER_ZUHR)
+                Text(
+                    text = stringResource(R.string.settings_jumuah_mode_title),
+                    style = TvTypography.Subtitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val modes = listOf(JumuahMode.FIXED, JumuahMode.AFTER_ZUHR)
+                    for (mode in modes) {
+                        val isSelected = (settings.jumuahMode == mode)
+                        Card(
+                            onClick = {
+                                onSetJumuahMode(mode)
+                                if (settings.jumuahTimes.isEmpty()) {
+                                    onSetJumuahTimes(if (mode == JumuahMode.FIXED) listOf("13:00") else listOf("45"))
+                                }
+                            },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                    else Modifier
+                                )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = stringResource(mode.labelRes()),
+                                    style = TvTypography.CardTitle.copy(
+                                        fontSize = 15.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) AccentEmerald else colorScheme.onSurface
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (mode == JumuahMode.FIXED) stringResource(R.string.settings_jumuah_mode_fixed_desc) else stringResource(R.string.settings_jumuah_mode_after_zuhr_desc),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 2. Number of Sittings (1, 2, or 3)
+                Text(
+                    text = stringResource(R.string.settings_jumuah_sittings_count_title),
+                    style = TvTypography.Subtitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val counts = listOf(1, 2, 3)
+                    val currentCount = settings.jumuahTimes.size.coerceIn(1, 3)
+                    for (c in counts) {
+                        val isCountSelected = (currentCount == c)
+                        val countLabel = when (c) {
+                            1 -> stringResource(R.string.settings_jumuah_sittings_1)
+                            2 -> stringResource(R.string.settings_jumuah_sittings_2)
+                            else -> stringResource(R.string.settings_jumuah_sittings_3)
+                        }
+                        Card(
+                            onClick = {
+                                val newTimes = when (settings.jumuahMode) {
+                                    JumuahMode.FIXED -> {
+                                        when (c) {
+                                            1 -> listOf("13:00")
+                                            2 -> listOf("12:30", "13:30")
+                                            else -> listOf("12:15", "13:00", "13:45")
+                                        }
+                                    }
+                                    JumuahMode.AFTER_ZUHR -> {
+                                        when (c) {
+                                            1 -> listOf("45")
+                                            2 -> listOf("45", "90")
+                                            else -> listOf("30", "60", "90")
+                                        }
+                                    }
+                                }
+                                onSetJumuahTimes(newTimes)
+                            },
+                            colors = CardDefaults.colors(
+                                containerColor = if (isCountSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            ),
+                            shape = CardDefaults.shape(RoundedCornerShape(8.dp)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .tvFocusable()
+                                .then(
+                                    if (isCountSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(8.dp))
+                                    else Modifier
+                                )
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = countLabel,
+                                    style = TvTypography.ButtonText.copy(
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isCountSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isCountSelected) AccentEmerald else colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 3. Sitting Time Adjusters
+                val currentTimes = if (settings.jumuahTimes.isEmpty()) {
+                    if (settings.jumuahMode == JumuahMode.FIXED) listOf("13:00") else listOf("45")
+                } else settings.jumuahTimes
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    currentTimes.forEachIndexed { index, timeValue ->
+                        Card(
+                            onClick = {},
+                            colors = CardDefaults.colors(containerColor = colorScheme.surface),
+                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.settings_jumuah_sitting_n, index + 1),
+                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = AccentGold)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (settings.jumuahMode == JumuahMode.FIXED) timeValue else "+$timeValue min",
+                                    style = TvTypography.ActivePrayerTime.copy(fontSize = 24.sp, color = AccentEmerald)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                val presetOptions = if (settings.jumuahMode == JumuahMode.FIXED) {
+                                    listOf("12:15", "12:30", "12:45", "13:00", "13:15", "13:30", "13:45", "14:00")
+                                } else {
+                                    listOf("0", "15", "30", "45", "60", "75", "90", "120")
+                                }
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val currentIndex = presetOptions.indexOf(timeValue).coerceAtLeast(0)
+                                    Surface(
+                                        onClick = {
+                                            if (currentIndex > 0) {
+                                                val mutable = currentTimes.toMutableList()
+                                                mutable[index] = presetOptions[currentIndex - 1]
+                                                onSetJumuahTimes(mutable)
+                                            }
+                                        },
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Text("<", style = TvTypography.ButtonText.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    }
+
+                                    Surface(
+                                        onClick = {
+                                            if (currentIndex < presetOptions.lastIndex) {
+                                                val mutable = currentTimes.toMutableList()
+                                                mutable[index] = presetOptions[currentIndex + 1]
+                                                onSetJumuahTimes(mutable)
+                                            }
+                                        },
+                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
+                                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
+                                        modifier = Modifier.tvFocusable()
+                                    ) {
+                                        Text(">", style = TvTypography.ButtonText.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. 53-Friday Validation Status
+                val validation = remember(settings.jumuahMode, settings.jumuahTimes, settings.latitude, settings.longitude, settings.zoneId, settings.calculationMethodName) {
+                    JumuahCalculator.validateSittings(
+                        startDate = LocalDate.now(),
+                        config = settings.prayerConfig(),
+                        jumuahMode = settings.jumuahMode,
+                        jumuahTimes = settings.jumuahTimes
+                    )
+                }
+
+                val firstWarn = validation.firstWarning
+                if (firstWarn != null) {
+                    val isInvalid = (firstWarn.reason == JumuahWarningReason.SITTING_AFTER_ASR)
+                    Card(
+                        onClick = {},
+                        colors = CardDefaults.colors(
+                            containerColor = if (isInvalid) colorScheme.error.copy(alpha = 0.2f) else AccentGold.copy(alpha = 0.15f)
+                        ),
+                        shape = CardDefaults.shape(RoundedCornerShape(8.dp)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isInvalid) {
+                                    stringResource(R.string.settings_jumuah_warning_after_asr, firstWarn.sittingTime, firstWarn.ashrTime, firstWarn.date)
+                                } else {
+                                    stringResource(R.string.settings_jumuah_warning_before_zuhr, firstWarn.sittingTime, firstWarn.zuhurTime, firstWarn.date)
+                                },
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isInvalid) colorScheme.error else AccentGold
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // 5. Friday Adhan Timing (shown only when Mosque Mode adhan is enabled)
+                if (settings.mosqueModeAdhanEnabled) {
+                    Text(
+                        text = stringResource(R.string.settings_jumuah_friday_adhan_timing_title),
+                        style = TvTypography.Subtitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val timings = listOf(FridayAdhanTiming.AT_ZUHR, FridayAdhanTiming.AT_JUMUAH)
+                        for (timing in timings) {
+                            val isTimingSelected = (settings.fridayAdhanTiming == timing)
+                            Card(
+                                onClick = { onSetFridayAdhanTiming(timing) },
+                                colors = CardDefaults.colors(
+                                    containerColor = if (isTimingSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                ),
+                                shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .tvFocusable()
+                                    .then(
+                                        if (isTimingSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
+                                        else Modifier
+                                    )
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = stringResource(timing.labelRes()),
+                                        style = TvTypography.CardTitle.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = if (isTimingSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isTimingSelected) AccentEmerald else colorScheme.onSurface
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (timing == FridayAdhanTiming.AT_ZUHR) stringResource(R.string.settings_jumuah_adhan_at_zuhr_desc) else stringResource(R.string.settings_jumuah_adhan_at_jumuah_desc),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
+                                    )
+                                }
                             }
                         }
                     }

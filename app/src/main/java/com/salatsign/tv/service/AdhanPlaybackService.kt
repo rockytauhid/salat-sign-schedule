@@ -25,15 +25,25 @@ import com.salatsign.tv.MainActivity
 import com.salatsign.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
+import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.repository.LanguageSyncCache
 import com.salatsign.tv.data.repository.SettingsRepository
 import com.salatsign.tv.ui.common.LocaleHelper
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import com.salatsign.tv.ui.common.labelRes
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.io.File
+import java.time.DayOfWeek
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class AdhanPlaybackService : Service() {
 
@@ -41,12 +51,12 @@ class AdhanPlaybackService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioManager: AudioManager? = null
+    private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     companion object {
         private const val TAG = "AdhanPlaybackService"
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "channel_adhan_playback"
-        const val CHANNEL_NAME = "Pemutaran Adhan"
 
         private val _isPlaying = MutableStateFlow(false)
         val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -80,7 +90,6 @@ class AdhanPlaybackService : Service() {
         }
 
         val prayerName = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME) ?: "SUBUH"
-        val prayerDisplayName = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_PRAYER_DISPLAY_NAME) ?: "Waktu Shalat"
         val adhanTypeStr = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE)
         val customUriStr = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI)
 
@@ -91,12 +100,25 @@ class AdhanPlaybackService : Service() {
             if (prayer == Prayer.SUBUH) AdhanAudioType.DEFAULT_SUBUH else AdhanAudioType.DEFAULT_STANDARD
         )
 
-        val language = runCatching {
-            runBlocking {
-                SettingsRepository(this@AdhanPlaybackService).appSettingsFlow.first().appLanguage
-            }
-        }.getOrDefault(AppLanguage.SYSTEM)
+        val passedLangStr = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_LANGUAGE)
+        val language = if (!passedLangStr.isNullOrBlank()) {
+            LanguageSyncCache.parseLanguage(passedLangStr)
+        } else {
+            LanguageSyncCache.getLanguage(this)
+        }
+
+        val passedZoneId = intent.getStringExtra(PrayerAlarmScheduler.EXTRA_ZONE_ID)
+        val zone = runCatching {
+            if (!passedZoneId.isNullOrBlank()) ZoneId.of(passedZoneId) else ZoneId.systemDefault()
+        }.getOrDefault(ZoneId.systemDefault())
+
+        val isMosqueMode = intent.getBooleanExtra(PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE, false)
+
         val localizedContext = LocaleHelper.wrap(this, language)
+        val isFriday = ZonedDateTime.now(zone).dayOfWeek == DayOfWeek.FRIDAY
+        val prayerDisplayName = localizedContext.getString(
+            prayer.labelRes(isFriday = isFriday && isMosqueMode)
+        )
 
         createNotificationChannel(localizedContext)
         val notification = buildForegroundNotification(localizedContext, prayerDisplayName)
@@ -111,6 +133,25 @@ class AdhanPlaybackService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
+        // If language or settings were not passed via extras, update notification in background without blocking
+        if (passedLangStr == null) {
+            serviceScope.launch {
+                val freshSettings = runCatching {
+                    SettingsRepository(this@AdhanPlaybackService).appSettingsFlow.first()
+                }.getOrNull() ?: return@launch
+
+                val updatedContext = LocaleHelper.wrap(this@AdhanPlaybackService, freshSettings.appLanguage)
+                val updatedZone = runCatching { ZoneId.of(freshSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                val updatedFriday = ZonedDateTime.now(updatedZone).dayOfWeek == DayOfWeek.FRIDAY
+                val updatedName = updatedContext.getString(
+                    prayer.labelRes(isFriday = updatedFriday && freshSettings.isMosqueMode)
+                )
+                val updatedNotification = buildForegroundNotification(updatedContext, updatedName)
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.notify(NOTIFICATION_ID, updatedNotification)
+            }
+        }
+
         playAdhan(prayer, adhanType, customUriStr)
 
         return START_NOT_STICKY
@@ -119,8 +160,13 @@ class AdhanPlaybackService : Service() {
     private fun playAdhan(prayer: Prayer, type: AdhanAudioType, customUriStr: String?) {
         releaseAudioResources()
 
-        // Code comment per remediation plan:
-        // USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
+        if (type == AdhanAudioType.SILENT) {
+            Log.d(TAG, "Adhan type is SILENT. Stopping service.")
+            stopSelf()
+            return
+        }
+
+        // Note: USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -163,7 +209,7 @@ class AdhanPlaybackService : Service() {
             }
 
             if (!customLoaded) {
-                setRawDataSource(player, prayer, type)
+                setRawDataSource(player, type)
             }
 
             player.setOnPreparedListener { mp ->
@@ -172,7 +218,7 @@ class AdhanPlaybackService : Service() {
 
                 mp.start()
                 _isPlaying.value = true
-                Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.displayName}.")
+                Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.name}.")
             }
 
             player.setOnCompletionListener {
@@ -198,11 +244,11 @@ class AdhanPlaybackService : Service() {
         }
     }
 
-    private fun setRawDataSource(player: MediaPlayer, prayer: Prayer, type: AdhanAudioType) {
-        val rawResId = if (type == AdhanAudioType.DEFAULT_SUBUH || prayer == Prayer.SUBUH) {
-            R.raw.adhan_subuh
-        } else {
-            R.raw.adhan_default
+    private fun setRawDataSource(player: MediaPlayer, type: AdhanAudioType) {
+        val rawResId = AdhanAudioResolver.resolveRawResource(type)
+        if (rawResId == null) {
+            Log.w(TAG, "No raw audio resource resolved for type: $type")
+            return
         }
 
         val afd = resources.openRawResourceFd(rawResId)
@@ -289,6 +335,7 @@ class AdhanPlaybackService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         releaseAudioResources()
         wakeLock?.let {
             if (it.isHeld) {

@@ -13,7 +13,9 @@ data class PrayerTimeItem(
     val isNext: Boolean = false,
     val isActive: Boolean = false,
     val isFriday: Boolean = false,
-    val iqamahMinutesAfter: Int = 0
+    val iqamahMinutesAfter: Int = 0,
+    val jumuahSittings: List<LocalTime> = emptyList(),
+    val secondaryTimeNote: String? = null
 ) {
     val formattedTime: String
         get() = time?.format(TimeFormatter24) ?: "--:--"
@@ -23,8 +25,9 @@ data class PrayerTimeItem(
         return time?.format(formatter) ?: "--:--"
     }
 
+    @Deprecated("Use stringResource(prayer.labelRes(...)) in UI layer")
     val displayLabel: String
-        get() = if (prayer == Prayer.ZUHUR && isFriday) "Jumu'ah" else prayer.displayName
+        get() = if (prayer == Prayer.ZUHUR && isFriday) "Jumu'ah" else prayer.name
 
     val iqamahTime: LocalTime?
         get() = if (iqamahMinutesAfter > 0 && time != null) time.plusMinutes(iqamahMinutesAfter.toLong()) else null
