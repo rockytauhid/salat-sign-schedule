@@ -31,13 +31,11 @@ class SalatSignApp : Application() {
         contentRepository = ContentRepository(this)
         alarmScheduler = PrayerAlarmScheduler(this)
 
-        // Schedule daily recurring midnight refresh via WorkManager
-        DailyScheduleWorker.enqueueDailyWork(this)
-
-        // Initial schedule check and legacy slide migration on startup
+        // Initial schedule check, daily WorkManager refresh (in configured zone), and legacy slide migration
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
             val settings = settingsRepository.appSettingsFlow.first()
+            DailyScheduleWorker.enqueueDailyWork(this@SalatSignApp, settings.zoneId)
             alarmScheduler.scheduleNext(settings)
         }
     }

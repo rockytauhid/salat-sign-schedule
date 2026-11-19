@@ -13,8 +13,8 @@ import androidx.work.WorkerParameters
 import com.salatsign.tv.data.repository.SettingsRepository
 import kotlinx.coroutines.flow.first
 import java.time.Duration
-import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 class DailyScheduleWorker(
@@ -27,16 +27,29 @@ class DailyScheduleWorker(
         const val WORK_NAME = "salatsign_daily_prayer_scheduling"
 
         /**
-         * Enqueues a periodic WorkManager task that runs once every 24 hours,
-         * with initial delay set so it fires just past midnight (~00:05).
+         * Computes the initial delay (in minutes) until 00:05 in the configured [zoneId] (F20).
          */
-        fun enqueueDailyWork(context: Context) {
-            val now = LocalDateTime.now()
-            var nextRun = now.toLocalDate().atTime(0, 5) // 00:05 AM
-            if (now.isAfter(nextRun)) {
-                nextRun = nextRun.plusDays(1)
+        fun computeInitialDelayMinutes(
+            zoneId: ZoneId = ZoneId.systemDefault(),
+            now: ZonedDateTime = ZonedDateTime.now(zoneId)
+        ): Long {
+            val zonedNow = now.withZoneSameInstant(zoneId)
+            var nextRun = zonedNow.toLocalDate().atTime(0, 5).atZone(zoneId)
+            if (!zonedNow.isBefore(nextRun)) {
+                nextRun = zonedNow.toLocalDate().plusDays(1).atTime(0, 5).atZone(zoneId)
             }
-            val initialDelayMinutes = Duration.between(now, nextRun).toMinutes().coerceAtLeast(1)
+            return Duration.between(zonedNow, nextRun).toMinutes().coerceAtLeast(1)
+        }
+
+        /**
+         * Enqueues a periodic WorkManager task that runs once every 24 hours,
+         * with initial delay set so it fires just past midnight (~00:05) in the configured timezone.
+         */
+        fun enqueueDailyWork(context: Context, zoneIdString: String? = null) {
+            val zone = runCatching {
+                if (!zoneIdString.isNullOrBlank()) ZoneId.of(zoneIdString) else ZoneId.systemDefault()
+            }.getOrDefault(ZoneId.systemDefault())
+            val initialDelayMinutes = computeInitialDelayMinutes(zone)
 
             val workRequest = PeriodicWorkRequestBuilder<DailyScheduleWorker>(24, TimeUnit.HOURS)
                 .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
@@ -47,7 +60,7 @@ class DailyScheduleWorker(
                 ExistingPeriodicWorkPolicy.UPDATE,
                 workRequest
             )
-            Log.d(TAG, "Enqueued daily prayer scheduling worker with initial delay of $initialDelayMinutes mins.")
+            Log.d(TAG, "Enqueued daily prayer scheduling worker for zone ${zone.id} with initial delay of $initialDelayMinutes mins.")
         }
     }
 
