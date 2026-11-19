@@ -66,7 +66,7 @@ fun LiveClockHeader(
     mosqueIconPreset: MosqueIconPreset = MosqueIconPreset.DOME_CRESCENT,
     mosqueFontPreset: MosqueFontPreset = MosqueFontPreset.MODERN_SANS,
     isViewingToday: Boolean = true,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     onPreviousDay: () -> Unit = {},
     onNextDay: () -> Unit = {},
     onTodayClick: () -> Unit = {},
@@ -85,8 +85,12 @@ fun LiveClockHeader(
     }
 
     val timeFormatted = remember(currentTime, is24HourFormat) {
-        val pattern = if (is24HourFormat) "HH:mm:ss" else "hh:mm:ss a"
-        currentTime.format(DateTimeFormatter.ofPattern(pattern, Locale.US))
+        if (is24HourFormat) {
+            currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss", Locale.US))
+        } else {
+            currentTime.format(DateTimeFormatter.ofPattern("h:mm:ss a", Locale.forLanguageTag("en-AU")))
+                .lowercase(Locale.ENGLISH)
+        }
     }
 
     val colorScheme = MaterialTheme.colorScheme

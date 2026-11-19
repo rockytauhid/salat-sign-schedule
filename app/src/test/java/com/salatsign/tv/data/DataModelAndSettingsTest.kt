@@ -65,7 +65,7 @@ class DataModelAndSettingsTest {
         assertFalse("Mosque Mode Reminders must be false by default (quiet)", settings.mosqueModeRemindersEnabled)
         assertTrue("Visual strike highlight should be true by default", settings.showStrikeHighlight)
         assertEquals(AppLanguage.SYSTEM, settings.appLanguage)
-        assertTrue("24-hour format should be true by default", settings.is24HourFormat)
+        assertFalse("12-hour format should be default for en-AU (D2)", settings.is24HourFormat)
         assertTrue("Arabic prayer names should be shown by default", settings.showArabicPrayerNames)
         assertEquals("", settings.mosqueName)
         assertEquals("", settings.mosqueSubtitle)
@@ -122,5 +122,35 @@ class DataModelAndSettingsTest {
         assertEquals("Kajian Ahad Pagi", slide.title)
         assertEquals(15, slide.durationSeconds)
         assertTrue(slide.enabled)
+    }
+
+    @Test
+    fun timeFormatting_honours12HourAnd24HourSetting() {
+        val morning = java.time.LocalTime.of(5, 12)
+        val afternoon = java.time.LocalTime.of(13, 5)
+
+        val itemMorning = com.salatsign.tv.data.model.PrayerTimeItem(prayer = Prayer.SUBUH, time = morning, iqamahMinutesAfter = 15)
+        val itemAfternoon = com.salatsign.tv.data.model.PrayerTimeItem(prayer = Prayer.ZUHUR, time = afternoon)
+
+        assertEquals("5:12 am", itemMorning.formattedTime(is24Hour = false))
+        assertEquals("05:12", itemMorning.formattedTime(is24Hour = true))
+        assertEquals("5:27 am", itemMorning.formattedIqamahTime(is24Hour = false))
+        assertEquals("05:27", itemMorning.formattedIqamahTime(is24Hour = true))
+
+        assertEquals("1:05 pm", itemAfternoon.formattedTime(is24Hour = false))
+        assertEquals("13:05", itemAfternoon.formattedTime(is24Hour = true))
+
+        val day = com.salatsign.tv.data.model.PrayerTimesDay(
+            date = java.time.LocalDate.of(2026, 6, 15),
+            hijriDate = "29 Dhu al-Hijjah 1447 H",
+            gregorianDate = "Monday, 15 June 2026",
+            prayers = listOf(itemMorning, itemAfternoon),
+            sunrise = java.time.LocalTime.of(7, 8),
+            nextPrayer = itemMorning,
+            activePrayer = null,
+            secondsUntilNext = 60
+        )
+        assertEquals("7:08 am", day.formattedSunrise(is24Hour = false))
+        assertEquals("07:08", day.formattedSunrise(is24Hour = true))
     }
 }

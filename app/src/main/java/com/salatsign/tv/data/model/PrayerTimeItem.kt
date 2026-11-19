@@ -21,8 +21,8 @@ data class PrayerTimeItem(
         get() = time?.format(TimeFormatter24) ?: "--:--"
 
     fun formattedTime(is24Hour: Boolean): String {
-        val formatter = if (is24Hour) TimeFormatter24 else TimeFormatter12
-        return time?.format(formatter) ?: "--:--"
+        val t = time ?: return "--:--"
+        return formatLocalTime(t, is24Hour)
     }
 
     @Deprecated("Use stringResource(prayer.labelRes(...)) in UI layer")
@@ -36,14 +36,22 @@ data class PrayerTimeItem(
         get() = iqamahTime?.format(TimeFormatter24)
 
     fun formattedIqamahTime(is24Hour: Boolean): String? {
-        val formatter = if (is24Hour) TimeFormatter24 else TimeFormatter12
-        return iqamahTime?.format(formatter)
+        val t = iqamahTime ?: return null
+        return formatLocalTime(t, is24Hour)
     }
 
     companion object {
         val TimeFormatter24: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.US)
-        val TimeFormatter12: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US)
+        val TimeFormatter12: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.forLanguageTag("en-AU"))
         // Backwards compatibility alias
         val TimeFormatter: DateTimeFormatter = TimeFormatter24
+
+        fun formatLocalTime(time: LocalTime, is24Hour: Boolean): String {
+            return if (is24Hour) {
+                time.format(TimeFormatter24)
+            } else {
+                time.format(TimeFormatter12).lowercase(Locale.ENGLISH)
+            }
+        }
     }
 }

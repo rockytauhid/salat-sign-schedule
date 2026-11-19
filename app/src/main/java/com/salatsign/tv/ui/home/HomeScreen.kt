@@ -114,7 +114,7 @@ fun HomeScreen(
                     NextPrayerSpotlightCard(
                         nextPrayer = prayerTimes.nextPrayer,
                         countdown = prayerTimes.countdownFormatted,
-                        sunrise = prayerTimes.formattedSunrise,
+                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         isReminderEnabled = uiState.settings.prePrayerReminderEnabled,
                         adhanType = uiState.settings.adhanFor(prayerTimes.nextPrayer.prayer).type,
                         is24HourFormat = uiState.settings.is24HourFormat,
@@ -128,7 +128,7 @@ fun HomeScreen(
                     // Non-today summary header
                     NonTodaySummaryCard(
                         dateFormatted = prayerTimes.gregorianDate,
-                        sunrise = prayerTimes.formattedSunrise,
+                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.7f)
@@ -159,7 +159,7 @@ fun NextPrayerSpotlightCard(
     sunrise: String,
     isReminderEnabled: Boolean,
     adhanType: AdhanAudioType,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
@@ -362,7 +362,7 @@ fun NonTodaySummaryCard(
 @Composable
 fun PrayerCardsRow(
     prayers: List<PrayerTimeItem>,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
@@ -388,7 +388,7 @@ fun PrayerCardsRow(
 @Composable
 fun PrayerCard(
     item: PrayerTimeItem,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
@@ -472,7 +472,7 @@ fun PrayerCard(
                     )
                 }
                 if (item.jumuahSittings.size > 1) {
-                    val s2 = item.jumuahSittings[1].format(if (is24HourFormat) PrayerTimeItem.TimeFormatter24 else PrayerTimeItem.TimeFormatter12)
+                    val s2 = PrayerTimeItem.formatLocalTime(item.jumuahSittings[1], is24HourFormat)
                     Text(
                         text = stringResource(R.string.settings_jumuah_sitting_n, 2) + ": " + s2,
                         style = TvTypography.BodyLabel.copy(
