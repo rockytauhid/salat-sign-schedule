@@ -6,11 +6,13 @@ package com.salatsign.tv.ui.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.salatsign.tv.R
 import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.PrayerDayCache
+import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,12 +64,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val date = customDate ?: today
         val isToday = (date == today)
 
+        val hijriMonthNames = runCatching {
+            LocaleHelper.wrap(app, settings.appLanguage).resources.getStringArray(R.array.hijri_months).toList()
+        }.getOrDefault(emptyList())
+
         val key = DailyPrayerCacheKey(
             date = date,
             config = settings.prayerConfig(),
             hijriOffsetDays = settings.hijriOffsetDays,
             hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
-            iqamahOffsets = settings.iqamahOffsets()
+            iqamahOffsets = settings.iqamahOffsets(),
+            hijriMonthNames = hijriMonthNames
         )
         val prayerTimes = prayerDayCache.getOrCompute(key, nowZoned)
 

@@ -27,6 +27,12 @@ class HijriCalendarEngineTest {
         assertTrue("Hijri date should contain 'H' suffix", hijriDate.endsWith("H") || hijriDate.contains("Hijri"))
     }
 
+    private val testEnglishMonths = listOf(
+        "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
+        "Jumada al-Ula", "Jumada al-Akhirah", "Rajab", "Sha'ban",
+        "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
+    )
+
     @Test
     fun formatHijriDate_on2026_11_17_isJumadaAlAkhirah1448() {
         val hijrahDate = HijriCalendarEngine.getHijrahDate(testDate, 0)
@@ -37,7 +43,7 @@ class HijriCalendarEngineTest {
         assertEquals("Month of 2026-11-17 must be Jumada al-Akhirah (month 6)", 6, monthOfYear)
         assertEquals("Year must be 1448 H", 1448, year)
 
-        val formatted = HijriCalendarEngine.formatHijriDate(testDate, 0)
+        val formatted = HijriCalendarEngine.formatHijriDate(testDate, 0, monthNames = testEnglishMonths)
         assertTrue("Formatted date must contain 'Jumada al-Akhirah' (got: $formatted)", formatted.contains("Jumada al-Akhirah"))
         assertTrue("Formatted date must contain '1448 H' (got: $formatted)", formatted.contains("1448 H"))
     }
@@ -107,26 +113,36 @@ class HijriCalendarEngineTest {
     fun formatHijriDate_multilingualMonthNames() {
         val dateEn = HijriCalendarEngine.formatHijriDate(
             date = testDate,
-            monthNames = HijriCalendarEngine.EnglishHijriMonthNames,
+            monthNames = testEnglishMonths,
             yearSuffix = "AH"
         )
         assertTrue(dateEn.contains("Jumada al-Akhirah"))
         assertTrue(dateEn.endsWith("AH"))
 
+        val testIdMonths = listOf(
+            "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir",
+            "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban",
+            "Ramadhan", "Syawal", "Dzulqa'dah", "Dzulhijjah"
+        )
         val dateId = HijriCalendarEngine.formatHijriDate(
             date = testDate,
-            monthNames = HijriCalendarEngine.IndonesianHijriMonthNames,
+            monthNames = testIdMonths,
             yearSuffix = "H"
         )
         assertTrue(dateId.contains("Jumadil Akhir"))
         assertTrue(dateId.endsWith("H"))
 
+        val testArMonths = listOf(
+            "مُحَرَّم", "صَفَر", "رَبِيع الأوَّل", "رَبِيع الآخِر",
+            "جُمَادَى الأولى", "جُمَادَى الآخِرة", "رَجَب", "شَعْبَان",
+            "رَمَضَان", "شَوَّال", "ذُو القَعْدَة", "ذُو الحِجَّة"
+        )
         val dateAr = HijriCalendarEngine.formatHijriDate(
             date = testDate,
-            monthNames = HijriCalendarEngine.ArabicHijriMonthNames,
+            monthNames = testArMonths,
             yearSuffix = "هـ"
         )
-        assertTrue(dateAr.contains(HijriCalendarEngine.ArabicHijriMonthNames[5]))
+        assertTrue(dateAr.contains(testArMonths[5]))
         assertTrue(dateAr.endsWith("هـ"))
     }
 

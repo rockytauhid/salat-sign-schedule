@@ -168,12 +168,14 @@ object PrayerCalculationEngine {
         val hijriBeforeMaghrib = HijriCalendarEngine.formatHijriDate(
             date = date,
             offsetDays = key.hijriOffsetDays,
-            changeAtMidnight = true
+            changeAtMidnight = true,
+            monthNames = key.hijriMonthNames
         )
         val hijriAfterMaghrib = HijriCalendarEngine.formatHijriDate(
             date = date.plusDays(1),
             offsetDays = key.hijriOffsetDays,
-            changeAtMidnight = true
+            changeAtMidnight = true,
+            monthNames = key.hijriMonthNames
         )
         val gregorianFormatted = HijriCalendarEngine.formatGregorianDate(date)
 

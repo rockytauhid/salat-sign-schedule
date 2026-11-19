@@ -13,57 +13,10 @@ import java.util.Locale
 
 object HijriCalendarEngine {
 
-    val EnglishHijriMonthNames = listOf(
-        "Muharram",
-        "Safar",
-        "Rabi' al-Awwal",
-        "Rabi' al-Thani",
-        "Jumada al-Ula",
-        "Jumada al-Akhirah",
-        "Rajab",
-        "Sha'ban",
-        "Ramadan",
-        "Shawwal",
-        "Dhu al-Qi'dah",
-        "Dhu al-Hijjah"
-    )
-
-    val IndonesianHijriMonthNames = listOf(
-        "Muharram",
-        "Safar",
-        "Rabiul Awal",
-        "Rabiul Akhir",
-        "Jumadil Awal",
-        "Jumadil Akhir",
-        "Rajab",
-        "Sya'ban",
-        "Ramadhan",
-        "Syawal",
-        "Dzulqa'dah",
-        "Dzulhijjah"
-    )
-
-    val ArabicHijriMonthNames = listOf(
-        "مُحَرَّم",
-        "صَفَر",
-        "رَبِيع الأوَّل",
-        "رَبِيع الآخِر",
-        "جُمَادَى الأولى",
-        "جُمَادَى الآخِرة",
-        "رَجَب",
-        "شَعْبَان",
-        "رَمَضَان",
-        "شَوَّال",
-        "ذُو القَعْدَة",
-        "ذُو الحِجَّة"
-    )
-
-    // Backwards compatibility alias
-    val HijriMonthNames = EnglishHijriMonthNames
-
     /**
      * Converts a LocalDate into a formatted Hijriyah date string taking into account
-     * the user-configured offset (-2 to +2 days), Maghrib rollover (D8), and language.
+     * the user-configured offset (-2 to +2 days), Maghrib rollover (D8), and localized month names
+     * loaded from `R.array.hijri_months` (F16).
      */
     fun formatHijriDate(
         date: LocalDate,
@@ -71,7 +24,7 @@ object HijriCalendarEngine {
         now: ZonedDateTime? = null,
         maghribTime: ZonedDateTime? = null,
         changeAtMidnight: Boolean = false,
-        monthNames: List<String> = EnglishHijriMonthNames,
+        monthNames: List<String> = emptyList(),
         yearSuffix: String = "H"
     ): String {
         return try {
@@ -83,10 +36,8 @@ object HijriCalendarEngine {
 
             val monthName = if (monthIndex in monthNames.indices) {
                 monthNames[monthIndex]
-            } else if (monthIndex in EnglishHijriMonthNames.indices) {
-                EnglishHijriMonthNames[monthIndex]
             } else {
-                "${monthIndex + 1}"
+                hijrahDate.format(DateTimeFormatter.ofPattern("MMMM", Locale.ENGLISH))
             }
 
             "$day $monthName $year $yearSuffix"
