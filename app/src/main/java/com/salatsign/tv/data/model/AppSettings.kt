@@ -148,7 +148,7 @@ data class AppSettings(
     val fridayAdhanTiming: FridayAdhanTiming = FridayAdhanTiming.AT_ZUHR,
     // Localization & Display Options
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
-    val is24HourFormat: Boolean = true,
+    val is24HourFormat: Boolean = false,
     val showArabicPrayerNames: Boolean = true,
     // Mosque branding settings
     val mosqueName: String = "",

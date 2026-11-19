@@ -26,6 +26,11 @@ data class PrayerTimesDay(
     val formattedSunrise: String
         get() = sunrise?.format(PrayerTimeItem.TimeFormatter) ?: "--:--"
 
+    fun formattedSunrise(is24Hour: Boolean): String {
+        val s = sunrise ?: return "--:--"
+        return PrayerTimeItem.formatLocalTime(s, is24Hour)
+    }
+
     val countdownFormatted: String
         get() {
             if (secondsUntilNext <= 0) return "00:00:00"

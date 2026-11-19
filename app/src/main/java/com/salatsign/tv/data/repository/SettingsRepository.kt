@@ -153,7 +153,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             if (LanguageSyncCache.getLanguage(context) != appLanguage) {
                 LanguageSyncCache.setLanguage(context, appLanguage)
             }
-            val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: true
+            val is24HourFormat = preferences[PreferencesKeys.IS_24_HOUR_FORMAT] ?: false
             val showArabicPrayerNames = preferences[PreferencesKeys.SHOW_ARABIC_PRAYER_NAMES] ?: true
 
             val adhanSubuh = readAdhanOption(preferences, Prayer.SUBUH, AdhanAudioOption.Silent)

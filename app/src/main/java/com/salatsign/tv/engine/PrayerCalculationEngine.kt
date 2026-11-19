@@ -98,7 +98,7 @@ object PrayerCalculationEngine {
         isMosqueMode: Boolean = false,
         jumuahMode: JumuahMode = JumuahMode.FIXED,
         jumuahTimes: List<String> = emptyList(),
-        is24HourFormat: Boolean = true
+        is24HourFormat: Boolean = false
     ): PrayerTimesDay {
         val key = DailyPrayerCacheKey(
             date = date,
@@ -153,7 +153,7 @@ object PrayerCalculationEngine {
             jumuahSittings = resolvedZonedSittings.map { it.toLocalTime() }
             effectiveZuhurTime = jumuahSittings.first()
             if (key.jumuahTimes.isNotEmpty()) {
-                val formattedZuhr = zuhurTime.format(if (key.is24HourFormat) PrayerTimeItem.TimeFormatter24 else PrayerTimeItem.TimeFormatter12)
+                val formattedZuhr = PrayerTimeItem.formatLocalTime(zuhurTime, key.is24HourFormat)
                 secondaryJumuahNote = "Zuhr begins $formattedZuhr"
             } else {
                 secondaryJumuahNote = null

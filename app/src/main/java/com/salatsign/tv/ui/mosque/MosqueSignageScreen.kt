@@ -193,7 +193,7 @@ fun MosqueScheduleView(
 @Composable
 fun MosqueActiveStrikeBanner(
     prayer: PrayerTimeItem,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -285,7 +285,7 @@ fun MosqueActiveStrikeBanner(
 fun MosqueNextPrayerBanner(
     nextPrayer: PrayerTimeItem,
     countdown: String,
-    is24HourFormat: Boolean = true,
+    is24HourFormat: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
