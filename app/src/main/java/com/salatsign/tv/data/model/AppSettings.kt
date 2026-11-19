@@ -15,10 +15,10 @@ enum class AppLanguage {
     }
 }
 
-enum class ThemeMode(val displayName: String) {
-    ALWAYS_DARK("Mode Gelap (OLED/Malam)"),
-    ALWAYS_LIGHT("Mode Terang (Siang)"),
-    AUTO_DAY_NIGHT("Otomatis (Siang Terang / Malam Gelap)")
+enum class ThemeMode {
+    ALWAYS_DARK,
+    ALWAYS_LIGHT,
+    AUTO_DAY_NIGHT
 }
 
 enum class JumuahMode {
@@ -31,19 +31,19 @@ enum class FridayAdhanTiming {
     AT_JUMUAH
 }
 
-enum class MosqueIconPreset(val displayName: String) {
-    DOME_CRESCENT("Kubah & Bulan Sabit"),
-    MINARET("Menara Masjid"),
-    GEOMETRIC_STAR("Bintang 8 (Rub el Hizb)"),
-    MIHRAB("Mihrab Klasik"),
-    CUSTOM("Logo Kustom / USB")
+enum class MosqueIconPreset {
+    DOME_CRESCENT,
+    MINARET,
+    GEOMETRIC_STAR,
+    MIHRAB,
+    CUSTOM
 }
 
-enum class MosqueFontPreset(val displayName: String) {
-    MODERN_SANS("Modern Sans Bold"),
-    TRADITIONAL_SERIF("Klasik Tradisional"),
-    ELEGANT_DISPLAY("Elegan Kaligrafi"),
-    CLEAN_TECH("Minimalis Bersih")
+enum class MosqueFontPreset {
+    MODERN_SANS,
+    TRADITIONAL_SERIF,
+    ELEGANT_DISPLAY,
+    CLEAN_TECH
 }
 
 data class CityPreset(
