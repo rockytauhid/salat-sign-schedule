@@ -235,19 +235,21 @@ object PrayerCalculationEngine {
         if (isToday) {
             val nonNullPrayers = rawList.filter { it.second != null }
 
-            // 1. Next Prayer Today
+            // 1. Next Prayer Today (computed via ZonedDateTime durations for DST accuracy, F17)
             if (key.isMosqueMode && isFriday && jumuahSittings.isNotEmpty()) {
                 if (effectiveZuhurTime != null && referenceTime.isBefore(effectiveZuhurTime)) {
                     val upcomingBefore = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
                     if (upcomingBefore != null) {
                         identifiedNextPrayer = upcomingBefore.first
-                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcomingBefore.second).coerceAtLeast(0)
+                        val targetZoned = ZonedDateTime.of(date, upcomingBefore.second!!, referenceZoned.zone)
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, targetZoned).coerceAtLeast(0)
                     }
                 } else if (jumuahSittings.size > 1 && referenceTime.isBefore(jumuahSittings.last())) {
                     val nextSitting = jumuahSittings.firstOrNull { it.isAfter(referenceTime) }
                     if (nextSitting != null) {
                         identifiedNextPrayer = Prayer.ZUHUR
-                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, nextSitting).coerceAtLeast(0)
+                        val targetZoned = ZonedDateTime.of(date, nextSitting, referenceZoned.zone)
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, targetZoned).coerceAtLeast(0)
                     }
                 } else {
                     val afterJumuahPrayers = listOf(
@@ -259,25 +261,25 @@ object PrayerCalculationEngine {
                     val upcomingAfter = afterJumuahPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
                     if (upcomingAfter != null) {
                         identifiedNextPrayer = upcomingAfter.first
-                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcomingAfter.second).coerceAtLeast(0)
+                        val targetZoned = ZonedDateTime.of(date, upcomingAfter.second!!, referenceZoned.zone)
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, targetZoned).coerceAtLeast(0)
                     } else if (cached.tomorrowSubuh != null) {
                         identifiedNextPrayer = Prayer.SUBUH
-                        val secondsUntilMidnight = ChronoUnit.SECONDS.between(referenceTime, LocalTime.MAX) + 1
-                        val secondsFromMidnight = cached.tomorrowSubuh.toSecondOfDay().toLong()
-                        secondsUntilNext = (secondsUntilMidnight + secondsFromMidnight).coerceAtLeast(0)
+                        val tomorrowSubuhZoned = ZonedDateTime.of(date.plusDays(1), cached.tomorrowSubuh, referenceZoned.zone)
+                        secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, tomorrowSubuhZoned).coerceAtLeast(0)
                     }
                 }
             } else {
                 val upcoming = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
                 if (upcoming != null) {
                     identifiedNextPrayer = upcoming.first
-                    secondsUntilNext = ChronoUnit.SECONDS.between(referenceTime, upcoming.second).coerceAtLeast(0)
+                    val targetZoned = ZonedDateTime.of(date, upcoming.second!!, referenceZoned.zone)
+                    secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, targetZoned).coerceAtLeast(0)
                 } else if (cached.tomorrowSubuh != null) {
                     // If all valid prayers today have passed (or after Isya), next is tomorrow's first available prayer (Subuh)
                     identifiedNextPrayer = Prayer.SUBUH
-                    val secondsUntilMidnight = ChronoUnit.SECONDS.between(referenceTime, LocalTime.MAX) + 1
-                    val secondsFromMidnight = cached.tomorrowSubuh.toSecondOfDay().toLong()
-                    secondsUntilNext = (secondsUntilMidnight + secondsFromMidnight).coerceAtLeast(0)
+                    val tomorrowSubuhZoned = ZonedDateTime.of(date.plusDays(1), cached.tomorrowSubuh, referenceZoned.zone)
+                    secondsUntilNext = ChronoUnit.SECONDS.between(referenceZoned, tomorrowSubuhZoned).coerceAtLeast(0)
                 }
             }
 
@@ -365,7 +367,8 @@ object PrayerCalculationEngine {
 
     /**
      * Checks if referenceTime is currently within the exact strike window (0 to 5 minutes after prayer)
-     * of any prayer today. Used by Mosque Mode to trigger silent slideshow interruption.
+     * of any prayer today. Handles midnight wrap-around for late-night prayers (e.g. Isya at 23:58 -> 00:01) (F17).
+     * Used by Mosque Mode to trigger silent slideshow interruption.
      */
     fun getPrayerAtExactTimeStrike(
         todayPrayerTimes: PrayerTimesDay,
@@ -373,11 +376,11 @@ object PrayerCalculationEngine {
         windowMinutes: Long = 5,
         isMosqueMode: Boolean = false
     ): Prayer? {
+        val windowSeconds = windowMinutes * 60
         val zuhurItem = todayPrayerTimes.prayers.firstOrNull { it.prayer == Prayer.ZUHUR }
         if (isMosqueMode && zuhurItem != null && zuhurItem.isFriday && zuhurItem.jumuahSittings.isNotEmpty()) {
             for (sitting in zuhurItem.jumuahSittings) {
-                val diffSeconds = ChronoUnit.SECONDS.between(sitting, currentTime)
-                if (diffSeconds in 0..(windowMinutes * 60)) {
+                if (isWithinStrikeWindow(sitting, currentTime, windowSeconds)) {
                     return Prayer.ZUHUR
                 }
             }
@@ -387,12 +390,36 @@ object PrayerCalculationEngine {
                 continue
             }
             val prayerTime = item.time ?: continue
-            val diffSeconds = ChronoUnit.SECONDS.between(prayerTime, currentTime)
-            if (diffSeconds in 0..(windowMinutes * 60)) {
+            if (isWithinStrikeWindow(prayerTime, currentTime, windowSeconds)) {
                 return item.prayer
             }
         }
         return null
+    }
+
+    /**
+     * ZonedDateTime-aware exact strike window check that cleanly handles prayers crossing midnight (F17).
+     */
+    fun getPrayerAtExactTimeStrike(
+        todayPrayerTimes: PrayerTimesDay,
+        nowZoned: ZonedDateTime,
+        windowMinutes: Long = 5,
+        isMosqueMode: Boolean = false
+    ): Prayer? {
+        return getPrayerAtExactTimeStrike(
+            todayPrayerTimes = todayPrayerTimes,
+            currentTime = nowZoned.toLocalTime(),
+            windowMinutes = windowMinutes,
+            isMosqueMode = isMosqueMode
+        )
+    }
+
+    private fun isWithinStrikeWindow(prayerTime: LocalTime, currentTime: LocalTime, windowSeconds: Long): Boolean {
+        val directDiff = ChronoUnit.SECONDS.between(prayerTime, currentTime)
+        if (directDiff in 0..windowSeconds) return true
+        // Midnight wrap-around: e.g. prayer at 23:58, currentTime at 00:01 -> directDiff = -86220, +86400 = +180s
+        val wrappedDiff = directDiff + 86_400L
+        return wrappedDiff in 0..windowSeconds
     }
 
     /**

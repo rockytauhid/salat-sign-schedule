@@ -499,4 +499,75 @@ class PrayerCalculationEngineTest {
             }
         }
     }
+
+    @Test
+    fun secondsUntilNext_afterIsyaAcrossDstSpringForward_usesZonedDuration() {
+        // Australia/Sydney clocks spring forward at 02:00 AEST -> 03:00 AEDT on Sunday 4 Oct 2026
+        val sydneyZone = ZoneId.of("Australia/Sydney")
+        val sydneyConfig = PrayerConfig(
+            latitude = -33.8688,
+            longitude = 151.2093,
+            zoneId = sydneyZone,
+            methodName = "MUSLIM_WORLD_LEAGUE"
+        )
+        val saturdayOct3 = LocalDate.of(2026, 10, 3)
+        val sundayOct4 = LocalDate.of(2026, 10, 4)
+
+        val nowZoned = ZonedDateTime.of(saturdayOct3, LocalTime.of(23, 0, 0), sydneyZone)
+        val saturdayDay = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = saturdayOct3,
+            config = sydneyConfig,
+            referenceZoned = nowZoned
+        )
+        val sundayDay = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = sundayOct4,
+            config = sydneyConfig,
+            referenceZoned = ZonedDateTime.of(sundayOct4, LocalTime.of(12, 0), sydneyZone)
+        )
+        val tomorrowSubuh = sundayDay.prayers.first { it.prayer == Prayer.SUBUH }.time!!
+        val expectedZonedSubuh = ZonedDateTime.of(sundayOct4, tomorrowSubuh, sydneyZone)
+        val expectedSeconds = java.time.temporal.ChronoUnit.SECONDS.between(nowZoned, expectedZonedSubuh)
+
+        assertEquals(Prayer.SUBUH, saturdayDay.nextPrayer?.prayer)
+        assertEquals("Overnight countdown across DST spring-forward must use ZonedDateTime duration", expectedSeconds, saturdayDay.secondsUntilNext)
+
+        // Confirm it is 3600s less than naive wall-clock calculation
+        val naiveSeconds = (3600L) + tomorrowSubuh.toSecondOfDay().toLong()
+        assertEquals(naiveSeconds - 3600L, saturdayDay.secondsUntilNext)
+    }
+
+    @Test
+    fun getPrayerAtExactTimeStrike_lateNightPrayerCrossingMidnight_triggersAfterMidnight() {
+        val lateIsyaDay = com.salatsign.tv.data.model.PrayerTimesDay(
+            date = LocalDate.of(2026, 6, 21),
+            hijriDate = "6 Muharram 1448 H",
+            gregorianDate = "Sunday, 21 June 2026",
+            prayers = listOf(
+                com.salatsign.tv.data.model.PrayerTimeItem(Prayer.SUBUH, LocalTime.of(3, 0)),
+                com.salatsign.tv.data.model.PrayerTimeItem(Prayer.ZUHUR, LocalTime.of(13, 0)),
+                com.salatsign.tv.data.model.PrayerTimeItem(Prayer.ASHR, LocalTime.of(17, 30)),
+                com.salatsign.tv.data.model.PrayerTimeItem(Prayer.MAGRIB, LocalTime.of(21, 45)),
+                com.salatsign.tv.data.model.PrayerTimeItem(Prayer.ISYA, LocalTime.of(23, 58))
+            ),
+            sunrise = LocalTime.of(4, 30),
+            nextPrayer = null,
+            activePrayer = null,
+            secondsUntilNext = 0
+        )
+
+        // 00:01 is 3 minutes after 23:58 -> within 5-min strike window
+        assertEquals(
+            Prayer.ISYA,
+            PrayerCalculationEngine.getPrayerAtExactTimeStrike(lateIsyaDay, LocalTime.of(0, 1), windowMinutes = 5)
+        )
+        // 00:03 is 5 minutes after 23:58 -> boundary of 5-min strike window
+        assertEquals(
+            Prayer.ISYA,
+            PrayerCalculationEngine.getPrayerAtExactTimeStrike(lateIsyaDay, LocalTime.of(0, 3), windowMinutes = 5)
+        )
+        // 00:04 is 6 minutes after 23:58 -> outside 5-min strike window
+        assertNull(
+            PrayerCalculationEngine.getPrayerAtExactTimeStrike(lateIsyaDay, LocalTime.of(0, 4), windowMinutes = 5)
+        )
+    }
 }
