@@ -25,8 +25,10 @@ android {
         localeFilters += listOf("en")
     }
 
-    val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
-        it.contains("Release", ignoreCase = true)
+    val isReleaseTaskRequested = gradle.startParameter.taskNames.any { task ->
+        val name = task.substringAfterLast(':')
+        (name.startsWith("assemble", ignoreCase = true) || name.startsWith("bundle", ignoreCase = true)) &&
+            name.endsWith("Release", ignoreCase = true)
     }
 
     val storeFilePath = project.findProperty("RELEASE_STORE_FILE")?.toString()

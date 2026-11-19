@@ -23,7 +23,8 @@ data class DailyPrayerCacheKey(
     val isMosqueMode: Boolean = false,
     val jumuahMode: JumuahMode = JumuahMode.FIXED,
     val jumuahTimes: List<String> = emptyList(),
-    val is24HourFormat: Boolean = false
+    val is24HourFormat: Boolean = false,
+    val hijriMonthNames: List<String> = emptyList()
 )
 
 /**

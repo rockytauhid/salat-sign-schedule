@@ -15,6 +15,7 @@ import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.service.PrayerAlarmScheduler
+import com.salatsign.tv.ui.common.labelRes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -152,5 +153,18 @@ class DataModelAndSettingsTest {
         )
         assertEquals("7:08 am", day.formattedSunrise(is24Hour = false))
         assertEquals("07:08", day.formattedSunrise(is24Hour = true))
+    }
+
+    @Test
+    fun settingsEnums_allMapToStringResourcesInLabels() {
+        for (mode in ThemeMode.entries) {
+            assertTrue(mode.labelRes() != 0)
+        }
+        for (preset in MosqueIconPreset.entries) {
+            assertTrue(preset.labelRes() != 0)
+        }
+        for (font in MosqueFontPreset.entries) {
+            assertTrue(font.labelRes() != 0)
+        }
     }
 }

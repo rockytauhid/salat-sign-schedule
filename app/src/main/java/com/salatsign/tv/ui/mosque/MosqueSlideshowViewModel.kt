@@ -6,6 +6,7 @@ package com.salatsign.tv.ui.mosque
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.salatsign.tv.R
 import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
@@ -14,6 +15,7 @@ import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
+import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,6 +70,9 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val prayerDayCache = PrayerDayCache()
 
     private fun getPrayerTimesDay(settings: AppSettings, nowZoned: ZonedDateTime): PrayerTimesDay {
+        val hijriMonthNames = runCatching {
+            LocaleHelper.wrap(app, settings.appLanguage).resources.getStringArray(R.array.hijri_months).toList()
+        }.getOrDefault(emptyList())
         val key = DailyPrayerCacheKey(
             date = nowZoned.toLocalDate(),
             config = settings.prayerConfig(),
@@ -77,7 +82,8 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             isMosqueMode = settings.isMosqueMode,
             jumuahMode = settings.jumuahMode,
             jumuahTimes = settings.jumuahTimes,
-            is24HourFormat = settings.is24HourFormat
+            is24HourFormat = settings.is24HourFormat,
+            hijriMonthNames = hijriMonthNames
         )
         return prayerDayCache.getOrCompute(key, nowZoned)
     }
