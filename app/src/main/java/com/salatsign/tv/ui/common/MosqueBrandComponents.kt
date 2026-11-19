@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import coil3.compose.AsyncImage
+import com.salatsign.tv.R
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.ui.theme.AccentEmerald
@@ -51,7 +53,7 @@ fun MosqueEmblemIcon(
         }
         AsyncImage(
             model = model,
-            contentDescription = "Logo Masjid Kustom",
+            contentDescription = stringResource(R.string.mosque_icon_custom),
             modifier = modifier
                 .size(size)
                 .clip(CircleShape)
@@ -71,7 +73,7 @@ fun MosqueEmblemIcon(
                 MosqueIconPreset.DOME_CRESCENT -> {
                     Icon(
                         imageVector = Icons.Default.Mosque,
-                        contentDescription = "Kubah Masjid",
+                        contentDescription = stringResource(preset.labelRes()),
                         tint = AccentEmerald,
                         modifier = Modifier.size(iconSize)
                     )
@@ -79,7 +81,7 @@ fun MosqueEmblemIcon(
                 MosqueIconPreset.MINARET -> {
                     Icon(
                         imageVector = Icons.Default.AccountBalance,
-                        contentDescription = "Menara Masjid",
+                        contentDescription = stringResource(preset.labelRes()),
                         tint = AccentEmerald,
                         modifier = Modifier.size(iconSize)
                     )
@@ -87,7 +89,7 @@ fun MosqueEmblemIcon(
                 MosqueIconPreset.GEOMETRIC_STAR -> {
                     Icon(
                         imageVector = Icons.Default.Stars,
-                        contentDescription = "Bintang 8",
+                        contentDescription = stringResource(preset.labelRes()),
                         tint = AccentGold,
                         modifier = Modifier.size(iconSize)
                     )
@@ -95,7 +97,7 @@ fun MosqueEmblemIcon(
                 MosqueIconPreset.MIHRAB -> {
                     Icon(
                         imageVector = Icons.Default.DoorFront,
-                        contentDescription = "Mihrab",
+                        contentDescription = stringResource(preset.labelRes()),
                         tint = AccentEmerald,
                         modifier = Modifier.size(iconSize)
                     )
@@ -104,7 +106,7 @@ fun MosqueEmblemIcon(
                     if (!customLogoUri.isNullOrBlank()) {
                         AsyncImage(
                             model = customLogoUri,
-                            contentDescription = "Logo",
+                            contentDescription = stringResource(R.string.mosque_icon_custom),
                             modifier = Modifier
                                 .size(size)
                                 .clip(CircleShape),
@@ -113,7 +115,7 @@ fun MosqueEmblemIcon(
                     } else {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Simbol Masjid",
+                            contentDescription = stringResource(preset.labelRes()),
                             tint = AccentGold,
                             modifier = Modifier.size(iconSize)
                         )

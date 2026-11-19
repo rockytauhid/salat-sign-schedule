@@ -84,27 +84,6 @@ val PopularCityPresets = listOf(
     CityPreset("New York, USA", 40.7128, -74.0060, "NORTH_AMERICA", "America/New_York")
 )
 
-val MosqueNamePresets = listOf(
-    "Masjid Raya",
-    "Masjid Agung",
-    "Masjid Al-Ikhlas",
-    "Masjid At-Taqwa",
-    "Masjid Al-Muhajirin",
-    "Masjid Baiturrahman",
-    "Masjid Al-Huda",
-    "Masjid Nurul Iman",
-    "Masjid Darussalam",
-    "Musholla Al-Barokah"
-)
-
-val MosqueSubtitlePresets = listOf(
-    "Luruskan dan Rapatkan Shaf",
-    "Harap Menonaktifkan Nada Dering Ponsel",
-    "Rapatkan Shaf Demi Kesempurnaan Shalat",
-    "Selamat Datang Jamaah Shalat",
-    "Jagalah Kebersihan & Kesucian Masjid"
-)
-
 data class AppSettings(
     val isSetupCompleted: Boolean = false,
     val isMosqueMode: Boolean = false,
