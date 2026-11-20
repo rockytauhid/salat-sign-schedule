@@ -225,7 +225,7 @@
     <string name="settings_arabic_names_toggle">Show Arabic Prayer Names</string>
 
     <string name="desc_announcement_slide">Mosque Announcement Slide</string>
-    <string name="desc_app_logo">SalatSign Logo</string>
+    <string name="desc_app_logo">App Logo</string>
 
     <!-- About & Credits Dialog -->
     <string name="settings_section_about">About &amp; Credits</string>
@@ -234,8 +234,8 @@
     <string name="settings_about_license">Open Source under GNU General Public License v3.0 (GPL-3.0-or-later)</string>
     <string name="settings_about_copyright">Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors</string>
     <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
-    <string name="settings_about_trademarks">SalatSign is a trademark. See TRADEMARKS.md for policy.</string>
-    <string name="settings_about_dialog_title">About SalatSign</string>
+    <string name="settings_about_trademarks">SalatSign &amp; SalatSchedule are trademarks. See TRADEMARKS.md for policy.</string>
+    <string name="settings_about_dialog_title">About</string>
     <string name="settings_about_libraries">Open Source Libraries: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
 
     <!-- Setup Wizard -->
@@ -252,7 +252,7 @@
     <string name="wizard_mode_home_desc">Interactive prayer times with D-pad calendar navigation, 15m reminders, and customizable Adhan alerts.</string>
     <string name="wizard_mode_mosque_title">MOSQUE MODE (Digital Signage)</string>
     <string name="wizard_mode_mosque_desc">Silent white-label public signage with prayer schedule, custom mosque logo, and announcement slideshow.</string>
-    <string name="wizard_mosque_silent_note">Mosque mode is silent by default. You can turn on adhan sound in Settings.</string>
+    <string name="wizard_mosque_silent_note">SalatSign is strictly silent: no audio playback or notification popups.</string>
     <string name="wizard_pin_default_title">Use Default PIN (0000)</string>
     <string name="wizard_pin_default_desc">Default PIN is 0000. You can change it at any time in Settings.</string>
     <string name="wizard_pin_custom_title">Set New Custom PIN (4–8 Digits)</string>

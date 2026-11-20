@@ -21,9 +21,9 @@ class PrayerAlarmScheduler(private val context: Context) {
     companion object {
         private const val TAG = "PrayerAlarmScheduler"
 
-        const val ACTION_PLAY_ADHAN = "com.salatsign.tv.action.PLAY_ADHAN"
-        const val ACTION_PRE_PRAYER_REMINDER = "com.salatsign.tv.action.PRE_PRAYER_REMINDER"
-        const val ACTION_STOP_ADHAN = "com.salatsign.tv.action.STOP_ADHAN"
+        const val ACTION_PLAY_ADHAN = "com.salatschedule.tv.action.PLAY_ADHAN"
+        const val ACTION_PRE_PRAYER_REMINDER = "com.salatschedule.tv.action.PRE_PRAYER_REMINDER"
+        const val ACTION_STOP_ADHAN = "com.salatschedule.tv.action.STOP_ADHAN"
 
         const val EXTRA_PRAYER_NAME = "extra_prayer_name"
         const val EXTRA_ADHAN_TYPE = "extra_adhan_type"
@@ -31,7 +31,6 @@ class PrayerAlarmScheduler(private val context: Context) {
         const val EXTRA_SCHEDULED_AT_EPOCH_MILLIS = "extra_scheduled_at_epoch_millis"
         const val EXTRA_LANGUAGE = "extra_language"
         const val EXTRA_ZONE_ID = "extra_zone_id"
-        const val EXTRA_IS_MOSQUE_MODE = "extra_is_mosque_mode"
 
         const val REQUEST_CODE_ADHAN = 100
         const val REQUEST_CODE_REMINDER = 200
@@ -39,15 +38,14 @@ class PrayerAlarmScheduler(private val context: Context) {
 
     /**
      * Schedules the next adhan and 15-minute reminder using two single-slot alarms.
-     * Respects quiet Mosque Mode defaults (P4.7).
      * Evaluates across midnight to guarantee uninterrupted chaining.
      */
     fun scheduleNext(settings: AppSettings, now: ZonedDateTime? = null) {
         val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
         val effectiveNow = now ?: ZonedDateTime.now(zone)
 
-        val isAdhanAllowed = if (settings.isMosqueMode) settings.mosqueModeAdhanEnabled else true
-        val isReminderAllowed = if (settings.isMosqueMode) settings.mosqueModeRemindersEnabled else settings.prePrayerReminderEnabled
+        val isAdhanAllowed = true
+        val isReminderAllowed = settings.prePrayerReminderEnabled
 
         if (!isAdhanAllowed && !isReminderAllowed) {
             Log.d(TAG, "No alarms enabled (quiet mode active): Canceling all pending alarms.")

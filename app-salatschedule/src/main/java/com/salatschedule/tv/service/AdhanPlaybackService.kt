@@ -71,7 +71,7 @@ class AdhanPlaybackService : Service() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "SalatSign:AdhanPlaybackWakeLock"
+            "SalatSchedule:AdhanPlaybackWakeLock"
         ).apply {
             setReferenceCounted(false)
             acquire(10 * 60 * 1000L) // 10 minutes timeout
@@ -113,12 +113,10 @@ class AdhanPlaybackService : Service() {
             if (!passedZoneId.isNullOrBlank()) ZoneId.of(passedZoneId) else ZoneId.systemDefault()
         }.getOrDefault(ZoneId.systemDefault())
 
-        val isMosqueMode = intent.getBooleanExtra(PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE, false)
-
         val localizedContext = LocaleHelper.wrap(this, language)
-        val isFriday = ZonedDateTime.now(zone).dayOfWeek == DayOfWeek.FRIDAY
+        // SalatSchedule is Home Mode: Friday displays plain Zuhr (D16/D18)
         val prayerDisplayName = localizedContext.getString(
-            prayer.labelRes(isFriday = isFriday && isMosqueMode)
+            prayer.labelRes(isFriday = false)
         )
 
         createNotificationChannel(localizedContext)
@@ -142,10 +140,8 @@ class AdhanPlaybackService : Service() {
                 }.getOrNull() ?: return@launch
 
                 val updatedContext = LocaleHelper.wrap(this@AdhanPlaybackService, freshSettings.appLanguage)
-                val updatedZone = runCatching { ZoneId.of(freshSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-                val updatedFriday = ZonedDateTime.now(updatedZone).dayOfWeek == DayOfWeek.FRIDAY
                 val updatedName = updatedContext.getString(
-                    prayer.labelRes(isFriday = updatedFriday && freshSettings.isMosqueMode)
+                    prayer.labelRes(isFriday = false)
                 )
                 val updatedNotification = buildForegroundNotification(updatedContext, updatedName)
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

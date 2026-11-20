@@ -29,13 +29,14 @@ class LanguageSyncCacheTest {
     }
 
     @Test
-    fun prayerAlarmScheduler_extrasAreDefined() {
+    fun prayerAlarmScheduler_extrasAndActionsAreDefined() {
         assertNotNull(PrayerAlarmScheduler.EXTRA_LANGUAGE)
         assertNotNull(PrayerAlarmScheduler.EXTRA_ZONE_ID)
-        assertNotNull(PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE)
         assertEquals("extra_language", PrayerAlarmScheduler.EXTRA_LANGUAGE)
         assertEquals("extra_zone_id", PrayerAlarmScheduler.EXTRA_ZONE_ID)
-        assertEquals("extra_is_mosque_mode", PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE)
+        assertEquals("com.salatschedule.tv.action.PLAY_ADHAN", PrayerAlarmScheduler.ACTION_PLAY_ADHAN)
+        assertEquals("com.salatschedule.tv.action.PRE_PRAYER_REMINDER", PrayerAlarmScheduler.ACTION_PRE_PRAYER_REMINDER)
+        assertEquals("com.salatschedule.tv.action.STOP_ADHAN", PrayerAlarmScheduler.ACTION_STOP_ADHAN)
     }
 
     @Test

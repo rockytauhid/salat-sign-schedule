@@ -56,7 +56,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val settingsState = settingsRepository.appSettingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = AppSettings()
+        initialValue = AppSettings(isMosqueMode = true)
     )
 
     private val _slideState = MutableStateFlow<SlideState>(SlideState.PrayerSchedule(60))
@@ -79,7 +79,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             hijriOffsetDays = settings.hijriOffsetDays,
             hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
             iqamahOffsets = settings.iqamahOffsets(),
-            isMosqueMode = settings.isMosqueMode,
+            isMosqueMode = true,
             jumuahMode = settings.jumuahMode,
             jumuahTimes = settings.jumuahTimes,
             is24HourFormat = settings.is24HourFormat,
@@ -114,9 +114,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 val prayerTimes = getPrayerTimesDay(settings, nowZoned)
 
                 // Check if currently within exact prayer strike window (5 minutes)
-                val strikingPrayer = if (settings.showStrikeHighlight) {
-                    PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, now, 5, isMosqueMode = settings.isMosqueMode)
-                } else null
+                val strikingPrayer = evaluateStrike(prayerTimes, now, settings.showStrikeHighlight)
 
                 if (strikingPrayer != null) {
                     _interruptedActivePrayer.value = strikingPrayer
@@ -136,9 +134,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 for (sec in 0 until scheduleDuration) {
                     delay(1000)
                     val currentNow = ZonedDateTime.now(zone).toLocalTime()
-                    val strike = if (settings.showStrikeHighlight) {
-                        PrayerCalculationEngine.getPrayerAtExactTimeStrike(prayerTimes, currentNow, 5)
-                    } else null
+                    val strike = evaluateStrike(prayerTimes, currentNow, settings.showStrikeHighlight)
 
                     if (strike != null) {
                         _interruptedActivePrayer.value = strike
@@ -167,9 +163,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         val slidePrayerTimes = getPrayerTimesDay(slideSettings, slideNowZoned)
 
                         // Check strike at the start of this slide
-                        val startStrike = if (slideSettings.showStrikeHighlight) {
-                            PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, slideNow, 5, isMosqueMode = slideSettings.isMosqueMode)
-                        } else null
+                        val startStrike = evaluateStrike(slidePrayerTimes, slideNow, slideSettings.showStrikeHighlight)
 
                         if (startStrike != null) {
                             _interruptedActivePrayer.value = startStrike
@@ -189,9 +183,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         for (sec in 0 until slideDuration) {
                             delay(1000)
                             val currentNow = ZonedDateTime.now(slideZone).toLocalTime()
-                            val strike = if (slideSettings.showStrikeHighlight) {
-                                PrayerCalculationEngine.getPrayerAtExactTimeStrike(slidePrayerTimes, currentNow, 5)
-                            } else null
+                            val strike = evaluateStrike(slidePrayerTimes, currentNow, slideSettings.showStrikeHighlight)
 
                             if (strike != null) {
                                 // Silent Exact-Time Interruption: Cancel slide immediately and return to schedule
@@ -221,19 +213,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
         val nowZoned = ZonedDateTime.now(zone)
 
         val prayerTimes = getPrayerTimesDay(settings, nowZoned)
-
-        // If interrupted active prayer is present, override isActive flag
-        val updatedPrayers = if (activePrayer != null) {
-            prayerTimes.prayers.map { item ->
-                if (item.prayer == activePrayer) {
-                    item.copy(isActive = true)
-                } else {
-                    item.copy(isActive = false)
-                }
-            }
-        } else {
-            prayerTimes.prayers
-        }
+        val updatedPrayers = applyActivePrayerOverride(prayerTimes, activePrayer)
 
         MosqueSignageUiState(
             currentSlideState = currentSlide,
@@ -244,6 +224,42 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = MosqueSignageUiState()
+        initialValue = MosqueSignageUiState(settings = AppSettings(isMosqueMode = true))
     )
+
+    companion object {
+        const val STRIKE_WINDOW_MINUTES = 5L
+
+        /**
+         * Evaluates whether [now] falls within the silent visual strike window for any prayer
+         * (including Friday Jumu'ah sittings, since SalatSign is strictly Mosque Mode).
+         */
+        fun evaluateStrike(
+            prayerTimes: PrayerTimesDay,
+            now: LocalTime,
+            showStrikeHighlight: Boolean
+        ): Prayer? {
+            if (!showStrikeHighlight) return null
+            return PrayerCalculationEngine.getPrayerAtExactTimeStrike(
+                prayerTimes,
+                now,
+                STRIKE_WINDOW_MINUTES,
+                isMosqueMode = true
+            )
+        }
+
+        /**
+         * Overrides [PrayerTimesDay.prayers] so only [activePrayer] is flagged active during a strike.
+         */
+        fun applyActivePrayerOverride(
+            prayerTimes: PrayerTimesDay,
+            activePrayer: Prayer?
+        ) = if (activePrayer != null) {
+            prayerTimes.prayers.map { item ->
+                item.copy(isActive = item.prayer == activePrayer)
+            }
+        } else {
+            prayerTimes.prayers
+        }
+    }
 }

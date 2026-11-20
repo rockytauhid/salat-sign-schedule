@@ -1,6 +1,6 @@
-# SalatSign — Audio Sources & Licensing Provenance
+# SalatSchedule — Audio Sources & Licensing Provenance
 
-This document tracks the provenance, licensing, checksums, and attribution for all bundled audio assets in `app/src/main/res/raw/`.
+This document tracks the provenance, licensing, checksums, and attribution for all bundled audio assets in `app-salatschedule/src/main/res/raw/` (SalatSign `app-salatsign` is strictly silent per Decision D18 and bundles no audio).
 
 Every audio asset bundled with the application **must** be listed here with verified licensing evidence before release (Decision D15 / Task H1).
 
@@ -10,7 +10,7 @@ Every audio asset bundled with the application **must** be listed here with veri
 
 ### 1. `adhan_default.wav`
 - **File Name:** `adhan_default.wav`
-- **Path:** `app/src/main/res/raw/adhan_default.wav`
+- **Path:** `app-salatschedule/src/main/res/raw/adhan_default.wav`
 - **SHA-256 Checksum:** `8b8fbafe8679076454429756fa72f11d5f442c87381cc6a4285451d826a9e629`
 - **Format:** RIFF PCM WAV, 44 bytes
 - **Performer / Artist:** Locally generated synthetic silence placeholder
@@ -27,7 +27,7 @@ Every audio asset bundled with the application **must** be listed here with veri
 
 ### 2. `adhan_subuh.wav`
 - **File Name:** `adhan_subuh.wav`
-- **Path:** `app/src/main/res/raw/adhan_subuh.wav`
+- **Path:** `app-salatschedule/src/main/res/raw/adhan_subuh.wav`
 - **SHA-256 Checksum:** `8b8fbafe8679076454429756fa72f11d5f442c87381cc6a4285451d826a9e629`
 - **Format:** RIFF PCM WAV, 44 bytes
 - **Performer / Artist:** Locally generated synthetic silence placeholder

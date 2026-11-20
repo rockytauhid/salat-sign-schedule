@@ -1,11 +1,14 @@
-# SalatSign — Android TV Islamic Prayer Times & Mosque Signage
+# SalatSign & SalatSchedule — Android TV Mosque Signage & Home Prayer Times
 
 [![Android API](https://img.shields.io/badge/API-26%2B%20(Android%208.0)-emerald.svg)](https://android.com)
 [![Target SDK](https://img.shields.io/badge/Target%20SDK-35%20(Android%2015)-blue.svg)](https://developer.android.com)
 [![Compose TV](https://img.shields.io/badge/Jetpack%20Compose%20for%20TV-1.0.0-purple.svg)](https://developer.android.com/tv/compose)
 [![Offline-First](https://img.shields.io/badge/Engine-100%25%20Offline-success.svg)](https://github.com/batoulapps/adhan-java)
 
-**SalatSign** is a modern, offline-first Android TV application engineered specifically for the 10-foot television experience. It provides high-precision Islamic prayer times (*Subuh, Zuhur, Ashr, Magrib, Isya*) alongside dual Gregorian and Hijriyah calendars, supporting both **Home / Personal Mode** (interactive navigation, 15-minute reminders, and background Adhan audio over active apps) and **Mosque Mode** (silent, white-labeled digital signage kiosk with automated announcement slideshows).
+This multi-module monorepo builds two dedicated, offline-first Android TV applications engineered for the 10-foot television experience:
+
+- **SalatSign** (`com.salatsign.tv`, `:app-salatsign`) — a **strictly silent**, white-label Mosque digital signage kiosk with Jumu'ah sitting schedules, Iqamah display, automated announcement slideshows, Admin PIN lockout protection, and `FLAG_KEEP_SCREEN_ON`.
+- **SalatSchedule** (`com.salatschedule.tv`, `:app-salatschedule`) — an interactive **Home / Personal** prayer timetable with D-pad date browsing, 15-minute pre-prayer reminders, and exact-time Adhan audio playback over other TV apps.
 
 ---
 
@@ -114,27 +117,38 @@ Execute the comprehensive suite of unit tests verifying prayer calculations, Hij
 
 ## 📦 Building for Production & Google Play Store
 
-### 1. Build Debug APK
+### 1. Build Debug APKs
 ```powershell
-./gradlew assembleDebug
+./gradlew :app-salatsign:assembleDebug :app-salatschedule:assembleDebug
 ```
-Output: `app/build/outputs/apk/debug/app-debug.apk`
+Outputs:
+- `app-salatsign/build/outputs/apk/debug/app-salatsign-debug.apk`
+- `app-salatschedule/build/outputs/apk/debug/app-salatschedule-debug.apk`
 
-### 2. Build Release Android App Bundle (.aab)
+### 2. Build Release Android App Bundles (.aab)
 ```powershell
-./gradlew bundleRelease
+./gradlew :app-salatsign:bundleRelease :app-salatschedule:bundleRelease
 ```
-Output: `app/build/outputs/bundle/release/app-release.aab`
+Outputs:
+- `app-salatsign/build/outputs/bundle/release/app-salatsign-release.aab`
+- `app-salatschedule/build/outputs/bundle/release/app-salatschedule-release.aab`
 
 ### 3. Signing Configuration
-For Google Play distribution, provide your release keystore via environment variables or Gradle properties:
+For Google Play distribution, provide per-app release keystores via environment variables or Gradle properties (or shared `RELEASE_STORE_*` fallback):
 ```properties
-RELEASE_STORE_FILE=path/to/release.keystore
-RELEASE_STORE_PASSWORD=your_store_password
-RELEASE_KEY_ALIAS=your_key_alias
-RELEASE_KEY_PASSWORD=your_key_password
+# SalatSign
+SALATSIGN_STORE_FILE=path/to/salatsign-release.keystore
+SALATSIGN_STORE_PASSWORD=your_store_password
+SALATSIGN_KEY_ALIAS=your_key_alias
+SALATSIGN_KEY_PASSWORD=your_key_password
+
+# SalatSchedule
+SALATSCHEDULE_STORE_FILE=path/to/salatschedule-release.keystore
+SALATSCHEDULE_STORE_PASSWORD=your_store_password
+SALATSCHEDULE_KEY_ALIAS=your_key_alias
+SALATSCHEDULE_KEY_PASSWORD=your_key_password
 ```
-*(If no external keystore is provided, the build uses the local debug keystore for development testing).*
+*(Release `assemble*Release` and `bundle*Release` tasks require a valid keystore and fail fast if unconfigured).*
 
 ---
 

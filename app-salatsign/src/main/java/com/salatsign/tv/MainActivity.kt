@@ -17,6 +17,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +40,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 /**
  * SalatSign MainActivity — Strictly silent Mosque Digital Signage TV experience.
@@ -79,13 +82,24 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Resolve Dark / Light Theme
-            val isDark = remember(settings.themeMode, mosqueUiState.prayerTimesDay) {
+            var themeTick by remember { mutableLongStateOf(0L) }
+            LaunchedEffect(settings.themeMode) {
+                if (settings.themeMode == ThemeMode.AUTO_DAY_NIGHT) {
+                    while (true) {
+                        delay(60_000L)
+                        themeTick++
+                    }
+                }
+            }
+
+            // Resolve Dark / Light Theme (re-evaluates every minute for Sunrise/Maghrib transitions)
+            val isDark = remember(settings.themeMode, mosqueUiState.prayerTimesDay, settings.zoneId, themeTick) {
                 when (settings.themeMode) {
                     ThemeMode.ALWAYS_DARK -> true
                     ThemeMode.ALWAYS_LIGHT -> false
                     ThemeMode.AUTO_DAY_NIGHT -> {
-                        val now = LocalTime.now()
+                        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                        val now = ZonedDateTime.now(zone).toLocalTime()
                         val prayerTimes = mosqueUiState.prayerTimesDay
                         if (prayerTimes != null) {
                             val sunrise = prayerTimes.sunrise

@@ -225,7 +225,7 @@
     <string name="settings_arabic_names_toggle">Tampilkan Nama Shalat Bahasa Arab</string>
 
     <string name="desc_announcement_slide">Slide Pengumuman Masjid</string>
-    <string name="desc_app_logo">Logo SalatSign</string>
+    <string name="desc_app_logo">Logo Aplikasi</string>
 
     <!-- About & Credits Dialog -->
     <string name="settings_section_about">Tentang &amp; Kredit</string>
@@ -234,8 +234,8 @@
     <string name="settings_about_license">Perangkat Lunak Bebas di bawah GNU General Public License v3.0 (GPL-3.0-or-later)</string>
     <string name="settings_about_copyright">Hak Cipta (C) 2026 Rocky Adam Tauhid dan para kontributor SalatSign</string>
     <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
-    <string name="settings_about_trademarks">SalatSign adalah merek dagang. Lihat TRADEMARKS.md untuk kebijakan lisensi merek.</string>
-    <string name="settings_about_dialog_title">Tentang SalatSign</string>
+    <string name="settings_about_trademarks">SalatSign &amp; SalatSchedule adalah merek dagang. Lihat TRADEMARKS.md untuk kebijakan merek.</string>
+    <string name="settings_about_dialog_title">Tentang</string>
     <string name="settings_about_libraries">Pustaka Open Source: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
 
     <!-- Setup Wizard -->
@@ -252,7 +252,7 @@
     <string name="wizard_mode_home_desc">Jadwal shalat interaktif keluarga dengan navigasi kalender remote TV, pengingat 15 menit, dan suara adhan.</string>
     <string name="wizard_mode_mosque_title">MODE MASJID (Digital Signage)</string>
     <string name="wizard_mode_mosque_desc">Tampilan layar digital signage masjid publik tanpa logo aplikasi, slideshow jadwal &amp; poster pengumuman.</string>
-    <string name="wizard_mosque_silent_note">Mode masjid hening secara default. Anda dapat mengaktifkan suara adhan di Pengaturan.</string>
+    <string name="wizard_mosque_silent_note">SalatSign sepenuhnya hening: tanpa pemutaran audio atau notifikasi pop-up.</string>
     <string name="wizard_pin_default_title">Gunakan PIN Bawaan (0000)</string>
     <string name="wizard_pin_default_desc">PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.</string>
     <string name="wizard_pin_custom_title">Atur PIN Kustom Baru (4-8 Digit)</string>

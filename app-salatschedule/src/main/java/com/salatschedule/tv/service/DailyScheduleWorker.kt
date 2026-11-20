@@ -24,7 +24,7 @@ class DailyScheduleWorker(
 
     companion object {
         private const val TAG = "DailyScheduleWorker"
-        const val WORK_NAME = "salatsign_daily_prayer_scheduling"
+        const val WORK_NAME = "salatschedule_daily_prayer_scheduling"
 
         /**
          * Computes the initial delay (in minutes) until 00:05 in the configured [zoneId] (F20).

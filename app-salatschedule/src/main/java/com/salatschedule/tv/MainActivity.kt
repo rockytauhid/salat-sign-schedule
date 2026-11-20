@@ -9,19 +9,46 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
+import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import com.salatsign.core.tv.R as CoreR
 import com.salatschedule.tv.service.AdhanPlaybackService
 import com.salatschedule.tv.service.PrayerAlarmScheduler
 import com.salatschedule.tv.ui.home.HomeScreen
@@ -33,8 +60,15 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.LanguageSyncCache
 import com.salatsign.tv.ui.common.LocaleHelper
+import com.salatsign.tv.ui.common.tvFocusable
+import com.salatsign.tv.ui.theme.AccentEmerald
+import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.SalatSignTheme
+import com.salatsign.tv.ui.theme.TvTypography
+import kotlinx.coroutines.delay
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 /**
  * SalatSchedule MainActivity — Interactive Home Prayer Times TV experience.
@@ -82,13 +116,24 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Resolve Dark / Light Theme
-            val isDark = remember(settings.themeMode, homeUiState.prayerTimesDay) {
+            var themeTick by remember { mutableLongStateOf(0L) }
+            LaunchedEffect(settings.themeMode) {
+                if (settings.themeMode == ThemeMode.AUTO_DAY_NIGHT) {
+                    while (true) {
+                        delay(60_000L)
+                        themeTick++
+                    }
+                }
+            }
+
+            // Resolve Dark / Light Theme (re-evaluates every minute for Sunrise/Maghrib transitions)
+            val isDark = remember(settings.themeMode, homeUiState.prayerTimesDay, settings.zoneId, themeTick) {
                 when (settings.themeMode) {
                     ThemeMode.ALWAYS_DARK -> true
                     ThemeMode.ALWAYS_LIGHT -> false
                     ThemeMode.AUTO_DAY_NIGHT -> {
-                        val now = LocalTime.now()
+                        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                        val now = ZonedDateTime.now(zone).toLocalTime()
                         val prayerTimes = homeUiState.prayerTimesDay
                         if (prayerTimes != null) {
                             val sunrise = prayerTimes.sunrise
@@ -113,15 +158,34 @@ class MainActivity : ComponentActivity() {
                     isSettingsOpen = isSettingsOpen.value,
                     onOpenSettings = { isSettingsOpen.value = true },
                     onCloseSettings = { isSettingsOpen.value = false },
-                    onStopAdhan = {
-                        val stopIntent = Intent(this, AdhanPlaybackService::class.java).apply {
-                            action = PrayerAlarmScheduler.ACTION_STOP_ADHAN
-                        }
-                        startService(stopIntent)
-                    }
+                    onStopAdhan = { stopAdhan() }
                 )
             }
         }
+    }
+
+    private fun stopAdhan() {
+        val stopIntent = Intent(this, AdhanPlaybackService::class.java).apply {
+            action = PrayerAlarmScheduler.ACTION_STOP_ADHAN
+        }
+        startService(stopIntent)
+    }
+
+    @android.annotation.SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // Immediate remote stop control while Adhan is playing (MT-1.4 Procedure B)
+        if (AdhanPlaybackService.isPlaying.value && event.action == KeyEvent.ACTION_DOWN) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_BACK,
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_ENTER,
+                KeyEvent.KEYCODE_MEDIA_STOP -> {
+                    stopAdhan()
+                    return true
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 }
 
@@ -142,51 +206,102 @@ private fun SalatScheduleMainContent(
         BackHandler { onCloseSettings() }
     }
 
-    when {
-        !settings.isSetupCompleted -> {
-            HomeSetupWizardScreen(
-                settings = settings,
-                onSelectCity = { settingsViewModel.selectCity(it) },
-                onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
-                onSetMadhab = { settingsViewModel.setMadhab(it) },
-                onTogglePrePrayerReminder = { settingsViewModel.togglePrePrayerReminder(it) },
-                onCompleteSetup = { settingsViewModel.completeSetup() }
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            !settings.isSetupCompleted -> {
+                HomeSetupWizardScreen(
+                    settings = settings,
+                    onSelectCity = { settingsViewModel.selectCity(it) },
+                    onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
+                    onSetMadhab = { settingsViewModel.setMadhab(it) },
+                    onTogglePrePrayerReminder = { settingsViewModel.togglePrePrayerReminder(it) },
+                    onCompleteSetup = { settingsViewModel.completeSetup() }
+                )
+            }
+            isSettingsOpen -> {
+                HomeSettingsScreen(
+                    settings = settings,
+                    onSetThemeMode = { settingsViewModel.setThemeMode(it) },
+                    onSelectCity = { settingsViewModel.selectCity(it) },
+                    onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
+                    onSetMadhab = { settingsViewModel.setMadhab(it) },
+                    onSetHighLatitudeRule = { settingsViewModel.setHighLatitudeRule(it) },
+                    onSetPrayerOffset = { prayer, mins -> settingsViewModel.setPrayerOffset(prayer, mins) },
+                    onSetSunriseOffset = { mins -> settingsViewModel.setSunriseOffset(mins) },
+                    onSetHijriOffset = { settingsViewModel.setHijriOffset(it) },
+                    onSetHijriChangeAtMidnight = { settingsViewModel.setHijriChangeAtMidnight(it) },
+                    onTogglePrePrayerReminder = { settingsViewModel.togglePrePrayerReminder(it) },
+                    onSetAdhanAudio = { prayer, option -> settingsViewModel.setAdhanAudio(prayer, option) },
+                    onSetCustomAdhan = { prayer, file, name -> settingsViewModel.setCustomAdhan(prayer, file, name) },
+                    onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
+                    onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
+                    onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
+                    onRestartSetupWizard = {
+                        onCloseSettings()
+                        settingsViewModel.restartSetupWizard()
+                    },
+                    onBack = onCloseSettings
+                )
+            }
+            else -> {
+                HomeScreen(
+                    uiState = homeUiState,
+                    onPreviousDay = { homeViewModel.previousDay() },
+                    onNextDay = { homeViewModel.nextDay() },
+                    onTodayClick = { homeViewModel.resetToToday() },
+                    onOpenSettings = onOpenSettings,
+                    onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
+                )
+            }
         }
-        isSettingsOpen -> {
-            HomeSettingsScreen(
-                settings = settings,
-                onSetThemeMode = { settingsViewModel.setThemeMode(it) },
-                onSelectCity = { settingsViewModel.selectCity(it) },
-                onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
-                onSetMadhab = { settingsViewModel.setMadhab(it) },
-                onSetHighLatitudeRule = { settingsViewModel.setHighLatitudeRule(it) },
-                onSetPrayerOffset = { prayer, mins -> settingsViewModel.setPrayerOffset(prayer, mins) },
-                onSetSunriseOffset = { mins -> settingsViewModel.setSunriseOffset(mins) },
-                onSetHijriOffset = { settingsViewModel.setHijriOffset(it) },
-                onSetHijriChangeAtMidnight = { settingsViewModel.setHijriChangeAtMidnight(it) },
-                onTogglePrePrayerReminder = { settingsViewModel.togglePrePrayerReminder(it) },
-                onSetAdhanAudio = { prayer, option -> settingsViewModel.setAdhanAudio(prayer, option) },
-                onSetCustomAdhan = { prayer, file, name -> settingsViewModel.setCustomAdhan(prayer, file, name) },
-                onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
-                onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
-                onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
-                onRestartSetupWizard = {
-                    onCloseSettings()
-                    settingsViewModel.restartSetupWizard()
-                },
-                onBack = onCloseSettings
-            )
-        }
-        else -> {
-            HomeScreen(
-                uiState = homeUiState,
-                onPreviousDay = { homeViewModel.previousDay() },
-                onNextDay = { homeViewModel.nextDay() },
-                onTodayClick = { homeViewModel.resetToToday() },
-                onOpenSettings = onOpenSettings,
-                onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
-            )
+
+        if (isAdhanPlaying) {
+            val colorScheme = MaterialTheme.colorScheme
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 36.dp)
+                    .background(colorScheme.surface.copy(alpha = 0.96f), RoundedCornerShape(16.dp))
+                    .border(2.dp, AccentGold, RoundedCornerShape(16.dp))
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = null,
+                    tint = AccentGold,
+                    modifier = Modifier.size(28.dp)
+                )
+                Text(
+                    text = stringResource(CoreR.string.notif_channel_adhan_name),
+                    style = TvTypography.CardTitle.copy(
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.onSurface
+                    )
+                )
+                Button(
+                    onClick = onStopAdhan,
+                    colors = ButtonDefaults.colors(
+                        containerColor = Color(0xFFDC2626),
+                        focusedContainerColor = AccentGold,
+                        contentColor = Color.White,
+                        focusedContentColor = Color.Black
+                    ),
+                    modifier = Modifier.tvFocusable()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Stop,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "  " + stringResource(CoreR.string.notif_adhan_stop_action),
+                        style = TvTypography.ButtonText.copy(fontSize = 16.sp)
+                    )
+                }
+            }
         }
     }
 }

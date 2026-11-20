@@ -57,14 +57,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             try {
                 withTimeout(8_000) {
                     val settings = repository.appSettingsFlow.first()
-                    val isAdhanAllowed = if (settings.isMosqueMode) settings.mosqueModeAdhanEnabled else true
-                    val isReminderAllowed = if (settings.isMosqueMode) settings.mosqueModeRemindersEnabled else settings.prePrayerReminderEnabled
-
-                    if (settings.isMosqueMode && !isAdhanAllowed && !isReminderAllowed) {
-                        Log.d(TAG, "Mosque Mode is active and quiet: Aborting alarm event execution.")
-                        scheduler.cancelAllAlarms()
-                        return@withTimeout
-                    }
+                    val isReminderAllowed = settings.prePrayerReminderEnabled
 
                     // Check if alarm fired more than 5 minutes late (device was off/asleep)
                     val isStale = PrayerCalculationEngine.isAlarmStale(scheduledAt)
@@ -73,18 +66,17 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
                     } else {
                         when (action) {
                             PrayerAlarmScheduler.ACTION_PLAY_ADHAN -> {
-                                if (isAdhanAllowed && adhanType != AdhanAudioType.SILENT.name) {
+                                if (adhanType != AdhanAudioType.SILENT.name) {
                                     val serviceIntent = Intent(context, AdhanPlaybackService::class.java).apply {
                                         putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayerName)
                                         putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE, adhanType)
                                         putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI, adhanUri)
                                         putExtra(PrayerAlarmScheduler.EXTRA_LANGUAGE, settings.appLanguage.name)
                                         putExtra(PrayerAlarmScheduler.EXTRA_ZONE_ID, settings.zoneId)
-                                        putExtra(PrayerAlarmScheduler.EXTRA_IS_MOSQUE_MODE, settings.isMosqueMode)
                                     }
                                     ContextCompat.startForegroundService(context, serviceIntent)
                                 } else {
-                                    Log.d(TAG, "Adhan for $prayerName is SILENT or not allowed. Skipping audio playback.")
+                                    Log.d(TAG, "Adhan for $prayerName is SILENT. Skipping audio playback.")
                                 }
                             }
 
@@ -127,9 +119,8 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-        val isFriday = ZonedDateTime.now(zone).dayOfWeek == DayOfWeek.FRIDAY
-        val prayerLabel = context.getString(prayer.labelRes(isFriday = isFriday && settings.isMosqueMode))
+        // SalatSchedule is Home Mode: Friday displays plain Zuhr (D16/D18)
+        val prayerLabel = context.getString(prayer.labelRes(isFriday = false))
 
         val tapIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP

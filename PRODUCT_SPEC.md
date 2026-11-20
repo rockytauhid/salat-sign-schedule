@@ -1,4 +1,8 @@
-# Product Specification — Android TV Prayer Times & Mosque Signage
+# Product Specification — SalatSign & SalatSchedule (Android TV)
+
+> **Multi-App Split (Decision D18):** This repository ships two separate Android TV apps sharing `:core` and `:core-tv-ui`:
+> - **SalatSchedule (`com.salatschedule.tv`, `:app-salatschedule`):** Home / Personal Mode (interactive prayer times, 15-min reminders, Adhan audio).
+> - **SalatSign (`com.salatsign.tv`, `:app-salatsign`):** Mosque / Kiosk Mode (**strictly silent** white-label digital signage, Jumu'ah, Iqamah, announcement slides, Admin PIN).
 
 ## 1. Prayer Times & Dual Calendar
 - **Five Daily Prayers:** Subuh (Fajr), Zuhur (Dhuhr), Ashr (Asr), Magrib (Maghrib), Isya (Isha).

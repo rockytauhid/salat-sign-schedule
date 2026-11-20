@@ -225,7 +225,7 @@
     <string name="settings_arabic_names_toggle">عرض أسماء الصلوات بالعربية</string>
 
     <string name="desc_announcement_slide">شريحة إعلانات المسجد</string>
-    <string name="desc_app_logo">شعار صلاة ساين</string>
+    <string name="desc_app_logo">شعار التطبيق</string>
 
     <!-- About & Credits Dialog -->
     <string name="settings_section_about">حول التطبيق والاعتمادات</string>
@@ -234,8 +234,8 @@
     <string name="settings_about_license">مفتوح المصدر بموجب رخصة جنو العمومية v3.0 (GPL-3.0-or-later)</string>
     <string name="settings_about_copyright">حقوق النشر (C) 2026 Rocky Adam Tauhid ومساهمو SalatSign</string>
     <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
-    <string name="settings_about_trademarks">SalatSign علامة تجارية. راجع ملف TRADEMARKS.md لمعرفة السياسة.</string>
-    <string name="settings_about_dialog_title">عن تطبيق صلاة ساين</string>
+    <string name="settings_about_trademarks">SalatSign وSalatSchedule علامتان تجاريتان. راجع ملف TRADEMARKS.md لمعرفة السياسة.</string>
+    <string name="settings_about_dialog_title">حول التطبيق</string>
     <string name="settings_about_libraries">المكتبات البرمجية: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
 
     <!-- Setup Wizard -->
@@ -252,7 +252,7 @@
     <string name="wizard_mode_home_desc">أوقات الصلاة مع تصفح التقويم عبر جهاز التحكم، تنبيهات قبل الصلاة بـ 15 دقيقة، وصوت الأذان.</string>
     <string name="wizard_mode_mosque_title">وضع المسجد (شاشات رقمية)</string>
     <string name="wizard_mode_mosque_desc">شاشة إعلانات رقمية صامتة بيضاء بدون شعارات التطبيق، مع جدول الصلاة وشعار المسجد والشرائح.</string>
-    <string name="wizard_mosque_silent_note">وضع المسجد صامت افتراضياً. يمكنك تفعيل صوت الأذان من الإعدادات.</string>
+    <string name="wizard_mosque_silent_note">SalatSign صامت تماماً: لا يوجد تشغيل صوت أو إشعارات منبثقة.</string>
     <string name="wizard_pin_default_title">استخدام الرمز الافتراضي (0000)</string>
     <string name="wizard_pin_default_desc">الرمز الافتراضي هو 0000. يمكنك تغييره في أي وقت من الإعدادات.</string>
     <string name="wizard_pin_custom_title">تعيين رمز PIN جديد (4 إلى 8 أرقام)</string>
