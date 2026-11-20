@@ -1,6 +1,6 @@
-# SalatSign Trademark Policy
+# SalatSign & SalatSchedule Trademark Policy
 
-"SalatSign" and the SalatSign logo (together, the "Marks") are claimed as trademarks
+"SalatSign", "SalatSchedule", and their associated logos (together, the "Marks") are claimed as trademarks
 of Rocky Adam Tauhid. The Marks are not registered; the owner relies on his rights
 from using the Marks and reserves the right to register them.
 

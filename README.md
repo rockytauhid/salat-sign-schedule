@@ -76,42 +76,28 @@ SalatSign adheres strictly to Android TV design principles:
 
 ---
 
-## 📂 Project Architecture
+## 📂 Project Architecture (Multi-Module)
 
 ```
 salatsign/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── AndroidManifest.xml          # TV Leanback & exact alarm permissions
-│   │   │   ├── java/com/salatsign/tv/
-│   │   │   │   ├── SalatSignApp.kt          # Application lifecycle & WorkManager init
-│   │   │   │   ├── MainActivity.kt          # Screen wake lock & D-pad key events
-│   │   │   │   ├── data/
-│   │   │   │   │   ├── model/               # Prayer, AppSettings, AdhanAudioOption, etc.
-│   │   │   │   │   └── repository/          # SettingsRepository & PrayerRepository
-│   │   │   │   ├── engine/
-│   │   │   │   │   ├── PrayerCalculationEngine.kt  # Offline prayer astronomical math
-│   │   │   │   │   └── HijriCalendarEngine.kt      # Offline HijrahDate converter
-│   │   │   │   ├── service/
-│   │   │   │   │   ├── PrayerAlarmScheduler.kt     # Exact AlarmManager scheduler
-│   │   │   │   │   ├── PrayerAlarmReceiver.kt      # Alarm broadcast receiver
-│   │   │   │   │   ├── AdhanPlaybackService.kt     # MediaPlayback ForegroundService
-│   │   │   │   │   ├── BootAndTimeReceiver.kt      # Boot & time-change alarm recovery
-│   │   │   │   │   └── DailyScheduleWorker.kt      # WorkManager midnight alarm refresh
-│   │   │   │   └── ui/
-│   │   │   │       ├── common/              # TvFocusModifiers & LiveClockHeader
-│   │   │   │       ├── home/                # HomeScreen & HomeViewModel
-│   │   │   │       ├── mosque/              # MosqueSignageScreen & MosqueSlideshowViewModel
-│   │   │   │       ├── settings/            # SettingsScreen & SettingsViewModel
-│   │   │   │       └── theme/               # Color, Theme, & Type
-│   │   │   └── res/
-│   │   │       ├── drawable/                # ic_launcher_foreground, ic_tv_banner
-│   │   │       └── raw/                     # Bundled adhan audio wav assets
-│   │   └── test/java/com/salatsign/tv/      # Comprehensive unit tests
-│   ├── build.gradle.kts                     # App dependencies & R8 Proguard rules
-│   └── proguard-rules.pro                   # R8 optimization keep rules
-└── README.md
+├── core/                                    # Shared Android library (com.salatsign.core)
+│   └── Models, PrayerCalculationEngine, PrayerDayCache, HijriCalendarEngine,
+│       JumuahCalculator, PinHasher, SettingsRepository, ContentRepository,
+│       AssetImporter, ImageImporter, ApiConstants (TV + future phone controller)
+├── core-tv-ui/                              # Shared Compose TV UI (com.salatsign.core.tv)
+│   └── SalatSignTheme, TvTypography, TvFocusModifiers, LiveClockHeader,
+│       LocaleHelper, Labels, MosqueBrandComponents, StorageFilePickerScreen,
+│       shared strings.xml / arrays.xml
+├── app-salatsign/                           # SalatSign TV app (com.salatsign.tv)
+│   └── Strictly silent Mosque digital signage (MosqueSignageScreen, Jumu'ah,
+│       Iqamah, Announcement slideshow, Admin PIN, FLAG_KEEP_SCREEN_ON)
+├── app-salatschedule/                       # SalatSchedule TV app (com.salatschedule.tv)
+│   └── Home prayer times (HomeScreen, AdhanPlaybackService, PrayerAlarmScheduler,
+│       BootAndTimeReceiver, DailyScheduleWorker, 15-min reminders)
+└── docs/
+    ├── DECISIONS.md                         # Confirmed decisions D1–D18
+    ├── salatsign/STORE_LISTING.md           # SalatSign Play Store listing
+    └── salatschedule/STORE_LISTING.md       # SalatSchedule Play Store listing
 ```
 
 ---

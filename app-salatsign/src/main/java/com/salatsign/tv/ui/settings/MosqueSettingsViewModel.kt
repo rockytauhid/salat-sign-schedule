@@ -1,0 +1,202 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
+
+package com.salatsign.tv.ui.settings
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.salatsign.tv.SalatSignApp
+import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.AppLanguage
+import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.CityPreset
+import com.salatsign.tv.data.model.JumuahMode
+import com.salatsign.tv.data.model.MosqueFontPreset
+import com.salatsign.tv.data.model.MosqueIconPreset
+import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.SlideContainer
+import com.salatsign.tv.data.model.SlideType
+import com.salatsign.tv.data.model.ThemeMode
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/**
+ * Strictly silent Mosque Mode Settings ViewModel for SalatSign.
+ * No alarm scheduler, no adhan audio, no notification reminders.
+ */
+class MosqueSettingsViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val app = application as SalatSignApp
+    private val repository = app.settingsRepository
+    private val contentRepository = app.contentRepository
+
+    val settings: StateFlow<AppSettings> = repository.appSettingsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AppSettings(isMosqueMode = true)
+    )
+
+    val slides: StateFlow<SlideContainer> = contentRepository.slidesFlow
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { repository.setThemeMode(mode) }
+    }
+
+    fun selectCity(city: CityPreset) {
+        viewModelScope.launch { repository.selectCity(city) }
+    }
+
+    fun setCalculationMethod(methodName: String) {
+        viewModelScope.launch { repository.setCalculationMethod(methodName) }
+    }
+
+    fun setMadhab(madhab: String) {
+        viewModelScope.launch { repository.setMadhab(madhab) }
+    }
+
+    fun setHighLatitudeRule(rule: String?) {
+        viewModelScope.launch { repository.setHighLatitudeRule(rule) }
+    }
+
+    fun setPrayerOffset(prayer: Prayer, minutes: Int) {
+        viewModelScope.launch { repository.setPrayerOffset(prayer, minutes) }
+    }
+
+    fun setSunriseOffset(minutes: Int) {
+        viewModelScope.launch { repository.setSunriseOffset(minutes) }
+    }
+
+    fun setIqamahOffset(prayer: Prayer, minutes: Int) {
+        viewModelScope.launch { repository.setIqamahOffset(prayer, minutes) }
+    }
+
+    fun setHijriOffset(offsetDays: Int) {
+        viewModelScope.launch { repository.updateHijriOffset(offsetDays) }
+    }
+
+    fun setHijriChangeAtMidnight(changeAtMidnight: Boolean) {
+        viewModelScope.launch { repository.setHijriChangeAtMidnight(changeAtMidnight) }
+    }
+
+    fun setShowStrikeHighlight(enabled: Boolean) {
+        viewModelScope.launch { repository.setShowStrikeHighlight(enabled) }
+    }
+
+    fun setMosqueName(name: String) {
+        viewModelScope.launch {
+            repository.updateMosqueBranding(name, settings.value.mosqueSubtitle, settings.value.mosqueLogoUri)
+        }
+    }
+
+    fun setMosqueSubtitle(subtitle: String) {
+        viewModelScope.launch {
+            repository.updateMosqueBranding(settings.value.mosqueName, subtitle, settings.value.mosqueLogoUri)
+        }
+    }
+
+    fun setMosqueIconPreset(preset: MosqueIconPreset) {
+        viewModelScope.launch { repository.setMosqueIconPreset(preset) }
+    }
+
+    fun setMosqueFontPreset(preset: MosqueFontPreset) {
+        viewModelScope.launch { repository.setMosqueFontPreset(preset) }
+    }
+
+    fun setScheduleDuration(seconds: Int) {
+        viewModelScope.launch { repository.updateScheduleDuration(seconds) }
+    }
+
+    fun clearSlides() {
+        viewModelScope.launch {
+            val current = contentRepository.slidesFlow.value
+            contentRepository.replaceAll(current.revision, emptyList())
+        }
+    }
+
+    fun deleteSlide(slideId: String) {
+        viewModelScope.launch { contentRepository.deleteSlide(slideId) }
+    }
+
+    fun addTextSlide(title: String, body: String, durationSeconds: Int) {
+        viewModelScope.launch {
+            val slide = AnnouncementSlide(
+                id = "slide_${System.currentTimeMillis()}",
+                type = SlideType.TEXT,
+                title = title,
+                body = body,
+                durationSeconds = durationSeconds.coerceIn(3, 120)
+            )
+            contentRepository.addSlide(slide)
+        }
+    }
+
+    fun addImageSlide(title: String, imageFile: String, durationSeconds: Int) {
+        viewModelScope.launch {
+            val slide = AnnouncementSlide(
+                id = "slide_${System.currentTimeMillis()}",
+                type = SlideType.IMAGE,
+                title = title,
+                imageFile = imageFile,
+                durationSeconds = durationSeconds.coerceIn(3, 120)
+            )
+            contentRepository.addSlide(slide)
+        }
+    }
+
+    fun setCustomLogo(relativeFileName: String) {
+        viewModelScope.launch {
+            repository.setMosqueIconPreset(MosqueIconPreset.CUSTOM)
+            repository.updateMosqueBranding(settings.value.mosqueName, settings.value.mosqueSubtitle, relativeFileName)
+        }
+    }
+
+    fun setAdminPin(newPin: String) {
+        viewModelScope.launch { repository.setCustomPin(newPin) }
+    }
+
+    fun recordPinSuccess() {
+        viewModelScope.launch { repository.recordPinSuccess() }
+    }
+
+    fun recordPinFailure(newFailedAttempts: Int, lockedUntilEpochMillis: Long) {
+        viewModelScope.launch { repository.recordPinFailure(newFailedAttempts, lockedUntilEpochMillis) }
+    }
+
+    fun dismissDefaultPinPrompt() {
+        viewModelScope.launch { repository.dismissDefaultPinPrompt() }
+    }
+
+    fun setAppLanguage(language: AppLanguage) {
+        viewModelScope.launch { repository.setAppLanguage(language) }
+    }
+
+    fun set24HourFormat(enabled: Boolean) {
+        viewModelScope.launch { repository.set24HourFormat(enabled) }
+    }
+
+    fun setShowArabicPrayerNames(enabled: Boolean) {
+        viewModelScope.launch { repository.setShowArabicPrayerNames(enabled) }
+    }
+
+    fun setJumuahMode(mode: JumuahMode) {
+        viewModelScope.launch { repository.setJumuahMode(mode) }
+    }
+
+    fun setJumuahTimes(times: List<String>) {
+        viewModelScope.launch { repository.setJumuahTimes(times) }
+    }
+
+    fun completeSetup() {
+        viewModelScope.launch {
+            repository.setMosqueMode(true)
+            repository.setSetupCompleted(true)
+        }
+    }
+
+    fun restartSetupWizard() {
+        viewModelScope.launch { repository.setSetupCompleted(false) }
+    }
+}

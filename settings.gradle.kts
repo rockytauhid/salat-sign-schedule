@@ -26,4 +26,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "SalatSign"
-include(":app")
+include(":core")
+include(":core-tv-ui")
+include(":app-salatsign")
+include(":app-salatschedule")
