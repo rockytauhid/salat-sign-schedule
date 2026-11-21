@@ -29,8 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -140,10 +142,18 @@ fun LiveClockHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                val appIconRes = androidx.compose.ui.platform.LocalContext.current.applicationInfo.icon
-                if (appIconRes != 0) {
+                val context = LocalContext.current
+                val appIconBitmap = remember(context) {
+                    runCatching {
+                        context.packageManager
+                            .getApplicationIcon(context.applicationInfo)
+                            .toBitmap(width = 128, height = 128)
+                            .asImageBitmap()
+                    }.getOrNull()
+                }
+                if (appIconBitmap != null) {
                     Image(
-                        painter = painterResource(id = appIconRes),
+                        bitmap = appIconBitmap,
                         contentDescription = stringResource(R.string.desc_app_logo),
                         modifier = Modifier
                             .size(54.dp)

@@ -1,0 +1,85 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run SalatSign (Mosque Signage)",
+      "type": "process",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/run-app.ps1",
+        "salatsign"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Run SalatSchedule (Home Prayer Times)",
+      "type": "process",
+      "group": "build",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/run-app.ps1",
+        "salatschedule"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Android TV Emulator (PhotoDream_TV_API_26)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/run-app.ps1",
+        "emulator"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Test & Lint (All Modules)",
+      "type": "process",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/run-app.ps1",
+        "test"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Logcat: SalatSign & SalatSchedule",
+      "type": "process",
+      "isBackground": true,
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/run-app.ps1",
+        "logcat"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
