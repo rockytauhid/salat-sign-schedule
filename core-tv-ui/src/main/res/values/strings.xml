@@ -150,10 +150,6 @@
     <string name="settings_open_wizard">Launch Setup Wizard</string>
     <string name="settings_pin_warning_title">Security Warning: Default PIN (0000) In Use</string>
     <string name="settings_pin_warning_desc">The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.</string>
-    <string name="settings_mode_active_mosque">Active Mode: MOSQUE MODE (Digital Signage)</string>
-    <string name="settings_mode_active_home">Active Mode: HOME MODE (Personal)</string>
-    <string name="settings_mode_switch_to_home">Click to switch to Home Mode (Personal)</string>
-    <string name="settings_mode_switch_to_mosque">Click to switch to Mosque Mode (Digital Signage)</string>
     <string name="settings_section_language">Display Language</string>
     <string name="settings_section_theme">Display Theme (Dark / Light)</string>
     <string name="settings_section_calc_method">Prayer Calculation Method</string>
@@ -184,14 +180,6 @@
     <string name="settings_reminder_toggle_desc">Display a notification on the TV 15 minutes before prayer time.</string>
     <string name="settings_section_home_adhan">Adhan Audio per Prayer Time</string>
     <string name="settings_btn_usb_file">USB / File</string>
-    <string name="settings_section_mosque_audio">Mosque Mode Audio &amp; Highlights</string>
-    <string name="settings_mosque_adhan_toggle">Mosque Mode Adhan Audio</string>
-    <string name="settings_mosque_adhan_on">Mosque Mode Adhan Audio: ACTIVE</string>
-    <string name="settings_mosque_adhan_off">Mosque Mode Adhan Audio: SILENT (Default)</string>
-    <string name="settings_mosque_adhan_desc">Play audible Adhan through TV speakers during Mosque digital signage.</string>
-    <string name="settings_mosque_reminders_toggle">Mosque Mode Pre-Prayer Notifications</string>
-    <string name="settings_mosque_reminders_on">Mosque Mode Pre-Prayer Notifications: ACTIVE</string>
-    <string name="settings_mosque_reminders_off">Mosque Mode Pre-Prayer Notifications: DISABLED (Default)</string>
     <string name="settings_mosque_strike_toggle">Exact-Time Visual Highlight Strike</string>
     <string name="settings_mosque_strike_on">Visual Highlight Strike: ACTIVE (Default)</string>
     <string name="settings_mosque_strike_off">Visual Highlight Strike: DISABLED</string>
@@ -211,10 +199,6 @@
     <string name="settings_no_slides_title">No announcement slides yet</string>
     <string name="settings_no_slides_desc">Add image slides from USB flash drive or create text announcement slides.</string>
     <string name="settings_section_security">Admin PIN &amp; Security Settings</string>
-    <string name="settings_home_pin_toggle">Protect Settings with PIN in Home Mode</string>
-    <string name="settings_home_pin_on">Home Mode PIN Protection: ACTIVE</string>
-    <string name="settings_home_pin_off">Home Mode PIN Protection: DISABLED</string>
-    <string name="settings_home_pin_desc">Require PIN to open settings in Home Mode (always required in Mosque Mode).</string>
     <string name="settings_custom_pin_active">Custom PIN Active (Hashed &amp; Secured)</string>
     <string name="settings_custom_pin_desc">Settings are protected with your custom PIN.</string>
     <string name="settings_using_default_pin">Using Default PIN (0000)</string>
@@ -290,4 +274,12 @@
     <string name="settings_jumuah_warning_after_asr">Invalid: Sitting %1$s is on or after Asr (%2$s) on %3$s</string>
     <string name="wizard_step_jumuah_title">Step %1$d: Friday Jumu\'ah Schedule</string>
     <string name="wizard_btn_skip_jumuah">Skip (Configure later in Settings)</string>
+
+    <!-- Local Phone Controller (LAN) -->
+    <string name="settings_section_phone_controller">Local Phone Controller (LAN)</string>
+    <string name="settings_phone_controller_on">Phone Controller: RUNNING</string>
+    <string name="settings_phone_controller_off">Phone Controller: STOPPED</string>
+    <string name="settings_phone_controller_desc">Open the address below on a phone connected to the same Wi-Fi to manage slides, branding, and Jumu\'ah times using your Admin PIN.</string>
+    <string name="settings_phone_controller_url">Open on phone: %1$s</string>
+    <string name="settings_phone_controller_no_wifi">Connect this TV to Wi-Fi or Ethernet to get a local LAN address.</string>
 </resources>

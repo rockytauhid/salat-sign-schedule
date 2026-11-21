@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.salatsign.core.tv.R
 import com.salatsign.tv.data.importing.ImportKind
 import java.io.File
@@ -77,9 +76,9 @@ object StorageVolumeManager {
             }
         }
 
-        // 3. Fallback via ContextCompat external files dirs (Android 8+ / USB mount points)
+        // 3. Fallback via external files dirs (Android 8+ / USB mount points)
         try {
-            val externalDirs = ContextCompat.getExternalFilesDirs(context, null)
+            val externalDirs = context.getExternalFilesDirs(null)
             for (dir in externalDirs) {
                 if (dir != null) {
                     val root = findStorageRoot(dir)

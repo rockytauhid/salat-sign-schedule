@@ -41,6 +41,13 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     val slides: StateFlow<SlideContainer> = contentRepository.slidesFlow
 
+    val isPhoneControllerRunning: StateFlow<Boolean> = app.localServer.isRunning
+    val phoneControllerUrl: StateFlow<String?> = app.phoneControllerUrl
+
+    fun setPhoneControllerEnabled(enabled: Boolean) {
+        app.setPhoneControllerEnabled(enabled)
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { repository.setThemeMode(mode) }
     }

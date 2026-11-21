@@ -150,10 +150,6 @@
     <string name="settings_open_wizard">Buka Setup Wizard</string>
     <string name="settings_pin_warning_title">Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan</string>
     <string name="settings_pin_warning_desc">Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.</string>
-    <string name="settings_mode_active_mosque">Mode Aktif: MODE MASJID (Digital Signage)</string>
-    <string name="settings_mode_active_home">Mode Aktif: MODE RUMAH (Personal)</string>
-    <string name="settings_mode_switch_to_home">Klik tombol ini untuk beralih ke Mode Rumah (Personal)</string>
-    <string name="settings_mode_switch_to_mosque">Klik tombol ini untuk beralih ke Mode Masjid (Digital Signage)</string>
     <string name="settings_section_language">Bahasa Tampilan</string>
     <string name="settings_section_theme">Pilihan Tema Tampilan (Dark / Light)</string>
     <string name="settings_section_calc_method">Metode Perhitungan Waktu Shalat</string>
@@ -184,14 +180,6 @@
     <string name="settings_reminder_toggle_desc">Menampilkan notifikasi di layar TV 15 menit menjelang waktu adhan tiba.</string>
     <string name="settings_section_home_adhan">Pilihan Suara Adhan per Waktu Shalat</string>
     <string name="settings_btn_usb_file">USB / File</string>
-    <string name="settings_section_mosque_audio">Audio &amp; Highlight Mode Masjid</string>
-    <string name="settings_mosque_adhan_toggle">Suara Adhan di Mode Masjid</string>
-    <string name="settings_mosque_adhan_on">Suara Adhan di Mode Masjid: AKTIF</string>
-    <string name="settings_mosque_adhan_off">Suara Adhan di Mode Masjid: HENING (Default)</string>
-    <string name="settings_mosque_adhan_desc">Memutar suara Adhan melalui speaker TV saat digital signage aktif di masjid.</string>
-    <string name="settings_mosque_reminders_toggle">Notifikasi Pengingat di Mode Masjid</string>
-    <string name="settings_mosque_reminders_on">Notifikasi Pengingat di Mode Masjid: AKTIF</string>
-    <string name="settings_mosque_reminders_off">Notifikasi Pengingat di Mode Masjid: NONAKTIF (Default)</string>
     <string name="settings_mosque_strike_toggle">Highlight Visual Tepat Waktu Shalat</string>
     <string name="settings_mosque_strike_on">Highlight Visual: AKTIF (Default)</string>
     <string name="settings_mosque_strike_off">Highlight Visual: NONAKTIF</string>
@@ -211,10 +199,6 @@
     <string name="settings_no_slides_title">Belum ada slide pengumuman</string>
     <string name="settings_no_slides_desc">Tambahkan slide poster gambar dari flashdisk atau buat pengumuman teks.</string>
     <string name="settings_section_security">Pengaturan PIN &amp; Keamanan Admin</string>
-    <string name="settings_home_pin_toggle">Lindungi Pengaturan dengan PIN di Mode Rumah</string>
-    <string name="settings_home_pin_on">Perlindungan PIN Mode Rumah: AKTIF</string>
-    <string name="settings_home_pin_off">Perlindungan PIN Mode Rumah: NONAKTIF</string>
-    <string name="settings_home_pin_desc">Wajibkan PIN untuk membuka menu pengaturan di Mode Rumah (Mode Masjid selalu mewajibkan PIN).</string>
     <string name="settings_custom_pin_active">PIN Kustom Aktif (Aman &amp; Terenkripsi)</string>
     <string name="settings_custom_pin_desc">Pengaturan masjid terlindungi dengan PIN kustom Anda.</string>
     <string name="settings_using_default_pin">Masih Menggunakan PIN Bawaan (0000)</string>
@@ -290,4 +274,12 @@
     <string name="settings_jumuah_warning_after_asr">Tidak Valid: Sesi %1$s melampaui Asr (%2$s) pada %3$s</string>
     <string name="wizard_step_jumuah_title">Langkah %1$d: Jadwal Shalat Jumat</string>
     <string name="wizard_btn_skip_jumuah">Lewati (Dapat diatur di Pengaturan)</string>
+
+    <!-- Local Phone Controller (LAN) -->
+    <string name="settings_section_phone_controller">Kontrol Ponsel Lokal (LAN)</string>
+    <string name="settings_phone_controller_on">Kontrol Ponsel: AKTIF</string>
+    <string name="settings_phone_controller_off">Kontrol Ponsel: NONAKTIF</string>
+    <string name="settings_phone_controller_desc">Buka alamat di bawah pada ponsel di jaringan Wi-Fi yang sama untuk mengelola slide, identitas masjid, dan jadwal Jumat menggunakan PIN Admin.</string>
+    <string name="settings_phone_controller_url">Buka di ponsel: %1$s</string>
+    <string name="settings_phone_controller_no_wifi">Hubungkan TV ini ke Wi-Fi atau Ethernet untuk mendapatkan alamat LAN lokal.</string>
 </resources>

@@ -1,8 +1,12 @@
-# Proguard Rules for SalatSign (Android TV)
+# Proguard Rules for SalatSchedule (Android TV — Home Prayer Times & Adhan)
 
 # Keep Data Models & Preferences Serializations
 -keep class com.salatsign.tv.data.model.** { *; }
 -keepclassmembers class com.salatsign.tv.data.model.** { *; }
+
+# Keep Adhan & Alarm Services / Receivers
+-keep class com.salatschedule.tv.service.** { *; }
+-keepclassmembers class com.salatschedule.tv.service.** { *; }
 
 # Keep Adhan Offline Astronomical Engine
 -keep class com.batoulapps.adhan.** { *; }

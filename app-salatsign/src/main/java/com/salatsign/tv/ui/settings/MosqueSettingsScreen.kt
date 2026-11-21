@@ -123,6 +123,9 @@ fun MosqueSettingsScreen(
     onSetMosqueSubtitle: (String) -> Unit,
     onSetMosqueIconPreset: (MosqueIconPreset) -> Unit,
     onSetMosqueFontPreset: (MosqueFontPreset) -> Unit,
+    isPhoneControllerRunning: Boolean = false,
+    phoneControllerUrl: String? = null,
+    onTogglePhoneController: (Boolean) -> Unit = {},
     onSetScheduleDuration: (Int) -> Unit,
     onAddTextSlide: (String, String, Int) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
@@ -1674,6 +1677,64 @@ fun MosqueSettingsScreen(
                         }
                     }
                 }
+
+            // ================= SECTION: LOCAL PHONE CONTROLLER (LAN) =================
+            Text(
+                text = stringResource(R.string.settings_section_phone_controller),
+                style = TvTypography.CardTitle.copy(color = AccentGold)
+            )
+
+            Surface(
+                onClick = { onTogglePhoneController(!isPhoneControllerRunning) },
+                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = if (isPhoneControllerRunning) AccentEmerald.copy(alpha = 0.25f) else colorScheme.surface,
+                    focusedContainerColor = AccentGold.copy(alpha = 0.35f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tvFocusable()
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = if (isPhoneControllerRunning) {
+                            stringResource(R.string.settings_phone_controller_on)
+                        } else {
+                            stringResource(R.string.settings_phone_controller_off)
+                        },
+                        style = TvTypography.CardTitle.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isPhoneControllerRunning) AccentEmerald else colorScheme.onSurface
+                        )
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_phone_controller_desc),
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 13.sp,
+                            color = colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                    )
+                    if (isPhoneControllerRunning) {
+                        Text(
+                            text = if (!phoneControllerUrl.isNullOrBlank()) {
+                                stringResource(R.string.settings_phone_controller_url, phoneControllerUrl)
+                            } else {
+                                stringResource(R.string.settings_phone_controller_no_wifi)
+                            },
+                            style = TvTypography.CardTitle.copy(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentGold
+                            )
+                        )
+                    }
+                }
+            }
+
             // ================= SECTION: ABOUT & CREDITS (Phase 7.1) =================
             Text(
                 text = stringResource(R.string.settings_section_about),

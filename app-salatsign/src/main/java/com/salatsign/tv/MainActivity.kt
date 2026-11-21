@@ -191,6 +191,8 @@ private fun SalatSignMainContent(
     val settings by settingsViewModel.settings.collectAsState()
     val mosqueUiState by mosqueViewModel.uiState.collectAsState()
     val slideContainer by settingsViewModel.slides.collectAsState()
+    val isPhoneControllerRunning by settingsViewModel.isPhoneControllerRunning.collectAsState()
+    val phoneControllerUrl by settingsViewModel.phoneControllerUrl.collectAsState()
     val view = LocalView.current
 
     // Always keep screen awake for Mosque Digital Signage
@@ -253,6 +255,9 @@ private fun SalatSignMainContent(
                 onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
                 onSetJumuahMode = { settingsViewModel.setJumuahMode(it) },
                 onSetJumuahTimes = { settingsViewModel.setJumuahTimes(it) },
+                isPhoneControllerRunning = isPhoneControllerRunning,
+                phoneControllerUrl = phoneControllerUrl,
+                onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },
                 onRestartSetupWizard = {
                     onCloseSettings()
                     settingsViewModel.restartSetupWizard()

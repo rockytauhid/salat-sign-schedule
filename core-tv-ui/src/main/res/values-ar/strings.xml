@@ -150,10 +150,6 @@
     <string name="settings_open_wizard">فتح معالج الإعداد الأولي</string>
     <string name="settings_pin_warning_title">تنبيه أمان: الرمز الافتراضي (0000) قيد الاستخدام</string>
     <string name="settings_pin_warning_desc">شاشة المسجد العامة متاحة للجميع، يرجى تعيين رمز PIN مخصص لحماية الإعدادات.</string>
-    <string name="settings_mode_active_mosque">الوضع الحالي: وضع المسجد (شاشة رقمية)</string>
-    <string name="settings_mode_active_home">الوضع الحالي: الوضع المنزلي (شخصي)</string>
-    <string name="settings_mode_switch_to_home">انقر للتبديل إلى الوضع المنزلي</string>
-    <string name="settings_mode_switch_to_mosque">انقر للتبديل إلى وضع المسجد</string>
     <string name="settings_section_language">لغة العرض</string>
     <string name="settings_section_theme">سمة الشاشة (فاتح / داكن)</string>
     <string name="settings_section_calc_method">طريقة حساب أوقات الصلاة</string>
@@ -184,14 +180,6 @@
     <string name="settings_reminder_toggle_desc">إظهار تنبيه على الشاشة قبل موعد الصلاة بـ 15 دقيقة.</string>
     <string name="settings_section_home_adhan">أصوات الأذان لكل صلاة</string>
     <string name="settings_btn_usb_file">ملف USB</string>
-    <string name="settings_section_mosque_audio">الصوت والتنبيهات في وضع المسجد</string>
-    <string name="settings_mosque_adhan_toggle">صوت الأذان في وضع المسجد</string>
-    <string name="settings_mosque_adhan_on">صوت الأذان في وضع المسجد: مفعل</string>
-    <string name="settings_mosque_adhan_off">صوت الأذان في وضع المسجد: صامت (افتراضي)</string>
-    <string name="settings_mosque_adhan_desc">تشغيل الأذان عبر مكبرات صوت التلفاز في شاشة المسجد.</string>
-    <string name="settings_mosque_reminders_toggle">تنبيهات الإشعارات في وضع المسجد</string>
-    <string name="settings_mosque_reminders_on">تنبيهات الإشعارات في وضع المسجد: مفعل</string>
-    <string name="settings_mosque_reminders_off">تنبيهات الإشعارات في وضع المسجد: معطل (افتراضي)</string>
     <string name="settings_mosque_strike_toggle">وميض وتنبيه بصري عند وقت الصلاة</string>
     <string name="settings_mosque_strike_on">التنبيه البصري: مفعل (افتراضي)</string>
     <string name="settings_mosque_strike_off">التنبيه البصري: معطل</string>
@@ -211,10 +199,6 @@
     <string name="settings_no_slides_title">لا توجد شرائح إعلانات حالياً</string>
     <string name="settings_no_slides_desc">أضف شرائح صور من فلاش USB أو أنشئ إعلانات نصية.</string>
     <string name="settings_section_security">رمز PIN وأمان المسؤول</string>
-    <string name="settings_home_pin_toggle">حماية الإعدادات برمز PIN في الوضع المنزلي</string>
-    <string name="settings_home_pin_on">حماية PIN في الوضع المنزلي: مفعل</string>
-    <string name="settings_home_pin_off">حماية PIN في الوضع المنزلي: معطل</string>
-    <string name="settings_home_pin_desc">طلب رمز PIN لفتح الإعدادات في الوضع المنزلي (مطلوب دائماً في وضع المسجد).</string>
     <string name="settings_custom_pin_active">رمز PIN مخصص ومحمي</string>
     <string name="settings_custom_pin_desc">الإعدادات محمية برمز PIN المخصص الخاص بك.</string>
     <string name="settings_using_default_pin">قيد استخدام الرمز الافتراضي (0000)</string>
@@ -290,4 +274,12 @@
     <string name="settings_jumuah_warning_after_asr">غير صالح: الفترة %1$s توافق أو بعد العصر (%2$s) في %3$s</string>
     <string name="wizard_step_jumuah_title">الخطوة %1$d: جدول صلاة الجمعة</string>
     <string name="wizard_btn_skip_jumuah">تخطي (يمكن ضبطه في الإعدادات)</string>
+
+    <!-- Local Phone Controller (LAN) -->
+    <string name="settings_section_phone_controller">التحكم عبر الهاتف محلياً (LAN)</string>
+    <string name="settings_phone_controller_on">التحكم عبر الهاتف: يعمل</string>
+    <string name="settings_phone_controller_off">التحكم عبر الهاتف: متوقف</string>
+    <string name="settings_phone_controller_desc">افتح العنوان أدناه على هاتف متصل بنفس شبكة Wi-Fi لإدارة الشرائح وهوية المسجد ومواعيد الجمعة باستخدام رمز PIN.</string>
+    <string name="settings_phone_controller_url">افتح على الهاتف: %1$s</string>
+    <string name="settings_phone_controller_no_wifi">قم بتوصيل هذا التلفاز بشبكة Wi-Fi أو Ethernet للحصول على عنوان LAN محلي.</string>
 </resources>

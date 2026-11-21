@@ -4,16 +4,26 @@
 package com.salatsign.tv
 
 import android.app.Application
+import com.salatsign.tv.data.api.ApiConstants
+import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.migration.LegacySlideMigration
 import com.salatsign.tv.data.repository.ContentRepository
 import com.salatsign.tv.data.repository.SettingsRepository
+import com.salatsign.tv.remote.LocalNetworkUtils
+import com.salatsign.tv.remote.SalatSignLocalServer
+import com.salatsign.tv.remote.SalatSignNsdHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 /**
  * SalatSign (Mosque Digital Signage) Application.
- * Strictly silent: manages mosque settings and announcement slides without any audio or alarm services.
+ * Strictly silent: manages mosque settings, announcement slides, and optional LAN phone controller
+ * without any audio or alarm services.
  */
 class SalatSignApp : Application() {
 
@@ -23,15 +33,49 @@ class SalatSignApp : Application() {
     lateinit var contentRepository: ContentRepository
         private set
 
+    lateinit var localServer: SalatSignLocalServer
+        private set
+
+    private lateinit var nsdHelper: SalatSignNsdHelper
+
+    private val _phoneControllerUrl = MutableStateFlow<String?>(null)
+    val phoneControllerUrl: StateFlow<String?> = _phoneControllerUrl.asStateFlow()
+
     override fun onCreate() {
         super.onCreate()
         settingsRepository = SettingsRepository(this)
         contentRepository = ContentRepository(this)
 
+        val slideImagesDir = File(filesDir, "content/images")
+        val logoImagesDir = File(filesDir, "content/logo")
+        localServer = SalatSignLocalServer(
+            settingsRepository = settingsRepository,
+            contentRepository = contentRepository,
+            slideImageImporter = ImageImporter(slideImagesDir),
+            logoImageImporter = ImageImporter(logoImagesDir),
+            port = ApiConstants.DEFAULT_HTTP_PORT,
+            appVersionName = BuildConfig.VERSION_NAME
+        )
+        nsdHelper = SalatSignNsdHelper(this)
+
         // Ensure mosque mode is always active and migrate any legacy slides on startup
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
             settingsRepository.setMosqueMode(true)
+        }
+    }
+
+    fun setPhoneControllerEnabled(enabled: Boolean) {
+        if (enabled) {
+            if (localServer.start()) {
+                nsdHelper.register(localServer.port)
+                val ip = LocalNetworkUtils.getLocalIpv4Address()
+                _phoneControllerUrl.value = ip?.let { "http://$it:${localServer.port}" }
+            }
+        } else {
+            nsdHelper.unregister()
+            localServer.stop()
+            _phoneControllerUrl.value = null
         }
     }
 }

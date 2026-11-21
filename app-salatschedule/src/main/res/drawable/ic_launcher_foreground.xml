@@ -6,79 +6,77 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Soft Drop Shadow under Dome -->
+    <!-- Soft Drop Shadow under Clock Emblem -->
     <path
         android:fillColor="#33000000"
-        android:pathData="M34,77 C34,77 40,79 54,79 C68,79 74,77 74,77 L75,81 C75,81 68,83 54,83 C40,83 33,81 33,81 Z" />
+        android:pathData="M32,78 C32,78 40,82 54,82 C68,82 76,78 76,78 L77,82 C77,82 68,86 54,86 C40,86 31,82 31,82 Z" />
 
-    <!-- Mihrab / Mosque Arch Outer Frame -->
+    <!-- Outer Emerald Clock Ring -->
     <path
-        android:pathData="M54,26 C43,35 34,47 34,60 L34,76 L74,76 L74,60 C74,47 65,35 54,26 Z">
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26 Z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="34"
+                android:startX="26"
                 android:startY="26"
-                android:endX="74"
-                android:endY="76"
+                android:endX="82"
+                android:endY="82"
                 android:type="linear">
-                <item android:color="#1F4E37" android:offset="0.0" />
-                <item android:color="#143625" android:offset="1.0" />
+                <item android:color="#1F5E41" android:offset="0.0" />
+                <item android:color="#0F2E20" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
 
-    <!-- Arch Inner Silhouette -->
+    <!-- Inner Deep Dial -->
     <path
-        android:pathData="M54,31 C46,38 38,49 38,61 L38,74 L70,74 L70,61 C70,49 62,38 54,31 Z"
-        android:fillColor="#0D2419" />
+        android:fillColor="#081A12"
+        android:pathData="M54,31 A23,23 0 1,0 54,77 A23,23 0 1,0 54,31 Z" />
 
-    <!-- Glowing Crescent Moon -->
-    <path
-        android:pathData="M51,40 C43,44 39,53 42,61 C45,69 54,73 62,70 C57,71 50,68 47,63 C44,58 45,51 49,46 C50,44 51,42 51,40 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="40"
-                android:startY="40"
-                android:endX="62"
-                android:endY="72"
-                android:type="linear">
-                <item android:color="#6EE7B7" android:offset="0.0" />
-                <item android:color="#10B981" android:offset="0.6" />
-                <item android:color="#059669" android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
-    <!-- Radiant Gold 8-Point Star (Rub el Hizb) -->
-    <path
-        android:pathData="M61,43 L63.5,45.5 L67,45.5 L65.5,49 L68,51.5 L64.5,52.5 L63.5,56 L61,53.5 L57.5,54.5 L58.5,51 L56,48.5 L59.5,47.5 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:startX="56"
-                android:startY="43"
-                android:endX="68"
-                android:endY="56"
-                android:type="linear">
-                <item android:color="#FDE68A" android:offset="0.0" />
-                <item android:color="#F59E0B" android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-
-    <!-- Center Minaret Finial / Crescent Accent -->
-    <path
-        android:fillColor="#FBBF24"
-        android:pathData="M53.2,21 L54.8,21 L54.8,25 L53.2,25 Z" />
-    <path
-        android:fillColor="#FBBF24"
-        android:pathData="M54,19.5 A1.8,1.8 0 1,0 54,23.1 A1.8,1.8 0 1,0 54,19.5 Z" />
-
-    <!-- Modern Minimalist Clock Arc Accent (Representing Prayer Schedule Time) -->
+    <!-- Subtle Emerald Rim Stroke -->
     <path
         android:strokeColor="#34D399"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round"
+        android:strokeWidth="1.8"
         android:fillColor="#00000000"
-        android:pathData="M31,64 A25,25 0 0,1 77,64" />
+        android:pathData="M54,31 A23,23 0 1,0 54,77 A23,23 0 1,0 54,31 Z" />
+
+    <!-- Cardinal Prayer Hour Ticks (12, 3, 6, 9) -->
+    <path
+        android:strokeColor="#FBBF24"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M54,34 L54,37.5 M74,54 L70.5,54 M54,74 L54,70.5 M34,54 L37.5,54" />
+
+    <!-- Glowing Crescent Accent on Left Half of Dial -->
+    <path
+        android:pathData="M48,41 C41,44 38,52 41,59 C44,66 51,69 58,67 C53,67 48,64 46,59 C44,54 45,48 48,43 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="39"
+                android:startY="41"
+                android:endX="58"
+                android:endY="68"
+                android:type="linear">
+                <item android:color="#6EE7B7" android:offset="0.0" />
+                <item android:color="#10B981" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Golden Clock Hands pointing to Prayer Time -->
+    <path
+        android:strokeColor="#FDE68A"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M54,54 L54,42 M54,54 L64,54" />
+
+    <!-- Center Gold Pivot -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M54,51.2 A2.8,2.8 0 1,0 54,56.8 A2.8,2.8 0 1,0 54,51.2 Z" />
+
+    <!-- Top Golden Star Accent -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M54,19 L55.4,21.8 L58.4,22.2 L56.2,24.2 L56.8,27.2 L54,25.7 L51.2,27.2 L51.8,24.2 L49.6,22.2 L52.6,21.8 Z" />
 
 </vector>
