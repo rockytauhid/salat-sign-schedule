@@ -29,7 +29,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run Unit Tests & Lint across all modules
-        run: ./gradlew testDebugUnitTest lintDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest lintDebug
 
       - name: Assemble Debug APKs (SalatSign & SalatSchedule)
         run: ./gradlew :app-salatsign:assembleDebug :app-salatschedule:assembleDebug
