@@ -13,7 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
@@ -35,14 +39,16 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun PrayerCardsRow(
     prayers: List<PrayerTimeItem>,
+    sunriseTime: String? = null,
     is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     isMosqueMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val hasSunriseCard = !sunriseTime.isNullOrBlank()
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(if (hasSunriseCard) 10.dp else 14.dp)
     ) {
         for (item in prayers) {
             PrayerCard(
@@ -50,9 +56,88 @@ fun PrayerCardsRow(
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
                 isMosqueMode = isMosqueMode,
+                isCompactSixColumn = hasSunriseCard,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
+            )
+            if (hasSunriseCard && item.prayer == Prayer.SUBUH) {
+                SunriseCard(
+                    sunriseTime = sunriseTime!!,
+                    is24HourFormat = is24HourFormat,
+                    showArabicPrayerNames = showArabicPrayerNames,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SunriseCard(
+    sunriseTime: String,
+    is24HourFormat: Boolean = false,
+    showArabicPrayerNames: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
+    val shape = RoundedCornerShape(16.dp)
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(colorScheme.surface.copy(alpha = 0.82f), shape)
+            .border(width = 1.dp, color = accentSecondary.copy(alpha = 0.40f), shape = shape)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (showArabicPrayerNames) {
+                Text(
+                    text = "الشروق",
+                    maxLines = 1,
+                    style = TvTypography.ArabicTitle.copy(
+                        fontSize = 17.sp,
+                        color = accentSecondary
+                    )
+                )
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            Text(
+                text = stringResource(R.string.prayer_sunrise),
+                maxLines = 1,
+                style = TvTypography.CardTitle.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface.copy(alpha = 0.85f)
+                )
+            )
+
+            Text(
+                text = sunriseTime,
+                maxLines = 1,
+                softWrap = false,
+                style = TvTypography.InactivePrayerTime.copy(
+                    fontSize = if (is24HourFormat) 26.sp else 21.sp,
+                    color = accentSecondary
+                )
+            )
+
+            Icon(
+                imageVector = Icons.Default.WbSunny,
+                contentDescription = stringResource(R.string.prayer_sunrise),
+                tint = accentSecondary,
+                modifier = Modifier.size(18.dp)
             )
         }
     }
@@ -64,9 +149,12 @@ fun PrayerCard(
     is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     isMosqueMode: Boolean = false,
+    isCompactSixColumn: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
     val prayerLabel = if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
         stringResource(R.string.prayer_jumuah)
     } else {
@@ -76,8 +164,8 @@ fun PrayerCard(
     val shape = RoundedCornerShape(16.dp)
     val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
     val borderModifier = when {
-        item.isActive -> Modifier.pulsingGlow(shape = shape, glowColor = AccentEmerald)
-        item.isNext -> Modifier.border(width = 2.dp, color = AccentGold.copy(alpha = 0.85f), shape = shape)
+        item.isActive -> Modifier.pulsingGlow(shape = shape, glowColor = accentPrimary)
+        item.isNext -> Modifier.border(width = 2.dp, color = accentSecondary.copy(alpha = 0.9f), shape = shape)
         else -> Modifier
     }
 
@@ -91,7 +179,7 @@ fun PrayerCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 10.dp),
+                .padding(horizontal = if (isCompactSixColumn) 8.dp else 10.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -101,8 +189,8 @@ fun PrayerCard(
                     text = item.prayer.arabicName,
                     maxLines = 1,
                     style = TvTypography.ArabicTitle.copy(
-                        fontSize = 18.sp,
-                        color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
+                        fontSize = if (isCompactSixColumn) 17.sp else 18.sp,
+                        color = if (item.isNext) accentSecondary else colorScheme.onSurface.copy(alpha = 0.65f)
                     )
                 )
             } else {
@@ -114,26 +202,36 @@ fun PrayerCard(
                 text = prayerLabel,
                 maxLines = 1,
                 style = TvTypography.CardTitle.copy(
-                    fontSize = 20.sp,
+                    fontSize = if (isCompactSixColumn) 18.sp else 20.sp,
                     fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
                     color = colorScheme.onSurface
                 )
             )
 
-            // Prayer Time (Sized cleanly so 12h "12:30 pm" never wraps or clips in 5-column TV grid)
+            // Prayer Time (Sized cleanly so 12h "12:30 pm" never wraps or clips in 5- or 6-column TV grid)
             Text(
                 text = item.formattedTime(is24HourFormat),
                 maxLines = 1,
                 softWrap = false,
                 style = if (item.isNext) {
                     TvTypography.InactivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 32.sp else 26.sp,
+                        fontSize = when {
+                            is24HourFormat && isCompactSixColumn -> 28.sp
+                            is24HourFormat -> 32.sp
+                            isCompactSixColumn -> 23.sp
+                            else -> 26.sp
+                        },
                         fontWeight = FontWeight.Bold,
-                        color = AccentEmerald
+                        color = accentPrimary
                     )
                 } else {
                     TvTypography.InactivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 28.sp else 24.sp,
+                        fontSize = when {
+                            is24HourFormat && isCompactSixColumn -> 26.sp
+                            is24HourFormat -> 28.sp
+                            isCompactSixColumn -> 21.sp
+                            else -> 24.sp
+                        },
                         color = colorScheme.onSurface
                     )
                 }
@@ -147,7 +245,7 @@ fun PrayerCard(
                         text = note,
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
-                            color = AccentGold
+                            color = accentSecondary
                         )
                     )
                 }
@@ -171,7 +269,7 @@ fun PrayerCard(
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AccentGold
+                        color = accentSecondary
                     )
                 )
             }
@@ -180,7 +278,7 @@ fun PrayerCard(
             if (item.isActive) {
                 Box(
                     modifier = Modifier
-                        .background(AccentEmerald, RoundedCornerShape(6.dp))
+                        .background(accentPrimary, RoundedCornerShape(6.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -195,7 +293,7 @@ fun PrayerCard(
             } else if (item.isNext) {
                 Box(
                     modifier = Modifier
-                        .background(AccentGold.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
+                        .background(accentSecondary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -203,7 +301,7 @@ fun PrayerCard(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AccentGold
+                            color = accentSecondary
                         )
                     )
                 }

@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
@@ -65,10 +66,12 @@ import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.TvEditableTextField
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
+import com.salatsign.tv.ui.common.tvCardScale
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.common.tvSelectableCardBorder
 import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
 import com.salatsign.tv.ui.common.tvSelectableSurfaceColors
+import com.salatsign.tv.ui.common.tvSurfaceScale
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.TvTypography
@@ -169,7 +172,7 @@ fun MosqueSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_location_title, 1, settings.cityName),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             CountryCitySelector(
                                 selectedCityName = settings.cityName,
@@ -192,10 +195,10 @@ fun MosqueSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_method_title, 2),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             Column(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(vertical = 4.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 methods.chunked(3).forEachIndexed { rowIdx, rowMethods ->
@@ -213,6 +216,7 @@ fun MosqueSetupWizardScreen(
                                                     containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
                                                 ),
                                                 shape = CardDefaults.shape(shape),
+                                                scale = tvCardScale(1.02f),
                                                 border = tvSelectableCardBorder(selected = selected, shape = shape),
                                                 modifier = Modifier
                                                     .weight(1f)
@@ -233,10 +237,10 @@ fun MosqueSetupWizardScreen(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = stringResource(R.string.settings_section_madhab),
-                                style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = AccentGold)
+                                style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.secondary)
                             )
                             Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 listOf("SHAFI" to stringResource(R.string.settings_madhab_standard), "HANAFI" to stringResource(R.string.settings_madhab_hanafi)).forEach { (key, label) ->
@@ -248,6 +252,7 @@ fun MosqueSetupWizardScreen(
                                             containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
                                         ),
                                         shape = CardDefaults.shape(shape),
+                                        scale = tvCardScale(1.02f),
                                         border = tvSelectableCardBorder(selected = selected, shape = shape),
                                         modifier = Modifier.weight(1f)
                                     ) {
@@ -275,7 +280,7 @@ fun MosqueSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_mosque_title, 3),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
 
                             // Label + Editable Input: Mosque Name (defaults to Masjiduna)
@@ -301,7 +306,7 @@ fun MosqueSetupWizardScreen(
                                 )
                             }
 
-                            // Label + 4 Mosque Emblem Icons
+                            // Label + 4 Mosque Emblem Icons (Square Tiles)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(
                                     text = stringResource(R.string.mosque_label_icon),
@@ -315,11 +320,11 @@ fun MosqueSetupWizardScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 6.dp, vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     MosqueIconPreset.entries.forEachIndexed { idx, preset ->
                                         val selected = settings.mosqueIconPreset == preset
-                                        val shape = RoundedCornerShape(10.dp)
+                                        val shape = RoundedCornerShape(14.dp)
                                         Card(
                                             onClick = { onSelectMosqueIcon(preset) },
                                             colors = CardDefaults.colors(
@@ -327,21 +332,30 @@ fun MosqueSetupWizardScreen(
                                                 focusedContainerColor = colorScheme.surfaceVariant
                                             ),
                                             shape = CardDefaults.shape(shape),
+                                            scale = tvCardScale(1.03f),
                                             border = tvSelectableCardBorder(selected = selected, shape = shape),
                                             modifier = Modifier
-                                                .weight(1f)
+                                                .size(116.dp)
                                                 .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
                                         ) {
-                                            Row(
-                                                modifier = Modifier.padding(10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .padding(8.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.Center
                                             ) {
-                                                MosqueEmblemIcon(preset = preset, customLogoUri = settings.mosqueLogoUri, size = 36.dp)
+                                                MosqueEmblemIcon(preset = preset, customLogoUri = settings.mosqueLogoUri, size = 46.dp)
+                                                Spacer(modifier = Modifier.height(8.dp))
                                                 Text(
                                                     text = stringResource(preset.labelRes()),
+                                                    textAlign = TextAlign.Center,
                                                     maxLines = 2,
-                                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface)
+                                                    style = TvTypography.BodyLabel.copy(
+                                                        fontSize = 12.sp,
+                                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (selected) AccentEmerald else colorScheme.onSurface
+                                                    )
                                                 )
                                             }
                                         }
@@ -396,7 +410,7 @@ fun MosqueSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_jumuah_title, 4),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             Text(
                                 text = stringResource(R.string.settings_jumuah_desc),
@@ -446,6 +460,7 @@ fun MosqueSetupWizardScreen(
                                                         onSetJumuahTimes(nextList)
                                                     },
                                                     shape = ClickableSurfaceDefaults.shape(btnShape),
+                                                    scale = tvSurfaceScale(1.03f),
                                                     colors = tvSelectableSurfaceColors(selected = false),
                                                     border = tvSelectableSurfaceBorder(selected = false, shape = btnShape),
                                                     modifier = if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier
@@ -475,6 +490,7 @@ fun MosqueSetupWizardScreen(
                                                         onSetJumuahTimes(nextList)
                                                     },
                                                     shape = ClickableSurfaceDefaults.shape(btnShape),
+                                                    scale = tvSurfaceScale(1.03f),
                                                     colors = tvSelectableSurfaceColors(selected = false),
                                                     border = tvSelectableSurfaceBorder(selected = false, shape = btnShape)
                                                 ) {
@@ -512,6 +528,7 @@ fun MosqueSetupWizardScreen(
                                             }
                                         },
                                         shape = ClickableSurfaceDefaults.shape(actionShape),
+                                        scale = tvSurfaceScale(1.02f),
                                         colors = tvSelectableSurfaceColors(selected = activeTimes.size >= 2),
                                         border = tvSelectableSurfaceBorder(selected = activeTimes.size >= 2, shape = actionShape)
                                     ) {
@@ -540,6 +557,7 @@ fun MosqueSetupWizardScreen(
                                         }
                                     },
                                     shape = ClickableSurfaceDefaults.shape(actionShape),
+                                    scale = tvSurfaceScale(1.02f),
                                     colors = tvSelectableSurfaceColors(selected = jumuahDisabled),
                                     border = tvSelectableSurfaceBorder(selected = jumuahDisabled, shape = actionShape),
                                     modifier = if (jumuahDisabled) Modifier.focusRequester(initialFocusRequester) else Modifier

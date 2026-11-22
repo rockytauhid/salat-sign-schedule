@@ -24,7 +24,7 @@
     <string name="lang_ar">العربية</string>
 
     <!-- Theme Modes -->
-    <string name="theme_always_dark">Mode Gelap (OLED / Malam)</string>
+    <string name="theme_always_dark">Mode Gelap (Malam)</string>
     <string name="theme_always_light">Mode Terang (Siang)</string>
     <string name="theme_auto_day_night">Otomatis (Siang Terang / Malam Gelap)</string>
 
@@ -254,7 +254,7 @@
     <string name="settings_jumuah_desc">Atur sesi dan waktu shalat Jumat.</string>
     <string name="settings_jumuah_mode_title">Metode Waktu Shalat Jumat</string>
     <string name="settings_jumuah_mode_fixed">Waktu Jam Tetap</string>
-    <string name="settings_jumuah_mode_fixed_desc">Masjid menyelenggarakan shalat Jumat pada jam dinding tetap sepanjang tahun (mis. 13:00).</string>
+    <string name="settings_jumuah_mode_fixed_desc">Masjid menyelenggarakan shalat Jumat pada jam dinding tetap sepanjang tahun.</string>
     <string name="settings_jumuah_mode_after_zuhr">Setelah Waktu Zuhur</string>
     <string name="settings_jumuah_mode_after_zuhr_desc">Shalat Jumat dimulai N menit setelah waktu masuk Zuhur astronomis.</string>
     <string name="settings_jumuah_sittings_count_title">Jumlah Sesi / Gelombang</string>

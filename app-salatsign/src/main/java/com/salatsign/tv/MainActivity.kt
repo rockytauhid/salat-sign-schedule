@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
     private var dpadCenterHoldJob: Job? = null
     private val isSettingsOpen = mutableStateOf(false)
     private val isPinDialogOpen = mutableStateOf(false)
+    private val adminHintTrigger = mutableLongStateOf(0L)
 
     override fun attachBaseContext(newBase: Context) {
         val language = LanguageSyncCache.getLanguage(newBase)
@@ -123,6 +124,7 @@ class MainActivity : ComponentActivity() {
                     settingsViewModel = settingsViewModel,
                     isSettingsOpen = isSettingsOpen.value,
                     isPinDialogOpen = isPinDialogOpen.value,
+                    adminHintTrigger = adminHintTrigger.longValue,
                     onRequestOpenSettings = { requestOpenSettings() },
                     onOpenSettingsDirect = { isSettingsOpen.value = true },
                     onCloseSettings = { isSettingsOpen.value = false },
@@ -148,22 +150,30 @@ class MainActivity : ComponentActivity() {
                     dpadCenterHoldJob?.cancel()
                     dpadCenterHoldJob = lifecycleScope.launch {
                         delay(3000)
+                        dpadCenterHoldJob = null
                         requestOpenSettings()
                     }
                     return true
                 } else if (event.action == KeyEvent.ACTION_UP) {
+                    val wasStillPending = dpadCenterHoldJob?.isActive == true
                     dpadCenterHoldJob?.cancel()
                     dpadCenterHoldJob = null
+                    if (wasStillPending) {
+                        adminHintTrigger.longValue = System.currentTimeMillis()
+                    }
                     return true
                 }
             }
 
-            if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_DOWN) {
-                Toast.makeText(
-                    this,
-                    getString(CoreR.string.mosque_hold_ok_toast),
-                    Toast.LENGTH_SHORT
-                ).show()
+            if (event.action == KeyEvent.ACTION_DOWN && (
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                    event.keyCode == KeyEvent.KEYCODE_BACK
+                )
+            ) {
+                adminHintTrigger.longValue = System.currentTimeMillis()
                 return true
             }
         }
@@ -183,6 +193,7 @@ private fun SalatSignMainContent(
     settingsViewModel: MosqueSettingsViewModel,
     isSettingsOpen: Boolean,
     isPinDialogOpen: Boolean,
+    adminHintTrigger: Long,
     onRequestOpenSettings: () -> Unit,
     onOpenSettingsDirect: () -> Unit,
     onCloseSettings: () -> Unit,
@@ -268,6 +279,7 @@ private fun SalatSignMainContent(
         else -> {
             MosqueSignageScreen(
                 uiState = mosqueUiState,
+                adminHintTrigger = adminHintTrigger,
                 onOpenSettings = onRequestOpenSettings
             )
         }

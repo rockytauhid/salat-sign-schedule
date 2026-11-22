@@ -259,20 +259,21 @@ fun PinDialog(
             shape = RoundedCornerShape(20.dp),
             colors = SurfaceDefaults.colors(containerColor = colorScheme.surface),
             modifier = Modifier
-                .width(440.dp)
-                .padding(16.dp)
+                .width(360.dp)
                 .border(1.5.dp, colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Icon & Title
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = if (lockoutSeconds > 0) Color(0xFFEF4444) else AccentGold,
-                    modifier = Modifier.size(36.dp)
+                    tint = if (lockoutSeconds > 0) Color(0xFFEF4444) else colorScheme.secondary,
+                    modifier = Modifier.size(34.dp)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -316,7 +317,7 @@ fun PinDialog(
                                 .size(18.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isFilled) (if (isError) Color(0xFFEF4444) else AccentEmerald)
+                                    if (isFilled) (if (isError) Color(0xFFEF4444) else colorScheme.primary)
                                     else colorScheme.onSurface.copy(alpha = 0.15f)
                                 )
                                 .border(
@@ -346,7 +347,7 @@ fun PinDialog(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isError) Color(0xFFEF4444) else AccentEmerald
+                            color = if (isError) Color(0xFFEF4444) else colorScheme.primary
                         )
                     )
                 } else {
@@ -367,11 +368,12 @@ fun PinDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val keyShape = RoundedCornerShape(10.dp)
                     for ((rowIndex, row) in keypadRows.withIndex()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             for (key in row) {
                                 val isFirstKey = (rowIndex == 0 && key == "1")
-                                val isActionKey = (key == "CLEAR" || key == "OK")
+                                val isOkKey = (key == "OK")
 
                                 Surface(
                                     onClick = {
@@ -382,16 +384,17 @@ fun PinDialog(
                                         }
                                     },
                                     enabled = lockoutSeconds == 0,
-                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
+                                    shape = ClickableSurfaceDefaults.shape(keyShape),
+                                    scale = tvSurfaceScale(1.04f),
                                     colors = ClickableSurfaceDefaults.colors(
-                                        containerColor = if (key == "OK") AccentEmerald else colorScheme.surfaceVariant,
-                                        focusedContainerColor = AccentGold
+                                        containerColor = if (isOkKey) colorScheme.primary else colorScheme.surfaceVariant,
+                                        focusedContainerColor = if (isOkKey) colorScheme.primary else colorScheme.surfaceVariant
                                     ),
+                                    border = tvSelectableSurfaceBorder(selected = false, shape = keyShape),
                                     modifier = Modifier
                                         .size(width = 90.dp, height = 48.dp)
-                                        .tvFocusable()
                                         .then(if (isFirstKey) Modifier.focusRequester(initialFocusRequester) else Modifier)
-                                 ) {
+                                ) {
                                     Box(
                                         modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
@@ -428,14 +431,13 @@ fun PinDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Dismiss / Cancel Button
+                val cancelShape = RoundedCornerShape(8.dp)
                 Surface(
                     onClick = onDismiss,
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        focusedContainerColor = colorScheme.surfaceVariant
-                    ),
-                    modifier = Modifier.tvFocusable()
+                    shape = ClickableSurfaceDefaults.shape(cancelShape),
+                    scale = tvSurfaceScale(1.03f),
+                    colors = tvSelectableSurfaceColors(selected = false),
+                    border = tvSelectableSurfaceBorder(selected = false, shape = cancelShape)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -444,13 +446,13 @@ fun PinDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = null,
-                            tint = colorScheme.onSurface.copy(alpha = 0.7f),
+                            tint = colorScheme.onSurface.copy(alpha = 0.75f),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = stringResource(R.string.btn_cancel),
-                            style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                            style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.85f))
                         )
                     }
                 }

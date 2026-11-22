@@ -30,9 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.CardBorder
 import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.CardScale
 import androidx.tv.material3.ClickableSurfaceBorder
 import androidx.tv.material3.ClickableSurfaceColors
 import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.ClickableSurfaceScale
 import androidx.tv.material3.MaterialTheme
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
@@ -72,11 +74,11 @@ fun tvSelectableCardBorder(
     shape: Shape = RoundedCornerShape(12.dp)
 ): CardBorder = CardDefaults.border(
     border = if (selected) {
-        Border(border = BorderStroke(2.dp, AccentEmerald), shape = shape)
+        Border(border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary), shape = shape)
     } else {
         Border.None
     },
-    focusedBorder = Border(border = BorderStroke(2.5.dp, AccentGold), shape = shape)
+    focusedBorder = Border(border = BorderStroke(2.5.dp, MaterialTheme.colorScheme.secondary), shape = shape)
 )
 
 /**
@@ -88,12 +90,28 @@ fun tvSelectableSurfaceBorder(
     shape: Shape = RoundedCornerShape(10.dp)
 ): ClickableSurfaceBorder = ClickableSurfaceDefaults.border(
     border = if (selected) {
-        Border(border = BorderStroke(2.dp, AccentEmerald), shape = shape)
+        Border(border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary), shape = shape)
     } else {
         Border.None
     },
-    focusedBorder = Border(border = BorderStroke(2.5.dp, AccentGold), shape = shape)
+    focusedBorder = Border(border = BorderStroke(2.5.dp, MaterialTheme.colorScheme.secondary), shape = shape)
 )
+
+/**
+ * Controlled focus scale for TV Cards (overrides androidx.tv.material3's aggressive 1.1x default
+ * so cards never enlarge outside the viewport or clip into neighbors).
+ * Use 1.0f for full-width banners and 1.02f–1.03f for multi-column tiles.
+ */
+@Composable
+fun tvCardScale(focusedScale: Float = 1.02f): CardScale =
+    CardDefaults.scale(focusedScale = focusedScale)
+
+/**
+ * Controlled focus scale for TV Surfaces so buttons/chips never enlarge off-screen.
+ */
+@Composable
+fun tvSurfaceScale(focusedScale: Float = 1.03f): ClickableSurfaceScale =
+    ClickableSurfaceDefaults.scale(focusedScale = focusedScale)
 
 /**
  * Unified high-contrast colors for androidx.tv.material3.Surface in Settings/Wizards.

@@ -58,6 +58,7 @@ import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.CountryCitySelector
 import com.salatsign.tv.ui.common.overscanPadding
+import com.salatsign.tv.ui.common.tvCardScale
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.common.tvSelectableCardBorder
 import com.salatsign.tv.ui.theme.AccentEmerald
@@ -178,7 +179,7 @@ fun HomeSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_location_title, 1, settings.cityName),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             CountryCitySelector(
                                 selectedCityName = settings.cityName,
@@ -201,10 +202,10 @@ fun HomeSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_method_title, 2),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             Column(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(vertical = 4.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 methods.chunked(3).forEachIndexed { rowIdx, rowMethods ->
@@ -222,6 +223,7 @@ fun HomeSetupWizardScreen(
                                                     containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
                                                 ),
                                                 shape = CardDefaults.shape(shape),
+                                                scale = tvCardScale(1.02f),
                                                 border = tvSelectableCardBorder(selected = selected, shape = shape),
                                                 modifier = Modifier
                                                     .weight(1f)
@@ -242,10 +244,10 @@ fun HomeSetupWizardScreen(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = stringResource(R.string.settings_section_madhab),
-                                style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = AccentGold)
+                                style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = colorScheme.secondary)
                             )
                             Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 listOf("SHAFI" to stringResource(R.string.settings_madhab_standard), "HANAFI" to stringResource(R.string.settings_madhab_hanafi)).forEach { (key, label) ->
@@ -257,6 +259,7 @@ fun HomeSetupWizardScreen(
                                             containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
                                         ),
                                         shape = CardDefaults.shape(shape),
+                                        scale = tvCardScale(1.02f),
                                         border = tvSelectableCardBorder(selected = selected, shape = shape),
                                         modifier = Modifier.weight(1f)
                                     ) {
@@ -277,7 +280,7 @@ fun HomeSetupWizardScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
                                 text = stringResource(R.string.settings_section_home_reminders),
-                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
+                                style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
                             Card(
                                 onClick = { onTogglePrePrayerReminder(!settings.prePrayerReminderEnabled) },
@@ -285,6 +288,7 @@ fun HomeSetupWizardScreen(
                                     containerColor = if (settings.prePrayerReminderEnabled) colorScheme.surfaceVariant else colorScheme.surface
                                 ),
                                 shape = CardDefaults.shape(shape),
+                                scale = tvCardScale(1.0f),
                                 border = tvSelectableCardBorder(selected = settings.prePrayerReminderEnabled, shape = shape),
                                 modifier = Modifier
                                     .fillMaxWidth()

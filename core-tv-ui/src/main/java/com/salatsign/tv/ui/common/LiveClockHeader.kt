@@ -102,6 +102,7 @@ fun LiveClockHeader(
     }
 
     val colorScheme = MaterialTheme.colorScheme
+    val shortCityName = remember(cityName) { formatHeaderCity(cityName) }
 
     Row(
         modifier = Modifier
@@ -123,30 +124,63 @@ fun LiveClockHeader(
                 MosqueEmblemIcon(
                     preset = mosqueIconPreset,
                     customLogoUri = mosqueLogoUri,
-                    size = 64.dp
+                    size = 68.dp
                 )
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     val displayName = mosqueName.ifBlank { stringResource(R.string.mosque_default_name) }
-                    Text(
-                        text = displayName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
-                    )
+                    val baseTitleStyle = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
+                    val adaptiveNameSize = when {
+                        displayName.length <= 16 -> baseTitleStyle.fontSize
+                        displayName.length <= 24 -> 27.sp
+                        displayName.length <= 31 -> 23.sp
+                        else -> 20.sp
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = displayName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = baseTitleStyle.copy(fontSize = adaptiveNameSize),
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (shortCityName.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .background(colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 9.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = shortCityName,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 13.sp,
+                                        color = colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+                    }
+
                     if (mosqueSubtitle.isNotBlank()) {
                         Text(
                             text = mosqueSubtitle,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = AccentGold)
-                        )
-                    } else {
-                        Text(
-                            text = cityName,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 20.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
+                            style = TvTypography.Subtitle.copy(
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.secondary
+                            )
                         )
                     }
                 }
@@ -191,8 +225,14 @@ fun LiveClockHeader(
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = cityName,
-                                style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = AccentEmerald, fontWeight = FontWeight.Bold)
+                                text = shortCityName,
+                                maxLines = 1,
+                                softWrap = false,
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 14.sp,
+                                    color = colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
                         }
                     }
@@ -327,11 +367,12 @@ fun LiveClockHeader(
         Column(
             horizontalAlignment = Alignment.End
         ) {
-            // Live Clock
+            // Live Clock (sized proportionally to match Gregorian/Hijri date width below)
             Text(
                 text = timeFormatted,
                 style = TvTypography.HeaderTitle.copy(
-                    fontSize = 46.sp,
+                    fontSize = 36.sp,
+                    letterSpacing = 0.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onBackground
@@ -344,15 +385,31 @@ fun LiveClockHeader(
                 style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = colorScheme.onBackground)
             )
 
-            // Hijri Date with Gold Accent
+            // Hijri Date with Theme-Aware Gold/Bronze Accent
             Text(
                 text = hijriDate,
                 style = TvTypography.Subtitle.copy(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AccentGold
+                    color = colorScheme.secondary
                 )
             )
         }
+    }
+}
+
+/**
+ * Strips the trailing country segment for concise header pills:
+ * - "Brisbane, QLD, Australia" -> "Brisbane, QLD"
+ * - "Jakarta, Indonesia" -> "Jakarta"
+ * - "Singapore" -> "Singapore"
+ */
+private fun formatHeaderCity(fullCityName: String): String {
+    val trimmed = fullCityName.trim()
+    val lastComma = trimmed.lastIndexOf(',')
+    return if (lastComma > 0) {
+        trimmed.substring(0, lastComma).trim().ifBlank { trimmed }
+    } else {
+        trimmed
     }
 }

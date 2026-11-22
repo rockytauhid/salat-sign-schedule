@@ -48,11 +48,10 @@ import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
+import com.salatsign.tv.ui.common.PrayerCardsRow
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
-import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.common.tvFocusable
-import com.salatsign.tv.ui.common.tvPrayerCardBorder
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.EmeraldLight
@@ -120,7 +119,6 @@ fun HomeScreen(
                         activePrayer = activePrayerItem,
                         nextPrayer = nextPrayerItem,
                         countdown = prayerTimes.countdownFormatted,
-                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         isReminderEnabled = uiState.settings.prePrayerReminderEnabled,
                         adhanType = uiState.settings.adhanFor(nextPrayerItem.prayer).type,
                         is24HourFormat = uiState.settings.is24HourFormat,
@@ -133,7 +131,6 @@ fun HomeScreen(
                     // Non-today summary header
                     NonTodaySummaryCard(
                         dateFormatted = prayerTimes.gregorianDate,
-                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(0.7f)
@@ -142,9 +139,10 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 5 Daily Prayers Row
+                // 5 Daily Prayers + Sunrise Row
                 PrayerCardsRow(
                     prayers = prayerTimes.prayers,
+                    sunriseTime = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                     is24HourFormat = uiState.settings.is24HourFormat,
                     showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                     modifier = Modifier
@@ -161,7 +159,6 @@ fun NextPrayerSpotlightCard(
     activePrayer: PrayerTimeItem? = null,
     nextPrayer: PrayerTimeItem,
     countdown: String,
-    sunrise: String,
     isReminderEnabled: Boolean,
     adhanType: AdhanAudioType,
     is24HourFormat: Boolean = false,
@@ -169,6 +166,8 @@ fun NextPrayerSpotlightCard(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
     val heroPrayer = activePrayer ?: nextPrayer
     val isShowingCurrent = activePrayer != null
     val heroLabel = stringResource(heroPrayer.prayer.labelRes())
@@ -180,31 +179,33 @@ fun NextPrayerSpotlightCard(
         modifier = modifier
             .clip(spotlightShape)
             .background(colorScheme.surfaceVariant, spotlightShape)
-            .border(1.5.dp, AccentEmerald.copy(alpha = 0.45f), spotlightShape)
+            .border(1.5.dp, accentPrimary.copy(alpha = 0.45f), spotlightShape)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 14.dp),
+                .padding(horizontal = 32.dp, vertical = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left: Current Active Prayer (or Next Prayer between Sunrise & Dhuhr) + Ticking Countdown
             Column(
                 verticalArrangement = Arrangement.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 24.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .background(
-                                if (isShowingCurrent) AccentEmerald else AccentEmerald.copy(alpha = 0.2f),
+                                if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
                                 RoundedCornerShape(8.dp)
                             )
-                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = if (isShowingCurrent) {
@@ -213,9 +214,9 @@ fun NextPrayerSpotlightCard(
                                 stringResource(R.string.home_badge_next_prayer)
                             },
                             style = TvTypography.BodyLabel.copy(
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isShowingCurrent) Color.White else EmeraldLight
+                                color = if (isShowingCurrent) Color.White else accentPrimary
                             )
                         )
                     }
@@ -224,24 +225,24 @@ fun NextPrayerSpotlightCard(
                         Text(
                             text = heroPrayer.prayer.arabicName,
                             maxLines = 1,
-                            style = TvTypography.ArabicTitle.copy(fontSize = 22.sp)
+                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp, color = accentSecondary)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = heroLabel,
                     maxLines = 1,
                     style = TvTypography.HeaderTitle.copy(
-                        fontSize = 38.sp,
+                        fontSize = 42.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = colorScheme.onSurfaceVariant
                     )
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -250,8 +251,8 @@ fun NextPrayerSpotlightCard(
                     Icon(
                         imageVector = Icons.Default.AccessTime,
                         contentDescription = null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(20.dp)
+                        tint = accentSecondary,
+                        modifier = Modifier.size(22.dp)
                     )
                     Text(
                         text = if (isShowingCurrent) {
@@ -261,7 +262,7 @@ fun NextPrayerSpotlightCard(
                         },
                         maxLines = 1,
                         softWrap = false,
-                        style = TvTypography.CountdownText.copy(fontSize = 24.sp)
+                        style = TvTypography.CountdownText.copy(fontSize = 24.sp, color = accentSecondary)
                     )
                 }
             }
@@ -276,56 +277,31 @@ fun NextPrayerSpotlightCard(
                     maxLines = 1,
                     softWrap = false,
                     style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 60.sp else 52.sp,
+                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
                         color = colorScheme.onSurfaceVariant
                     )
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Reminder Badge
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .background(colorScheme.surface, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Sunrise info badge
-                    Row(
-                        modifier = Modifier
-                            .background(colorScheme.surface, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.WbSunny,
-                            contentDescription = null,
-                            tint = AccentGold,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.home_sunrise, sunrise),
-                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                        )
-                    }
-
-                    // Reminder Badge
-                    Row(
-                        modifier = Modifier
-                            .background(colorScheme.surface, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (isReminderEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                            contentDescription = null,
-                            tint = if (isReminderEnabled) AccentEmerald else colorScheme.onSurface.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isReminderEnabled) stringResource(R.string.home_reminder_active) else stringResource(R.string.home_reminder_inactive),
-                            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isReminderEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                        contentDescription = null,
+                        tint = if (isReminderEnabled) accentPrimary else colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isReminderEnabled) stringResource(R.string.home_reminder_active) else stringResource(R.string.home_reminder_inactive),
+                        style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                    )
                 }
             }
         }
@@ -335,7 +311,6 @@ fun NextPrayerSpotlightCard(
 @Composable
 fun NonTodaySummaryCard(
     dateFormatted: String,
-    sunrise: String,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -356,212 +331,12 @@ fun NonTodaySummaryCard(
             Column {
                 Text(
                     text = stringResource(R.string.home_archive_future_schedule),
-                    style = TvTypography.Subtitle.copy(color = AccentGold)
+                    style = TvTypography.Subtitle.copy(color = colorScheme.secondary)
                 )
                 Text(
                     text = dateFormatted,
                     style = TvTypography.HeaderTitle.copy(fontSize = 32.sp, color = colorScheme.onSurface)
                 )
-            }
-            Row(
-                modifier = Modifier
-                    .background(colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.WbSunny,
-                    contentDescription = null,
-                    tint = AccentGold,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.home_sunrise, sunrise),
-                    style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = colorScheme.onSurfaceVariant)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PrayerCardsRow(
-    prayers: List<PrayerTimeItem>,
-    is24HourFormat: Boolean = false,
-    showArabicPrayerNames: Boolean = true,
-    isMosqueMode: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        for (item in prayers) {
-            PrayerCard(
-                item = item,
-                is24HourFormat = is24HourFormat,
-                showArabicPrayerNames = showArabicPrayerNames,
-                isMosqueMode = isMosqueMode,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-fun PrayerCard(
-    item: PrayerTimeItem,
-    is24HourFormat: Boolean = false,
-    showArabicPrayerNames: Boolean = true,
-    isMosqueMode: Boolean = false,
-    modifier: Modifier = Modifier
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
-        stringResource(R.string.prayer_jumuah)
-    } else {
-        stringResource(item.prayer.labelRes())
-    }
-
-    val shape = RoundedCornerShape(16.dp)
-    val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
-    val borderModifier = when {
-        item.isActive -> Modifier.pulsingGlow(shape = shape, glowColor = AccentEmerald)
-        item.isNext -> Modifier.border(width = 2.dp, color = AccentGold.copy(alpha = 0.85f), shape = shape)
-        else -> Modifier
-    }
-
-    // Non-focusable display panel: prayer cards are informational only
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(containerColor, shape)
-            .then(borderModifier)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Arabic Name
-            if (showArabicPrayerNames) {
-                Text(
-                    text = item.prayer.arabicName,
-                    maxLines = 1,
-                    style = TvTypography.ArabicTitle.copy(
-                        fontSize = 18.sp,
-                        color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                )
-            } else {
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            // Localized Name
-            Text(
-                text = prayerLabel,
-                maxLines = 1,
-                style = TvTypography.CardTitle.copy(
-                    fontSize = 20.sp,
-                    fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
-                    color = colorScheme.onSurface
-                )
-            )
-
-            // Prayer Time (Sized cleanly so 12h "12:30 pm" never wraps or clips in 5-column TV grid)
-            Text(
-                text = item.formattedTime(is24HourFormat),
-                maxLines = 1,
-                softWrap = false,
-                style = if (item.isNext) {
-                    TvTypography.InactivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 32.sp else 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AccentEmerald
-                    )
-                } else {
-                    TvTypography.InactivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 28.sp else 24.sp,
-                        color = colorScheme.onSurface
-                    )
-                }
-            )
-
-            // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for Mosque Mode
-            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
-                val note = item.secondaryTimeNote
-                if (note != null) {
-                    Text(
-                        text = note,
-                        style = TvTypography.BodyLabel.copy(
-                            fontSize = 11.sp,
-                            color = AccentGold
-                        )
-                    )
-                }
-                if (item.jumuahSittings.size > 1) {
-                    val s2 = PrayerTimeItem.formatLocalTime(item.jumuahSittings[1], is24HourFormat)
-                    Text(
-                        text = stringResource(R.string.settings_jumuah_sitting_n, 2) + ": " + s2,
-                        style = TvTypography.BodyLabel.copy(
-                            fontSize = 10.sp,
-                            color = colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
-                    )
-                }
-            }
-
-            // Iqamah indicator if configured
-            val formattedIqamah = item.formattedIqamahTime(is24HourFormat)
-            if (formattedIqamah != null) {
-                Text(
-                    text = stringResource(R.string.home_iqamah_time, formattedIqamah),
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AccentGold
-                    )
-                )
-            }
-
-            // Status label
-            if (item.isActive) {
-                Box(
-                    modifier = Modifier
-                        .background(AccentEmerald, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_badge_active_prayer),
-                        style = TvTypography.BodyLabel.copy(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    )
-                }
-            } else if (item.isNext) {
-                Box(
-                    modifier = Modifier
-                        .background(AccentGold.copy(alpha = 0.2f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_badge_next),
-                        style = TvTypography.BodyLabel.copy(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AccentGold
-                        )
-                    )
-                }
-            } else {
-                Spacer(modifier = Modifier.height(18.dp))
             }
         }
     }

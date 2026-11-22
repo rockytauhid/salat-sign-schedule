@@ -24,7 +24,7 @@
     <string name="lang_ar">العربية</string>
 
     <!-- Theme Modes -->
-    <string name="theme_always_dark">الوضع الداكن (ليلي / شاشات أوليد)</string>
+    <string name="theme_always_dark">الوضع الداكن (ليلي)</string>
     <string name="theme_always_light">الوضع الفاتح (نهاري)</string>
     <string name="theme_auto_day_night">تلقائي (نهاري فاتح / ليلي داكن)</string>
 
@@ -254,7 +254,7 @@
     <string name="settings_jumuah_desc">ضبط فترات ومواعيد صلاة الجمعة.</string>
     <string name="settings_jumuah_mode_title">طريقة حساب وقت الجمعة</string>
     <string name="settings_jumuah_mode_fixed">وقت ثابت على مدار العام</string>
-    <string name="settings_jumuah_mode_fixed_desc">يقيم المسجد صلاة الجمعة في وقت محدد على مدار العام (مثلاً 1:00 م).</string>
+    <string name="settings_jumuah_mode_fixed_desc">يقيم المسجد صلاة الجمعة في وقت محدد على مدار العام.</string>
     <string name="settings_jumuah_mode_after_zuhr">بعد دخول وقت الظهر</string>
     <string name="settings_jumuah_mode_after_zuhr_desc">تبدأ الجمعة بعد عدد محدد من الدقائق من دخول وقت الظهر الفلكي.</string>
     <string name="settings_jumuah_sittings_count_title">عدد فترات الصلاة</string>

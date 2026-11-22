@@ -152,7 +152,7 @@ fun CountryCitySelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 countries.forEachIndexed { idx, country ->
@@ -161,10 +161,11 @@ fun CountryCitySelector(
                     Card(
                         onClick = { selectedCountry = country },
                         colors = CardDefaults.colors(
-                            containerColor = if (isCountrySelected) AccentEmerald.copy(alpha = 0.25f) else colorScheme.surface,
+                            containerColor = if (isCountrySelected) colorScheme.primary.copy(alpha = 0.22f) else colorScheme.surface,
                             focusedContainerColor = colorScheme.surfaceVariant
                         ),
                         shape = CardDefaults.shape(shape),
+                        scale = tvCardScale(1.0f),
                         border = tvSelectableCardBorder(selected = isCountrySelected, shape = shape),
                         modifier = Modifier
                             .then(if (idx == 0 && initialFocusRequester != null) Modifier.focusRequester(initialFocusRequester) else Modifier)
@@ -176,7 +177,7 @@ fun CountryCitySelector(
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 14.sp,
                                 fontWeight = if (isCountrySelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isCountrySelected) AccentEmerald else colorScheme.onSurface
+                                color = if (isCountrySelected) colorScheme.primary else colorScheme.onSurface
                             ),
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
@@ -200,9 +201,9 @@ fun CountryCitySelector(
                 Modifier
                     .weight(1f, fill = false)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
+                    .padding(vertical = 4.dp)
             } else {
-                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+                Modifier.padding(vertical = 4.dp)
             }
             Column(
                 modifier = gridModifier,
@@ -226,6 +227,7 @@ fun CountryCitySelector(
                                     focusedContainerColor = colorScheme.surfaceVariant
                                 ),
                                 shape = CardDefaults.shape(shape),
+                                scale = tvCardScale(if (scrollableCityGrid) 1.0f else 1.01f),
                                 border = tvSelectableCardBorder(selected = isCitySelected, shape = shape),
                                 modifier = Modifier
                                     .weight(1f)
@@ -243,7 +245,7 @@ fun CountryCitySelector(
                                         style = TvTypography.CardTitle.copy(
                                             fontSize = 15.sp,
                                             fontWeight = if (isCitySelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isCitySelected) AccentEmerald else colorScheme.onSurface
+                                            color = if (isCitySelected) colorScheme.primary else colorScheme.onSurface
                                         )
                                     )
                                     Text(

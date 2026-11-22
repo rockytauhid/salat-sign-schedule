@@ -24,7 +24,7 @@
     <string name="lang_ar">العربية</string>
 
     <!-- Theme Modes -->
-    <string name="theme_always_dark">Dark Theme (OLED / Night)</string>
+    <string name="theme_always_dark">Dark Theme (Night)</string>
     <string name="theme_always_light">Light Theme (Day)</string>
     <string name="theme_auto_day_night">Automatic (Day Light / Night Dark)</string>
 
@@ -254,7 +254,7 @@
     <string name="settings_jumuah_desc">Configure Friday prayer sittings and timings.</string>
     <string name="settings_jumuah_mode_title">Jumu\'ah Calculation Mode</string>
     <string name="settings_jumuah_mode_fixed">Fixed Clock Time</string>
-    <string name="settings_jumuah_mode_fixed_desc">Mosque holds Jumu\'ah at fixed wall-clock times year-round (e.g. 1:00 pm).</string>
+    <string name="settings_jumuah_mode_fixed_desc">Mosque holds Jumu\'ah at fixed wall-clock times year-round.</string>
     <string name="settings_jumuah_mode_after_zuhr">After Zuhr Offset</string>
     <string name="settings_jumuah_mode_after_zuhr_desc">Jumu\'ah starts N minutes after calculated Zuhr time.</string>
     <string name="settings_jumuah_sittings_count_title">Number of Sittings</string>

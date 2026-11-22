@@ -24,7 +24,7 @@ val DarkTvColorScheme: ColorScheme = darkColorScheme(
     surface = DarkSurface,
     onSurface = DarkTextPrimary,
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = DarkTextSecondary,
+    onSurfaceVariant = DarkTextPrimary,
     border = AccentEmerald
 )
 
@@ -40,7 +40,7 @@ val LightTvColorScheme: ColorScheme = lightColorScheme(
     surface = LightSurface,
     onSurface = LightTextPrimary,
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = LightTextSecondary,
+    onSurfaceVariant = LightTextPrimary,
     border = AccentEmeraldDark
 )
 

@@ -13,20 +13,20 @@ val DarkTextPrimary = Color(0xFFF9FAFB)
 val DarkTextSecondary = Color(0xFF9CA3AF)
 val DarkDivider = Color(0xFF1E3A2B)
 
-// ================= Light Palette (Crisp Day / Sage) =================
-val LightBackground = Color(0xFFF4F7F4)
-val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFE2EBE5)
-val LightTextPrimary = Color(0xFF0F172A)
-val LightTextSecondary = Color(0xFF475569)
-val LightDivider = Color(0xFFD1DCD5)
+// ================= Light Palette (Warm Soft Sage / Low-Glare Day) =================
+val LightBackground = Color(0xFFE4ECE7)
+val LightSurface = Color(0xFFF1F5F2)
+val LightSurfaceVariant = Color(0xFFD2E2D8)
+val LightTextPrimary = Color(0xFF0B1F17)
+val LightTextSecondary = Color(0xFF3A5248)
+val LightDivider = Color(0xFFB8CEC1)
 
 // ================= Brand Accents =================
 val AccentEmerald = Color(0xFF10B981)
 val AccentEmeraldDark = Color(0xFF047857)
 val EmeraldLight = Color(0xFF34D399)
 val AccentGold = Color(0xFFFBBF24)
-val AccentGoldDark = Color(0xFFD97706)
+val AccentGoldDark = Color(0xFF9A5B04) // Rich antique bronze (>5.5:1 contrast on light surfaces)
 val ActivePrayerPulse = Color(0xFF059669)
 val PulseRed = Color(0xFFEF4444)
 

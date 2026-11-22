@@ -3,8 +3,13 @@
 
 package com.salatsign.tv.ui.mosque
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -22,13 +27,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,13 +81,23 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun MosqueSignageScreen(
     uiState: MosqueSignageUiState,
+    adminHintTrigger: Long = 0L,
     onOpenSettings: () -> Unit
 ) {
     val screenFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
+    var showAdminHint by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         screenFocusRequester.requestFocus()
+    }
+
+    LaunchedEffect(adminHintTrigger) {
+        if (adminHintTrigger > 0L) {
+            showAdminHint = true
+            delay(4000L)
+            showAdminHint = false
+        }
     }
 
     Box(
@@ -115,6 +133,40 @@ fun MosqueSignageScreen(
                         uiState = uiState
                     )
                 }
+            }
+        }
+
+        // Sliding remote-control instruction banner when user taps D-pad or OK
+        AnimatedVisibility(
+            visible = showAdminHint,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(tween(250)),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(tween(300)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 36.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .background(Color(0xFF0A2218).copy(alpha = 0.94f), RoundedCornerShape(14.dp))
+                    .border(1.5.dp, AccentGold.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    tint = AccentGold,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.mosque_hold_ok_toast),
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                )
             }
         }
     }
@@ -171,7 +223,6 @@ fun MosqueScheduleView(
                         activePrayer = prayerTimes.activePrayer,
                         nextPrayer = nextPrayerItem,
                         countdown = prayerTimes.countdownFormatted,
-                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         is24HourFormat = uiState.settings.is24HourFormat,
                         showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                         modifier = Modifier
@@ -182,9 +233,10 @@ fun MosqueScheduleView(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 5 Prayers Grid / Row
+                // 5 Daily Prayers + Sunrise Row
                 PrayerCardsRow(
                     prayers = prayerTimes.prayers,
+                    sunriseTime = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                     is24HourFormat = uiState.settings.is24HourFormat,
                     showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                     isMosqueMode = true,
@@ -211,11 +263,13 @@ fun MosqueActiveStrikeBanner(
     }
 
     val strikeShape = RoundedCornerShape(20.dp)
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
     Box(
         modifier = modifier
             .clip(strikeShape)
             .background(colorScheme.surfaceVariant, strikeShape)
-            .pulsingGlow(shape = strikeShape, glowColor = AccentEmerald)
+            .pulsingGlow(shape = strikeShape, glowColor = accentPrimary)
     ) {
         Row(
             modifier = Modifier
@@ -236,7 +290,7 @@ fun MosqueActiveStrikeBanner(
                 ) {
                     Box(
                         modifier = Modifier
-                            .background(AccentEmerald, RoundedCornerShape(8.dp))
+                            .background(accentPrimary, RoundedCornerShape(8.dp))
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Text(
@@ -252,7 +306,7 @@ fun MosqueActiveStrikeBanner(
                     Text(
                         text = prayer.prayer.arabicName,
                         maxLines = 1,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 28.sp)
+                        style = TvTypography.ArabicTitle.copy(fontSize = 28.sp, color = accentSecondary)
                     )
                 }
 
@@ -275,7 +329,7 @@ fun MosqueActiveStrikeBanner(
                     Text(
                         text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
                         maxLines = 1,
-                        style = TvTypography.Subtitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                        style = TvTypography.Subtitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = accentPrimary)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
@@ -283,7 +337,7 @@ fun MosqueActiveStrikeBanner(
                 Text(
                     text = stringResource(R.string.mosque_strike_admonition),
                     maxLines = 2,
-                    style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = AccentGold)
+                    style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = accentSecondary)
                 )
             }
 
@@ -293,7 +347,7 @@ fun MosqueActiveStrikeBanner(
                 softWrap = false,
                 style = TvTypography.ActivePrayerTime.copy(
                     fontSize = if (is24HourFormat) 68.sp else 58.sp,
-                    color = AccentEmerald
+                    color = accentPrimary
                 )
             )
         }
@@ -305,12 +359,13 @@ fun MosqueNextPrayerBanner(
     activePrayer: PrayerTimeItem? = null,
     nextPrayer: PrayerTimeItem,
     countdown: String,
-    sunrise: String,
     is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
     val heroPrayer = activePrayer ?: nextPrayer
     val isShowingCurrent = activePrayer != null
     val heroLabel = if (heroPrayer.prayer == Prayer.ZUHUR && heroPrayer.isFriday) {
@@ -329,7 +384,7 @@ fun MosqueNextPrayerBanner(
         modifier = modifier
             .clip(bannerShape)
             .background(colorScheme.surfaceVariant, bannerShape)
-            .border(width = 1.5.dp, color = AccentEmerald.copy(alpha = 0.45f), shape = bannerShape)
+            .border(width = 1.5.dp, color = accentPrimary.copy(alpha = 0.45f), shape = bannerShape)
     ) {
         Row(
             modifier = Modifier
@@ -351,7 +406,7 @@ fun MosqueNextPrayerBanner(
                     Box(
                         modifier = Modifier
                             .background(
-                                if (isShowingCurrent) AccentEmerald else AccentEmerald.copy(alpha = 0.2f),
+                                if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
                                 RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -365,7 +420,7 @@ fun MosqueNextPrayerBanner(
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isShowingCurrent) Color.White else EmeraldLight
+                                color = if (isShowingCurrent) Color.White else accentPrimary
                             )
                         )
                     }
@@ -374,7 +429,7 @@ fun MosqueNextPrayerBanner(
                         Text(
                             text = heroPrayer.prayer.arabicName,
                             maxLines = 1,
-                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp)
+                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp, color = accentSecondary)
                         )
                     }
                 }
@@ -399,7 +454,7 @@ fun MosqueNextPrayerBanner(
                         style = TvTypography.Subtitle.copy(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AccentGold
+                            color = accentSecondary
                         )
                     )
                 }
@@ -417,7 +472,7 @@ fun MosqueNextPrayerBanner(
                         Icon(
                             imageVector = Icons.Default.AccessTime,
                             contentDescription = null,
-                            tint = AccentGold,
+                            tint = accentSecondary,
                             modifier = Modifier.size(22.dp)
                         )
                         Text(
@@ -428,7 +483,7 @@ fun MosqueNextPrayerBanner(
                             },
                             maxLines = 1,
                             softWrap = false,
-                            style = TvTypography.CountdownText.copy(fontSize = 24.sp)
+                            style = TvTypography.CountdownText.copy(fontSize = 24.sp, color = accentSecondary)
                         )
                     }
 
@@ -436,7 +491,7 @@ fun MosqueNextPrayerBanner(
                     if (formattedIqamah != null) {
                         Box(
                             modifier = Modifier
-                                .background(AccentEmerald.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                .background(accentPrimary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
@@ -445,7 +500,7 @@ fun MosqueNextPrayerBanner(
                                 style = TvTypography.BodyLabel.copy(
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = AccentEmerald
+                                    color = accentPrimary
                                 )
                             )
                         }
@@ -462,33 +517,10 @@ fun MosqueNextPrayerBanner(
                     maxLines = 1,
                     softWrap = false,
                     style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                        fontSize = if (is24HourFormat) 68.sp else 58.sp,
                         color = colorScheme.onSurfaceVariant
                     )
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .background(colorScheme.surface, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.WbSunny,
-                        contentDescription = null,
-                        tint = AccentGold,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.home_sunrise, sunrise),
-                        maxLines = 1,
-                        softWrap = false,
-                        style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-                    )
-                }
             }
         }
     }
