@@ -94,9 +94,13 @@ import com.salatsign.tv.engine.JumuahWarningReason
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.displayLabel
 import com.salatsign.tv.ui.common.getMosqueFontFamily
+import com.salatsign.tv.ui.common.CountryCitySelector
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
+import com.salatsign.tv.ui.common.tvSelectableCardBorder
+import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
+import com.salatsign.tv.ui.common.tvSelectableSurfaceColors
 import com.salatsign.tv.ui.picker.StorageFilePickerScreen
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
@@ -185,11 +189,8 @@ fun HomeSettingsScreen(
                     Surface(
                         onClick = onRestartSetupWizard,
                         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = colorScheme.surfaceVariant,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier.tvFocusable()
+                        colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
+                        border = tvSelectableSurfaceBorder(shape = RoundedCornerShape(10.dp))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -209,11 +210,9 @@ fun HomeSettingsScreen(
                     Surface(
                         onClick = onClose,
                         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = colorScheme.surface,
-                            focusedContainerColor = AccentEmerald
-                        ),
-                        modifier = Modifier.focusRequester(initialFocusRequester).tvFocusable()
+                        colors = tvSelectableSurfaceColors(containerColor = colorScheme.surface),
+                        border = tvSelectableSurfaceBorder(shape = RoundedCornerShape(10.dp)),
+                        modifier = Modifier.focusRequester(initialFocusRequester)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -245,19 +244,16 @@ fun HomeSettingsScreen(
                 ) {
                     for (lang in AppLanguage.entries) {
                         val isSelected = (settings.appLanguage == lang)
+                        val langShape = RoundedCornerShape(10.dp)
                         Card(
                             onClick = { onSetAppLanguage(lang) },
                             colors = CardDefaults.colors(
-                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(langShape),
+                            border = tvSelectableCardBorder(selected = isSelected, shape = langShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -370,19 +366,16 @@ fun HomeSettingsScreen(
             ) {
                 for (mode in ThemeMode.entries) {
                     val isSelected = (settings.themeMode == mode)
+                    val themeShape = RoundedCornerShape(12.dp)
                     Card(
                         onClick = { onSetThemeMode(mode) },
                         colors = CardDefaults.colors(
-                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                            focusedContainerColor = colorScheme.surfaceVariant
                         ),
-                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
-                            .then(
-                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
-                                else Modifier
-                            )
+                        shape = CardDefaults.shape(themeShape),
+                        border = tvSelectableCardBorder(selected = isSelected, shape = themeShape),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Row(
                             modifier = Modifier.padding(14.dp),
@@ -422,35 +415,11 @@ fun HomeSettingsScreen(
                 )
             }
 
-            val cityScrollState = rememberScrollState()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(cityScrollState),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                for (city in PopularCityPresets) {
-                    val isSelected = (settings.cityName.startsWith(city.name.split(",")[0]))
-                    Surface(
-                        onClick = { onSelectCity(city) },
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier.tvFocusable()
-                    ) {
-                        Text(
-                            text = city.name,
-                            style = TvTypography.ButtonText.copy(
-                                fontSize = 15.sp,
-                                color = if (isSelected) Color.White else colorScheme.onSurface
-                            ),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
+            CountryCitySelector(
+                selectedCityName = settings.cityName,
+                onSelectCity = onSelectCity,
+                scrollableCityGrid = false
+            )
 
             // Timezone Mismatch Warning (if TV clock zone differs from configured location zone)
             val currentZone = remember(settings.zoneId) {
@@ -500,7 +469,8 @@ fun HomeSettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(methodScrollState),
+                    .horizontalScroll(methodScrollState)
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val methods = listOf(
@@ -514,20 +484,18 @@ fun HomeSettingsScreen(
                 )
                 for ((methodKey, methodTitle) in methods) {
                     val isSelected = settings.calculationMethodName.equals(methodKey, ignoreCase = true)
+                    val methodShape = RoundedCornerShape(8.dp)
                     Surface(
                         onClick = { onSetCalculationMethod(methodKey) },
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier.tvFocusable()
+                        shape = ClickableSurfaceDefaults.shape(methodShape),
+                        colors = tvSelectableSurfaceColors(selected = isSelected),
+                        border = tvSelectableSurfaceBorder(selected = isSelected, shape = methodShape)
                     ) {
                         Text(
                             text = methodTitle,
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 14.sp,
-                                color = if (isSelected) Color.White else colorScheme.onSurface
+                                color = if (isSelected) AccentEmerald else colorScheme.onSurface
                             ),
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                         )
@@ -546,18 +514,16 @@ fun HomeSettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 val isHanafi = settings.madhab.equals("HANAFI", ignoreCase = true)
+                val madhabShape = RoundedCornerShape(12.dp)
                 Card(
                     onClick = { onSetMadhab("SHAFI") },
                     colors = CardDefaults.colors(
-                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (!isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(madhabShape),
+                    border = tvSelectableCardBorder(selected = !isHanafi, shape = madhabShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -575,15 +541,12 @@ fun HomeSettingsScreen(
                 Card(
                     onClick = { onSetMadhab("HANAFI") },
                     colors = CardDefaults.colors(
-                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(madhabShape),
+                    border = tvSelectableCardBorder(selected = isHanafi, shape = madhabShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -617,22 +580,19 @@ fun HomeSettingsScreen(
                 )
                 for ((ruleKey, ruleTitle) in rules) {
                     val isSelected = (settings.highLatitudeRule?.uppercase() == ruleKey)
+                    val ruleShape = RoundedCornerShape(8.dp)
                     Surface(
                         onClick = { onSetHighLatitudeRule(ruleKey) },
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
+                        shape = ClickableSurfaceDefaults.shape(ruleShape),
+                        colors = tvSelectableSurfaceColors(selected = isSelected),
+                        border = tvSelectableSurfaceBorder(selected = isSelected, shape = ruleShape),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
                             text = ruleTitle,
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 13.sp,
-                                color = if (isSelected) Color.White else colorScheme.onSurface
+                                color = if (isSelected) AccentEmerald else colorScheme.onSurface
                             ),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                         )
@@ -682,29 +642,30 @@ fun HomeSettingsScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                val btnShape = RoundedCornerShape(4.dp)
                                 Surface(
                                     onClick = { onSetPrayerOffset(prayer, (currentOffset - 1).coerceAtLeast(-30)) },
-                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
-                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
-                                    modifier = Modifier.tvFocusable()
+                                    shape = ClickableSurfaceDefaults.shape(btnShape),
+                                    colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
+                                    border = tvSelectableSurfaceBorder(shape = btnShape)
                                 ) {
-                                    Text("-1", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    Text("-1", style = TvTypography.ButtonText.copy(fontSize = 11.sp, color = colorScheme.onSurface), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                 }
                                 Surface(
                                     onClick = { onSetPrayerOffset(prayer, 0) },
-                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
-                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
-                                    modifier = Modifier.tvFocusable()
+                                    shape = ClickableSurfaceDefaults.shape(btnShape),
+                                    colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
+                                    border = tvSelectableSurfaceBorder(shape = btnShape)
                                 ) {
-                                    Text("0", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    Text("0", style = TvTypography.ButtonText.copy(fontSize = 11.sp, color = colorScheme.onSurface), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                 }
                                 Surface(
                                     onClick = { onSetPrayerOffset(prayer, (currentOffset + 1).coerceAtMost(30)) },
-                                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
-                                    colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
-                                    modifier = Modifier.tvFocusable()
+                                    shape = ClickableSurfaceDefaults.shape(btnShape),
+                                    colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
+                                    border = tvSelectableSurfaceBorder(shape = btnShape)
                                 ) {
-                                    Text("+1", style = TvTypography.ButtonText.copy(fontSize = 11.sp), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    Text("+1", style = TvTypography.ButtonText.copy(fontSize = 11.sp, color = colorScheme.onSurface), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                 }
                             }
                         }
@@ -727,20 +688,18 @@ fun HomeSettingsScreen(
                 val offsets = listOf(-2, -1, 0, 1, 2)
                 for (offset in offsets) {
                     val isSelected = (settings.hijriOffsetDays == offset)
+                    val offsetShape = RoundedCornerShape(8.dp)
                     Surface(
                         onClick = { onSetHijriOffset(offset) },
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier.tvFocusable()
+                        shape = ClickableSurfaceDefaults.shape(offsetShape),
+                        colors = tvSelectableSurfaceColors(selected = isSelected),
+                        border = tvSelectableSurfaceBorder(selected = isSelected, shape = offsetShape)
                     ) {
                         Text(
                             text = if (offset > 0) "+$offset" else "$offset",
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 15.sp,
-                                color = if (isSelected) Color.White else colorScheme.onSurface
+                                color = if (isSelected) AccentEmerald else colorScheme.onSurface
                             ),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
@@ -753,18 +712,16 @@ fun HomeSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                val rolloverShape = RoundedCornerShape(10.dp)
                 Card(
                     onClick = { onSetHijriChangeAtMidnight(false) },
                     colors = CardDefaults.colors(
-                        containerColor = if (!settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (!settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (!settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(rolloverShape),
+                    border = tvSelectableCardBorder(selected = !settings.hijriChangeAtMidnight, shape = rolloverShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -777,15 +734,12 @@ fun HomeSettingsScreen(
                 Card(
                     onClick = { onSetHijriChangeAtMidnight(true) },
                     colors = CardDefaults.colors(
-                        containerColor = if (settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(rolloverShape),
+                    border = tvSelectableCardBorder(selected = settings.hijriChangeAtMidnight, shape = rolloverShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -802,13 +756,13 @@ fun HomeSettingsScreen(
                 )
 
                 // 15-min Reminder Toggle
+                val reminderShape = RoundedCornerShape(10.dp)
                 Surface(
                     onClick = { onToggleReminder(!settings.prePrayerReminderEnabled) },
-                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
-                    colors = ClickableSurfaceDefaults.colors(
-                        containerColor = if (settings.prePrayerReminderEnabled) colorScheme.surfaceVariant else colorScheme.surface
-                    ),
-                    modifier = Modifier.tvFocusable()
+                    shape = ClickableSurfaceDefaults.shape(reminderShape),
+                    colors = tvSelectableSurfaceColors(selected = settings.prePrayerReminderEnabled),
+                    border = tvSelectableSurfaceBorder(selected = settings.prePrayerReminderEnabled, shape = reminderShape),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -891,19 +845,16 @@ fun HomeSettingsScreen(
                 ) {
                     val prayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
                     for (prayer in prayers) {
+                        val usbShape = RoundedCornerShape(6.dp)
                         Surface(
                             onClick = {
                                 pickerTargetPrayer = prayer
                                 activePickerKind = ImportKind.CUSTOM_ADHAN
                             },
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(6.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = colorScheme.surfaceVariant,
-                                focusedContainerColor = AccentGold
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
+                            shape = ClickableSurfaceDefaults.shape(usbShape),
+                            colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
+                            border = tvSelectableSurfaceBorder(shape = usbShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),

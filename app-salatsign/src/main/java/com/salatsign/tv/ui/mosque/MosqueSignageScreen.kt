@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -165,9 +168,12 @@ fun MosqueScheduleView(
                     )
                 } else if (nextPrayerItem != null) {
                     MosqueNextPrayerBanner(
+                        activePrayer = prayerTimes.activePrayer,
                         nextPrayer = nextPrayerItem,
                         countdown = prayerTimes.countdownFormatted,
+                        sunrise = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                         is24HourFormat = uiState.settings.is24HourFormat,
+                        showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1.3f)
@@ -204,21 +210,24 @@ fun MosqueActiveStrikeBanner(
         stringResource(prayer.prayer.labelRes())
     }
 
-    Card(
-        onClick = {},
-        colors = CardDefaults.colors(containerColor = colorScheme.surfaceVariant),
-        shape = CardDefaults.shape(RoundedCornerShape(20.dp)),
+    val strikeShape = RoundedCornerShape(20.dp)
+    Box(
         modifier = modifier
-            .pulsingGlow(shape = RoundedCornerShape(20.dp), glowColor = AccentEmerald)
+            .clip(strikeShape)
+            .background(colorScheme.surfaceVariant, strikeShape)
+            .pulsingGlow(shape = strikeShape, glowColor = AccentEmerald)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 40.dp, vertical = 24.dp),
+                .padding(horizontal = 32.dp, vertical = 20.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Row(
@@ -233,7 +242,7 @@ fun MosqueActiveStrikeBanner(
                         Text(
                             text = stringResource(R.string.mosque_strike_title),
                             style = TvTypography.BodyLabel.copy(
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -242,16 +251,18 @@ fun MosqueActiveStrikeBanner(
 
                     Text(
                         text = prayer.prayer.arabicName,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 32.sp)
+                        maxLines = 1,
+                        style = TvTypography.ArabicTitle.copy(fontSize = 28.sp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                    maxLines = 1,
                     style = TvTypography.HeaderTitle.copy(
-                        fontSize = 54.sp,
+                        fontSize = 44.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = colorScheme.onSurfaceVariant
                     )
@@ -263,20 +274,27 @@ fun MosqueActiveStrikeBanner(
                 if (formattedIqamah != null) {
                     Text(
                         text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
-                        style = TvTypography.Subtitle.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
+                        maxLines = 1,
+                        style = TvTypography.Subtitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = AccentEmerald)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
                 Text(
                     text = stringResource(R.string.mosque_strike_admonition),
-                    style = TvTypography.Subtitle.copy(fontSize = 22.sp, color = AccentGold)
+                    maxLines = 2,
+                    style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = AccentGold)
                 )
             }
 
             Text(
                 text = prayer.formattedTime(is24HourFormat),
-                style = TvTypography.ActivePrayerTime.copy(fontSize = 84.sp, color = AccentEmerald)
+                maxLines = 1,
+                softWrap = false,
+                style = TvTypography.ActivePrayerTime.copy(
+                    fontSize = if (is24HourFormat) 68.sp else 58.sp,
+                    color = AccentEmerald
+                )
             )
         }
     }
@@ -284,33 +302,46 @@ fun MosqueActiveStrikeBanner(
 
 @Composable
 fun MosqueNextPrayerBanner(
+    activePrayer: PrayerTimeItem? = null,
     nextPrayer: PrayerTimeItem,
     countdown: String,
+    sunrise: String,
     is24HourFormat: Boolean = false,
+    showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val prayerLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
+    val heroPrayer = activePrayer ?: nextPrayer
+    val isShowingCurrent = activePrayer != null
+    val heroLabel = if (heroPrayer.prayer == Prayer.ZUHUR && heroPrayer.isFriday) {
+        stringResource(R.string.prayer_jumuah)
+    } else {
+        stringResource(heroPrayer.prayer.labelRes())
+    }
+    val nextLabel = if (nextPrayer.prayer == Prayer.ZUHUR && nextPrayer.isFriday) {
         stringResource(R.string.prayer_jumuah)
     } else {
         stringResource(nextPrayer.prayer.labelRes())
     }
 
-    Card(
-        onClick = {},
-        colors = CardDefaults.colors(containerColor = colorScheme.surface),
-        shape = CardDefaults.shape(RoundedCornerShape(20.dp)),
+    val bannerShape = RoundedCornerShape(20.dp)
+    Box(
         modifier = modifier
-            .border(width = 1.5.dp, color = AccentEmerald.copy(alpha = 0.35f), shape = RoundedCornerShape(20.dp))
+            .clip(bannerShape)
+            .background(colorScheme.surfaceVariant, bannerShape)
+            .border(width = 1.5.dp, color = AccentEmerald.copy(alpha = 0.45f), shape = bannerShape)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 40.dp, vertical = 24.dp),
+                .padding(horizontal = 32.dp, vertical = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Row(
@@ -319,42 +350,54 @@ fun MosqueNextPrayerBanner(
                 ) {
                     Box(
                         modifier = Modifier
-                            .background(AccentEmerald.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .background(
+                                if (isShowingCurrent) AccentEmerald else AccentEmerald.copy(alpha = 0.2f),
+                                RoundedCornerShape(8.dp)
+                            )
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = stringResource(R.string.mosque_next_prayer_badge),
+                            text = if (isShowingCurrent) {
+                                stringResource(R.string.home_badge_active_prayer)
+                            } else {
+                                stringResource(R.string.mosque_next_prayer_badge)
+                            },
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = EmeraldLight
+                                color = if (isShowingCurrent) Color.White else EmeraldLight
                             )
                         )
                     }
 
-                    Text(
-                        text = nextPrayer.prayer.arabicName,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 26.sp)
-                    )
+                    if (showArabicPrayerNames) {
+                        Text(
+                            text = heroPrayer.prayer.arabicName,
+                            maxLines = 1,
+                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = prayerLabel,
+                    text = heroLabel,
+                    maxLines = 1,
                     style = TvTypography.HeaderTitle.copy(
-                        fontSize = 50.sp,
+                        fontSize = 42.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurface
+                        color = colorScheme.onSurfaceVariant
                     )
                 )
 
-                val secondaryNote = nextPrayer.secondaryTimeNote
+                val secondaryNote = heroPrayer.secondaryTimeNote
                 if (secondaryNote != null) {
                     Text(
                         text = secondaryNote,
+                        maxLines = 1,
                         style = TvTypography.Subtitle.copy(
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
                             color = AccentGold
                         )
@@ -365,35 +408,42 @@ fun MosqueNextPrayerBanner(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccessTime,
                             contentDescription = null,
                             tint = AccentGold,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                         Text(
-                            text = stringResource(R.string.mosque_countdown_to_prayer, countdown),
-                            style = TvTypography.CountdownText.copy(fontSize = 46.sp)
+                            text = if (isShowingCurrent) {
+                                "$nextLabel ${nextPrayer.formattedTime(is24HourFormat)} • $countdown"
+                            } else {
+                                stringResource(R.string.mosque_countdown_to_prayer, countdown)
+                            },
+                            maxLines = 1,
+                            softWrap = false,
+                            style = TvTypography.CountdownText.copy(fontSize = 24.sp)
                         )
                     }
 
-                    val formattedIqamah = nextPrayer.formattedIqamahTime(is24HourFormat)
+                    val formattedIqamah = heroPrayer.formattedIqamahTime(is24HourFormat)
                     if (formattedIqamah != null) {
                         Box(
                             modifier = Modifier
                                 .background(AccentEmerald.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
                                 text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
+                                maxLines = 1,
                                 style = TvTypography.BodyLabel.copy(
-                                    fontSize = 20.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AccentEmerald
                                 )
@@ -408,9 +458,37 @@ fun MosqueNextPrayerBanner(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = nextPrayer.formattedTime(is24HourFormat),
-                    style = TvTypography.ActivePrayerTime.copy(fontSize = 80.sp, color = colorScheme.onSurface)
+                    text = heroPrayer.formattedTime(is24HourFormat),
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.ActivePrayerTime.copy(
+                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .background(colorScheme.surface, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.WbSunny,
+                        contentDescription = null,
+                        tint = AccentGold,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.home_sunrise, sunrise),
+                        maxLines = 1,
+                        softWrap = false,
+                        style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                    )
+                }
             }
         }
     }

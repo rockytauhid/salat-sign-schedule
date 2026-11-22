@@ -40,7 +40,6 @@ fun MosqueIconPreset.labelRes(): Int {
     return when (this) {
         MosqueIconPreset.DOME_CRESCENT -> R.string.mosque_icon_dome_crescent
         MosqueIconPreset.MINARET -> R.string.mosque_icon_minaret
-        MosqueIconPreset.GEOMETRIC_STAR -> R.string.mosque_icon_geometric_star
         MosqueIconPreset.MIHRAB -> R.string.mosque_icon_mihrab
         MosqueIconPreset.CUSTOM -> R.string.mosque_icon_custom
     }

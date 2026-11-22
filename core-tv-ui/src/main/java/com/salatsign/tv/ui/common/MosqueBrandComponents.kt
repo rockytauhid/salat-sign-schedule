@@ -3,24 +3,24 @@
 
 package com.salatsign.tv.ui.common
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.DoorFront
-import androidx.compose.material.icons.filled.Mosque
-import androidx.compose.material.icons.filled.Stars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -61,45 +61,40 @@ fun MosqueEmblemIcon(
             contentScale = ContentScale.Crop
         )
     } else {
+        val circleBg = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) {
+            Color(0xFF0A241A)
+        } else {
+            AccentEmerald.copy(alpha = 0.12f)
+        }
         Box(
             modifier = modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
+                .background(circleBg)
+                .border(1.dp, AccentEmerald.copy(alpha = 0.30f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             val iconSize = (size.value * 0.58f).dp
             when (preset) {
                 MosqueIconPreset.DOME_CRESCENT -> {
-                    Icon(
-                        imageVector = Icons.Default.Mosque,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_mosque_dome),
                         contentDescription = stringResource(preset.labelRes()),
-                        tint = AccentEmerald,
-                        modifier = Modifier.size(iconSize)
+                        modifier = Modifier.size((size.value * 0.72f).dp)
                     )
                 }
                 MosqueIconPreset.MINARET -> {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalance,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_mosque_minaret),
                         contentDescription = stringResource(preset.labelRes()),
-                        tint = AccentEmerald,
-                        modifier = Modifier.size(iconSize)
-                    )
-                }
-                MosqueIconPreset.GEOMETRIC_STAR -> {
-                    Icon(
-                        imageVector = Icons.Default.Stars,
-                        contentDescription = stringResource(preset.labelRes()),
-                        tint = AccentGold,
-                        modifier = Modifier.size(iconSize)
+                        modifier = Modifier.size((size.value * 0.72f).dp)
                     )
                 }
                 MosqueIconPreset.MIHRAB -> {
-                    Icon(
-                        imageVector = Icons.Default.DoorFront,
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_mosque_mihrab),
                         contentDescription = stringResource(preset.labelRes()),
-                        tint = AccentEmerald,
-                        modifier = Modifier.size(iconSize)
+                        modifier = Modifier.size((size.value * 0.72f).dp)
                     )
                 }
                 MosqueIconPreset.CUSTOM -> {

@@ -16,26 +16,10 @@
         <item>Dzulhijjah</item>
     </string-array>
 
-    <!-- Mosque Name Presets Indonesian -->
-    <string-array name="mosque_name_presets">
-        <item>Masjid Raya</item>
-        <item>Masjid Agung</item>
-        <item>Masjid Al-Ikhlas</item>
-        <item>Masjid At-Taqwa</item>
-        <item>Masjid Al-Muhajirin</item>
-        <item>Masjid Baiturrahman</item>
-        <item>Masjid Al-Huda</item>
-        <item>Masjid Nurul Iman</item>
-        <item>Masjid Darussalam</item>
-        <item>Musholla Al-Barokah</item>
-    </string-array>
-
-    <!-- Mosque Subtitle Presets Indonesian -->
+    <!-- Mosque Subtitle / Tagline Presets Indonesian -->
     <string-array name="mosque_subtitle_presets">
-        <item>Luruskan dan Rapatkan Shaf</item>
-        <item>Harap Menonaktifkan Nada Dering Ponsel</item>
+        <item>Selamat Datang di Komunitas Kami</item>
         <item>Rapatkan Shaf Demi Kesempurnaan Shalat</item>
-        <item>Selamat Datang Jamaah Shalat</item>
-        <item>Jagalah Kebersihan &amp; Kesucian Masjid</item>
+        <item>Kebersihan adalah Sebagian dari Iman</item>
     </string-array>
 </resources>

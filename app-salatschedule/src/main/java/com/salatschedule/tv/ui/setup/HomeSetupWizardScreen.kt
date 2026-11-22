@@ -56,8 +56,10 @@ import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.PopularCityPresets
+import com.salatsign.tv.ui.common.CountryCitySelector
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
+import com.salatsign.tv.ui.common.tvSelectableCardBorder
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.TvTypography
@@ -172,45 +174,17 @@ fun HomeSetupWizardScreen(
             ) {
                 when (currentStep) {
                     1 -> {
-                        // Step 1: Location / City
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        // Step 1: Country -> City Location
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
                                 text = stringResource(R.string.wizard_step_location_title, 1, settings.cityName),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
-                            val scrollState = rememberScrollState()
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(scrollState),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                PopularCityPresets.forEachIndexed { idx, city ->
-                                    val selected = settings.cityName == city.name
-                                    Card(
-                                        onClick = { onSelectCity(city) },
-                                        colors = CardDefaults.colors(
-                                            containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
-                                        ),
-                                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                                        modifier = Modifier
-                                            .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
-                                            .tvFocusable()
-                                            .then(if (selected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier)
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Text(
-                                                text = city.name,
-                                                style = TvTypography.CardTitle.copy(fontSize = 17.sp, color = colorScheme.onSurface)
-                                            )
-                                            Text(
-                                                text = city.zoneId,
-                                                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.7f))
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                            CountryCitySelector(
+                                selectedCityName = settings.cityName,
+                                onSelectCity = onSelectCity,
+                                initialFocusRequester = initialFocusRequester
+                            )
                         }
                     }
 
@@ -229,52 +203,62 @@ fun HomeSetupWizardScreen(
                                 text = stringResource(R.string.wizard_step_method_title, 2),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = AccentGold)
                             )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            Column(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                methods.forEachIndexed { idx, (key, label) ->
-                                    val selected = settings.calculationMethodName.equals(key, ignoreCase = true)
-                                    Card(
-                                        onClick = { onSetCalculationMethod(key) },
-                                        colors = CardDefaults.colors(
-                                            containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
-                                        ),
-                                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                                        modifier = Modifier
-                                            .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
-                                            .tvFocusable()
-                                            .then(if (selected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier)
+                                methods.chunked(3).forEachIndexed { rowIdx, rowMethods ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        Text(
-                                            text = label,
-                                            style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface),
-                                            modifier = Modifier.padding(16.dp)
-                                        )
+                                        rowMethods.forEachIndexed { colIdx, (key, label) ->
+                                            val idx = rowIdx * 3 + colIdx
+                                            val selected = settings.calculationMethodName.equals(key, ignoreCase = true)
+                                            val shape = RoundedCornerShape(12.dp)
+                                            Card(
+                                                onClick = { onSetCalculationMethod(key) },
+                                                colors = CardDefaults.colors(
+                                                    containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
+                                                ),
+                                                shape = CardDefaults.shape(shape),
+                                                border = tvSelectableCardBorder(selected = selected, shape = shape),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    maxLines = 2,
+                                                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface),
+                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = stringResource(R.string.settings_section_madhab),
                                 style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = AccentGold)
                             )
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
                                 listOf("SHAFI" to stringResource(R.string.settings_madhab_standard), "HANAFI" to stringResource(R.string.settings_madhab_hanafi)).forEach { (key, label) ->
                                     val selected = settings.madhab.equals(key, ignoreCase = true)
+                                    val shape = RoundedCornerShape(12.dp)
                                     Card(
                                         onClick = { onSetMadhab(key) },
                                         colors = CardDefaults.colors(
                                             containerColor = if (selected) colorScheme.surfaceVariant else colorScheme.surface
                                         ),
-                                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .tvFocusable()
-                                            .then(if (selected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier)
+                                        shape = CardDefaults.shape(shape),
+                                        border = tvSelectableCardBorder(selected = selected, shape = shape),
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
                                             text = label,
@@ -289,6 +273,7 @@ fun HomeSetupWizardScreen(
 
                     3 -> {
                         // Step 3: 15-Minute Pre-Prayer Reminders
+                        val shape = RoundedCornerShape(14.dp)
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Text(
                                 text = stringResource(R.string.settings_section_home_reminders),
@@ -299,12 +284,11 @@ fun HomeSetupWizardScreen(
                                 colors = CardDefaults.colors(
                                     containerColor = if (settings.prePrayerReminderEnabled) colorScheme.surfaceVariant else colorScheme.surface
                                 ),
-                                shape = CardDefaults.shape(RoundedCornerShape(14.dp)),
+                                shape = CardDefaults.shape(shape),
+                                border = tvSelectableCardBorder(selected = settings.prePrayerReminderEnabled, shape = shape),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .focusRequester(initialFocusRequester)
-                                    .tvFocusable()
-                                    .then(if (settings.prePrayerReminderEnabled) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(14.dp)) else Modifier)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(20.dp),

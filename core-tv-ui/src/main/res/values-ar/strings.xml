@@ -31,7 +31,6 @@
     <!-- Mosque Icon Presets -->
     <string name="mosque_icon_dome_crescent">قبة وهلال</string>
     <string name="mosque_icon_minaret">مئذنة المسجد</string>
-    <string name="mosque_icon_geometric_star">نجمة ثمانية (ربع الحزب)</string>
     <string name="mosque_icon_mihrab">محراب إسلامي</string>
     <string name="mosque_icon_custom">شعار مخصص / ذاكرة USB</string>
 
@@ -88,7 +87,7 @@
     <string name="mosque_iqamah_prefix">الإقامة: %1$s</string>
     <string name="mosque_next_prayer_badge">الصلاة القادمة</string>
     <string name="mosque_countdown_to_prayer">الوقت المتبقي للصلاة: %1$s</string>
-    <string name="mosque_default_name">المسجد الكبير</string>
+    <string name="mosque_default_name">مسجدنا</string>
     <string name="mosque_default_subtitle">استووا وتراصوا</string>
     <string name="mosque_hold_ok_toast">اضغط مطولاً على موافق لمدة 3 ثوانٍ أو اضغط على القائمة لفتح الإعدادات</string>
 
@@ -145,8 +144,8 @@
 
     <!-- Settings Screen -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_subtitle_home">إعدادات الوضع المنزلي والشخصي</string>
-    <string name="settings_subtitle_mosque">إعدادات وضع المسجد (الشاشات الرقمية)</string>
+    <string name="settings_subtitle_home">إعدادات جدول أوقات الصلاة</string>
+    <string name="settings_subtitle_mosque">إعدادات الشاشة الرقمية للمسجد</string>
     <string name="settings_open_wizard">فتح معالج الإعداد الأولي</string>
     <string name="settings_pin_warning_title">تنبيه أمان: الرمز الافتراضي (0000) قيد الاستخدام</string>
     <string name="settings_pin_warning_desc">شاشة المسجد العامة متاحة للجميع، يرجى تعيين رمز PIN مخصص لحماية الإعدادات.</string>
@@ -224,18 +223,17 @@
 
     <!-- Setup Wizard -->
     <string name="wizard_welcome">مرحباً بك في SalatSign</string>
-    <string name="wizard_step_indicator">دليل الإعداد الأولي لتلفاز أندرويد (الخطوة %1$d من %2$d)</string>
+    <string name="wizard_step_indicator">دليل الإعداد الأولي (الخطوة %1$d من %2$d)</string>
     <string name="wizard_step_lang_title">الخطوة 1: اختيار لغة العرض</string>
     <string name="wizard_step_lang_desc">اختر لغتك المفضلة لواجهة التطبيق واللوحة الرقمية.</string>
     <string name="wizard_step_location_title">الخطوة %1$d: تحديد المدينة والمنطقة الزمنية (الحالية: %2$s)</string>
     <string name="wizard_step_method_title">الخطوة %1$d: طريقة الحساب والمذهب الفقهي</string>
-    <string name="wizard_step_mode_title">الخطوة %1$d: اختيار وضع استخدام التطبيق</string>
     <string name="wizard_step_pin_title">الخطوة %1$d: رمز حماية المسؤول (أمان الشاشة)</string>
     <string name="wizard_step_mosque_title">الخطوة %1$d: هوية وشعار المسجد</string>
-    <string name="wizard_mode_home_title">الوضع المنزلي (شخصي)</string>
-    <string name="wizard_mode_home_desc">أوقات الصلاة مع تصفح التقويم عبر جهاز التحكم، تنبيهات قبل الصلاة بـ 15 دقيقة، وصوت الأذان.</string>
-    <string name="wizard_mode_mosque_title">وضع المسجد (شاشات رقمية)</string>
-    <string name="wizard_mode_mosque_desc">شاشة إعلانات رقمية صامتة بيضاء بدون شعارات التطبيق، مع جدول الصلاة وشعار المسجد والشرائح.</string>
+    <string name="mosque_label_name">اسم المسجد</string>
+    <string name="mosque_label_icon">أيقونة المسجد</string>
+    <string name="mosque_label_tagline">شعار المسجد</string>
+    <string name="mosque_tagline_hint">مثال: أهلاً بكم في مسجدنا، استووا وتراصوا فإن تسوية الصف من تمام الصلاة، الطهور شطر الإيمان</string>
     <string name="wizard_mosque_silent_note">SalatSign صامت تماماً: لا يوجد تشغيل صوت أو إشعارات منبثقة.</string>
     <string name="wizard_pin_default_title">استخدام الرمز الافتراضي (0000)</string>
     <string name="wizard_pin_default_desc">الرمز الافتراضي هو 0000. يمكنك تغييره في أي وقت من الإعدادات.</string>
@@ -253,7 +251,7 @@
 
     <!-- Jumu'ah (Friday) Schedule -->
     <string name="settings_section_jumuah">جدول صلاة الجمعة</string>
-    <string name="settings_jumuah_desc">ضبط فترات ومواعيد صلاة الجمعة. يطبق في وضع المسجد فقط.</string>
+    <string name="settings_jumuah_desc">ضبط فترات ومواعيد صلاة الجمعة.</string>
     <string name="settings_jumuah_mode_title">طريقة حساب وقت الجمعة</string>
     <string name="settings_jumuah_mode_fixed">وقت ثابت على مدار العام</string>
     <string name="settings_jumuah_mode_fixed_desc">يقيم المسجد صلاة الجمعة في وقت محدد على مدار العام (مثلاً 1:00 م).</string>
@@ -274,6 +272,10 @@
     <string name="settings_jumuah_warning_after_asr">غير صالح: الفترة %1$s توافق أو بعد العصر (%2$s) في %3$s</string>
     <string name="wizard_step_jumuah_title">الخطوة %1$d: جدول صلاة الجمعة</string>
     <string name="wizard_btn_skip_jumuah">تخطي (يمكن ضبطه في الإعدادات)</string>
+    <string name="jumuah_add_second_sitting">+ إضافة فترة ثانية</string>
+    <string name="jumuah_remove_second_sitting">إزالة الفترة الثانية</string>
+    <string name="jumuah_no_schedule">بدون جدول للجمعة (استخدام الظهر القياسي)</string>
+    <string name="jumuah_enable_schedule">تفعيل جدول الجمعة</string>
 
     <!-- Local Phone Controller (LAN) -->
     <string name="settings_section_phone_controller">التحكم عبر الهاتف محلياً (LAN)</string>

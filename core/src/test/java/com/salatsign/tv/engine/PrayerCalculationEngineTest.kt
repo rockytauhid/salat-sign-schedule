@@ -385,7 +385,30 @@ class PrayerCalculationEngineTest {
         assertTrue("At 01:00 AM before Subuh, Isya must be active (24h continuous semantics)", isyaEarly.isActive)
         assertEquals(Prayer.SUBUH, timesEarly.nextPrayer?.prayer)
 
-        // 2. At 08:00 AM (between Subuh and Zuhur): Subuh is active
+        // 2a. Between Subuh and Sunrise: Subuh is active
+        val subuhTime = timesEarly.prayers.first { it.prayer == Prayer.SUBUH }.time!!
+        val sunriseTime = timesEarly.sunrise!!
+        val duringFajrZoned = ZonedDateTime.of(testDate, subuhTime.plusMinutes(15), zoneId)
+        val timesDuringFajr = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = duringFajrZoned
+        )
+        val subuhDuringFajr = timesDuringFajr.prayers.first { it.prayer == Prayer.SUBUH }
+        assertTrue("Between Subuh and Sunrise, Subuh must be active", subuhDuringFajr.isActive)
+        assertEquals(Prayer.SUBUH, timesDuringFajr.activePrayer?.prayer)
+        assertEquals(Prayer.ZUHUR, timesDuringFajr.nextPrayer?.prayer)
+
+        // 2b. At Sunrise and 08:00 AM (after Sunrise, before Zuhur): Subuh has ended; no active prayer
+        val atSunriseZoned = ZonedDateTime.of(testDate, sunriseTime, zoneId)
+        val timesAtSunrise = PrayerCalculationEngine.calculatePrayerTimesDay(
+            date = testDate,
+            config = config,
+            referenceZoned = atSunriseZoned
+        )
+        assertNull("At Sunrise, Subuh must have ended (no active prayer)", timesAtSunrise.activePrayer)
+        assertFalse("At Sunrise, Subuh isActive must be false", timesAtSunrise.prayers.first { it.prayer == Prayer.SUBUH }.isActive)
+
         val midMorningZoned = ZonedDateTime.of(testDate, LocalTime.of(8, 0), zoneId)
         val timesMidMorning = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = testDate,
@@ -393,7 +416,8 @@ class PrayerCalculationEngineTest {
             referenceZoned = midMorningZoned
         )
         val subuhMid = timesMidMorning.prayers.first { it.prayer == Prayer.SUBUH }
-        assertTrue("At 08:00 AM, Subuh must be active", subuhMid.isActive)
+        assertFalse("At 08:00 AM (after Sunrise), Subuh must no longer be active", subuhMid.isActive)
+        assertNull("Between Sunrise and Zuhur, activePrayer must be null", timesMidMorning.activePrayer)
         assertEquals(Prayer.ZUHUR, timesMidMorning.nextPrayer?.prayer)
 
         // 3. At 13:00 PM (between Zuhur and Ashr): Zuhur is active

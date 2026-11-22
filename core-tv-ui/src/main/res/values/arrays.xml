@@ -16,26 +16,10 @@
         <item>Dhu al-Hijjah</item>
     </string-array>
 
-    <!-- Mosque Name Presets English -->
-    <string-array name="mosque_name_presets">
-        <item>Grand Mosque</item>
-        <item>Central Mosque</item>
-        <item>Islamic Centre</item>
-        <item>Al-Ikhlas Mosque</item>
-        <item>At-Taqwa Mosque</item>
-        <item>Al-Muhajirin Mosque</item>
-        <item>Baiturrahman Mosque</item>
-        <item>Al-Huda Mosque</item>
-        <item>Nurul Iman Mosque</item>
-        <item>Darussalam Mosque</item>
-    </string-array>
-
-    <!-- Mosque Subtitle Presets English -->
+    <!-- Mosque Subtitle / Tagline Presets English -->
     <string-array name="mosque_subtitle_presets">
-        <item>Straighten and close the prayer rows</item>
-        <item>Please silence all mobile phones</item>
+        <item>Welcome to Our Community</item>
         <item>Keep rows aligned for perfection of prayer</item>
-        <item>Welcome to the congregation</item>
-        <item>Please maintain cleanliness of the mosque</item>
+        <item>Cleanliness is half of faith</item>
     </string-array>
 </resources>

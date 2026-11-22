@@ -31,7 +31,6 @@
     <!-- Mosque Icon Presets -->
     <string name="mosque_icon_dome_crescent">Kubah &amp; Bulan Sabit</string>
     <string name="mosque_icon_minaret">Menara Masjid</string>
-    <string name="mosque_icon_geometric_star">Bintang 8 (Rub el Hizb)</string>
     <string name="mosque_icon_mihrab">Mihrab Klasik</string>
     <string name="mosque_icon_custom">Logo Kustom / USB</string>
 
@@ -88,7 +87,7 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">MENUJU SHALAT BERIKUTNYA</string>
     <string name="mosque_countdown_to_prayer">Menuju Waktu Shalat: %1$s</string>
-    <string name="mosque_default_name">Masjid Raya</string>
+    <string name="mosque_default_name">Masjiduna</string>
     <string name="mosque_default_subtitle">Luruskan dan Rapatkan Shaf</string>
     <string name="mosque_hold_ok_toast">Tahan OK selama 3 detik atau tekan Menu untuk Pengaturan Admin</string>
 
@@ -145,8 +144,8 @@
 
     <!-- Settings Screen -->
     <string name="settings_title">Pengaturan</string>
-    <string name="settings_subtitle_home">Konfigurasi Penggunaan Mode Rumah (Personal)</string>
-    <string name="settings_subtitle_mosque">Konfigurasi Penggunaan Mode Masjid (Digital Signage)</string>
+    <string name="settings_subtitle_home">Konfigurasi Jadwal Shalat</string>
+    <string name="settings_subtitle_mosque">Konfigurasi Digital Signage Masjid</string>
     <string name="settings_open_wizard">Buka Setup Wizard</string>
     <string name="settings_pin_warning_title">Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan</string>
     <string name="settings_pin_warning_desc">Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.</string>
@@ -224,18 +223,17 @@
 
     <!-- Setup Wizard -->
     <string name="wizard_welcome">Selamat Datang di SalatSign</string>
-    <string name="wizard_step_indicator">Panduan Konfigurasi Awal Android TV (Langkah %1$d dari %2$d)</string>
+    <string name="wizard_step_indicator">Panduan Konfigurasi Awal (Langkah %1$d dari %2$d)</string>
     <string name="wizard_step_lang_title">Langkah 1: Pilih Bahasa Tampilan</string>
     <string name="wizard_step_lang_desc">Pilih bahasa pengantar antarmuka dan pengumuman aplikasi.</string>
     <string name="wizard_step_location_title">Langkah %1$d: Pilih Lokasi Kota &amp; Zona Waktu (Saat ini: %2$s)</string>
     <string name="wizard_step_method_title">Langkah %1$d: Metode Perhitungan &amp; Mazhab Waktu Shalat</string>
-    <string name="wizard_step_mode_title">Langkah %1$d: Pilih Mode Penggunaan Aplikasi</string>
     <string name="wizard_step_pin_title">Langkah %1$d: PIN Keamanan Admin (Pengaman TV)</string>
     <string name="wizard_step_mosque_title">Langkah %1$d: Identitas &amp; Simbol Masjid Anda</string>
-    <string name="wizard_mode_home_title">MODE RUMAH (Personal)</string>
-    <string name="wizard_mode_home_desc">Jadwal shalat interaktif keluarga dengan navigasi kalender remote TV, pengingat 15 menit, dan suara adhan.</string>
-    <string name="wizard_mode_mosque_title">MODE MASJID (Digital Signage)</string>
-    <string name="wizard_mode_mosque_desc">Tampilan layar digital signage masjid publik tanpa logo aplikasi, slideshow jadwal &amp; poster pengumuman.</string>
+    <string name="mosque_label_name">Nama Masjid</string>
+    <string name="mosque_label_icon">Ikon Masjid</string>
+    <string name="mosque_label_tagline">Slogan / Tagline Masjid</string>
+    <string name="mosque_tagline_hint">mis. Selamat Datang di Masjid Kami, Luruskan dan rapatkan shaf untuk kesempurnaan shalat, Kebersihan sebagian dari iman</string>
     <string name="wizard_mosque_silent_note">SalatSign sepenuhnya hening: tanpa pemutaran audio atau notifikasi pop-up.</string>
     <string name="wizard_pin_default_title">Gunakan PIN Bawaan (0000)</string>
     <string name="wizard_pin_default_desc">PIN default adalah 0000. Anda dapat mengubahnya kapan saja melalui menu Pengaturan.</string>
@@ -253,7 +251,7 @@
 
     <!-- Jumu'ah (Friday) Schedule -->
     <string name="settings_section_jumuah">Jadwal Shalat Jumat</string>
-    <string name="settings_jumuah_desc">Atur sesi dan waktu shalat Jumat. Hanya berlaku di Mode Masjid.</string>
+    <string name="settings_jumuah_desc">Atur sesi dan waktu shalat Jumat.</string>
     <string name="settings_jumuah_mode_title">Metode Waktu Shalat Jumat</string>
     <string name="settings_jumuah_mode_fixed">Waktu Jam Tetap</string>
     <string name="settings_jumuah_mode_fixed_desc">Masjid menyelenggarakan shalat Jumat pada jam dinding tetap sepanjang tahun (mis. 13:00).</string>
@@ -274,6 +272,10 @@
     <string name="settings_jumuah_warning_after_asr">Tidak Valid: Sesi %1$s melampaui Asr (%2$s) pada %3$s</string>
     <string name="wizard_step_jumuah_title">Langkah %1$d: Jadwal Shalat Jumat</string>
     <string name="wizard_btn_skip_jumuah">Lewati (Dapat diatur di Pengaturan)</string>
+    <string name="jumuah_add_second_sitting">+ Tambah Sesi 2</string>
+    <string name="jumuah_remove_second_sitting">Hapus Sesi 2</string>
+    <string name="jumuah_no_schedule">Tanpa Jadwal Jumat (Gunakan Zuhur Standar)</string>
+    <string name="jumuah_enable_schedule">Aktifkan Jadwal Jumat</string>
 
     <!-- Local Phone Controller (LAN) -->
     <string name="settings_section_phone_controller">Kontrol Ponsel Lokal (LAN)</string>

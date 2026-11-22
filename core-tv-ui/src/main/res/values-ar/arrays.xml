@@ -16,26 +16,10 @@
         <item>ذُو الحِجَّة</item>
     </string-array>
 
-    <!-- Mosque Name Presets Arabic -->
-    <string-array name="mosque_name_presets">
-        <item>المسجد الكبير</item>
-        <item>المسجد الجامع</item>
-        <item>مسجد الإخلاص</item>
-        <item>مسجد التقوى</item>
-        <item>مسجد المهاجرين</item>
-        <item>مسجد بيت الرحمن</item>
-        <item>مسجد الهدى</item>
-        <item>مسجد نور الإيمان</item>
-        <item>مسجد دار السلام</item>
-        <item>مصلى البركة</item>
-    </string-array>
-
-    <!-- Mosque Subtitle Presets Arabic -->
+    <!-- Mosque Subtitle / Tagline Presets Arabic -->
     <string-array name="mosque_subtitle_presets">
-        <item>استووا وتراصوا</item>
-        <item>يرجى إغلاق الهواتف المحمولة</item>
+        <item>مرحباً بكم في مجتمعنا</item>
         <item>سووا صفوفكم فإن تسوية الصف من تمام الصلاة</item>
-        <item>أهلاً وسهلاً بضيوف الرحمن</item>
-        <item>حافظوا على نظافة المسجد وطهارته</item>
+        <item>الطهور شطر الإيمان</item>
     </string-array>
 </resources>

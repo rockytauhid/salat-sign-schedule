@@ -5,6 +5,7 @@ package com.salatsign.tv.ui.common
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,12 +30,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -72,7 +77,8 @@ fun LiveClockHeader(
     onPreviousDay: () -> Unit = {},
     onNextDay: () -> Unit = {},
     onTodayClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    initialFocusRequester: FocusRequester? = null
 ) {
     val zone = remember(zoneId) {
         runCatching { ZoneId.of(zoneId) }.getOrDefault(ZoneId.systemDefault())
@@ -108,6 +114,9 @@ fun LiveClockHeader(
         if (isMosqueMode) {
             // White-Label Mosque Branding (Zero App Logos or App Titles)
             Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -117,20 +126,26 @@ fun LiveClockHeader(
                     size = 64.dp
                 )
 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     val displayName = mosqueName.ifBlank { stringResource(R.string.mosque_default_name) }
                     Text(
                         text = displayName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         style = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
                     )
                     if (mosqueSubtitle.isNotBlank()) {
                         Text(
                             text = mosqueSubtitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = AccentGold)
                         )
                     } else {
                         Text(
                             text = cityName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = TvTypography.HeaderTitle.copy(fontSize = 20.sp, color = colorScheme.onBackground.copy(alpha = 0.7f))
                         )
                     }
@@ -195,7 +210,10 @@ fun LiveClockHeader(
                                 containerColor = colorScheme.surface,
                                 focusedContainerColor = AccentEmerald
                             ),
-                            modifier = Modifier.tvFocusable()
+                            modifier = Modifier
+                                .then(if (initialFocusRequester != null) Modifier.focusRequester(initialFocusRequester) else Modifier)
+                                .tvFocusable()
+                                .pointerInput(onPreviousDay) { detectTapGestures { onPreviousDay() } }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -223,7 +241,9 @@ fun LiveClockHeader(
                                     containerColor = AccentGold,
                                     focusedContainerColor = AccentEmerald
                                 ),
-                                modifier = Modifier.tvFocusable()
+                                modifier = Modifier
+                                    .tvFocusable()
+                                    .pointerInput(onTodayClick) { detectTapGestures { onTodayClick() } }
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -255,7 +275,9 @@ fun LiveClockHeader(
                                 containerColor = colorScheme.surface,
                                 focusedContainerColor = AccentEmerald
                             ),
-                            modifier = Modifier.tvFocusable()
+                            modifier = Modifier
+                                .tvFocusable()
+                                .pointerInput(onNextDay) { detectTapGestures { onNextDay() } }
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -283,7 +305,9 @@ fun LiveClockHeader(
                                 containerColor = colorScheme.surface,
                                 focusedContainerColor = AccentEmerald
                             ),
-                            modifier = Modifier.tvFocusable()
+                            modifier = Modifier
+                                .tvFocusable()
+                                .pointerInput(onSettingsClick) { detectTapGestures { onSettingsClick() } }
                         ) {
                             Box(modifier = Modifier.padding(6.dp)) {
                                 Icon(

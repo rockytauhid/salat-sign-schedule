@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -56,7 +58,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
@@ -80,6 +84,8 @@ import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.JumuahMode
+import com.salatsign.tv.data.model.MAX_MOSQUE_NAME_LENGTH
+import com.salatsign.tv.data.model.MAX_MOSQUE_TAGLINE_LENGTH
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
@@ -88,13 +94,18 @@ import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.JumuahCalculator
 import com.salatsign.tv.engine.JumuahWarningReason
+import com.salatsign.tv.ui.common.CountryCitySelector
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
+import com.salatsign.tv.ui.common.TvEditableTextField
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
+import com.salatsign.tv.ui.common.tvSelectableCardBorder
+import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
+import com.salatsign.tv.ui.common.tvSelectableSurfaceColors
 import com.salatsign.tv.ui.picker.StorageFilePickerScreen
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
@@ -329,19 +340,16 @@ fun MosqueSettingsScreen(
                 ) {
                     for (lang in AppLanguage.entries) {
                         val isSelected = (settings.appLanguage == lang)
+                        val langShape = RoundedCornerShape(10.dp)
                         Card(
                             onClick = { onSetAppLanguage(lang) },
                             colors = CardDefaults.colors(
-                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(langShape),
+                            border = tvSelectableCardBorder(selected = isSelected, shape = langShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(12.dp),
@@ -454,19 +462,16 @@ fun MosqueSettingsScreen(
             ) {
                 for (mode in ThemeMode.entries) {
                     val isSelected = (settings.themeMode == mode)
+                    val themeShape = RoundedCornerShape(12.dp)
                     Card(
                         onClick = { onSetThemeMode(mode) },
                         colors = CardDefaults.colors(
-                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                            containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                            focusedContainerColor = colorScheme.surfaceVariant
                         ),
-                        shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
-                            .then(
-                                if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
-                                else Modifier
-                            )
+                        shape = CardDefaults.shape(themeShape),
+                        border = tvSelectableCardBorder(selected = isSelected, shape = themeShape),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Row(
                             modifier = Modifier.padding(14.dp),
@@ -506,35 +511,11 @@ fun MosqueSettingsScreen(
                 )
             }
 
-            val cityScrollState = rememberScrollState()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(cityScrollState),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                for (city in PopularCityPresets) {
-                    val isSelected = (settings.cityName.startsWith(city.name.split(",")[0]))
-                    Surface(
-                        onClick = { onSelectCity(city) },
-                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                        colors = ClickableSurfaceDefaults.colors(
-                            containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                            focusedContainerColor = AccentGold
-                        ),
-                        modifier = Modifier.tvFocusable()
-                    ) {
-                        Text(
-                            text = city.name,
-                            style = TvTypography.ButtonText.copy(
-                                fontSize = 15.sp,
-                                color = if (isSelected) Color.White else colorScheme.onSurface
-                            ),
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
+            CountryCitySelector(
+                selectedCityName = settings.cityName,
+                onSelectCity = onSelectCity,
+                scrollableCityGrid = false
+            )
 
             // Timezone Mismatch Warning (if TV clock zone differs from configured location zone)
             val currentZone = remember(settings.zoneId) {
@@ -630,18 +611,16 @@ fun MosqueSettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 val isHanafi = settings.madhab.equals("HANAFI", ignoreCase = true)
+                val madhabShape = RoundedCornerShape(12.dp)
                 Card(
                     onClick = { onSetMadhab("SHAFI") },
                     colors = CardDefaults.colors(
-                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (!isHanafi) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (!isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(madhabShape),
+                    border = tvSelectableCardBorder(selected = !isHanafi, shape = madhabShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -659,15 +638,12 @@ fun MosqueSettingsScreen(
                 Card(
                     onClick = { onSetMadhab("HANAFI") },
                     colors = CardDefaults.colors(
-                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (isHanafi) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (isHanafi) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(madhabShape),
+                    border = tvSelectableCardBorder(selected = isHanafi, shape = madhabShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -906,18 +882,16 @@ fun MosqueSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                val rolloverShape = RoundedCornerShape(10.dp)
                 Card(
                     onClick = { onSetHijriChangeAtMidnight(false) },
                     colors = CardDefaults.colors(
-                        containerColor = if (!settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (!settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (!settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(rolloverShape),
+                    border = tvSelectableCardBorder(selected = !settings.hijriChangeAtMidnight, shape = rolloverShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -930,15 +904,12 @@ fun MosqueSettingsScreen(
                 Card(
                     onClick = { onSetHijriChangeAtMidnight(true) },
                     colors = CardDefaults.colors(
-                        containerColor = if (settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface
+                        containerColor = if (settings.hijriChangeAtMidnight) colorScheme.surfaceVariant else colorScheme.surface,
+                        focusedContainerColor = colorScheme.surfaceVariant
                     ),
-                    shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                    modifier = Modifier
-                        .weight(1f)
-                        .tvFocusable()
-                        .then(
-                            if (settings.hijriChangeAtMidnight) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
-                        )
+                    shape = CardDefaults.shape(rolloverShape),
+                    border = tvSelectableCardBorder(selected = settings.hijriChangeAtMidnight, shape = rolloverShape),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -951,16 +922,16 @@ fun MosqueSettingsScreen(
 
             Row(modifier = Modifier.fillMaxWidth()) {
                     // Visual Strike Highlight toggle
+                    val strikeShape = RoundedCornerShape(10.dp)
                     Card(
                         onClick = { onSetShowStrikeHighlight(!settings.showStrikeHighlight) },
-                        colors = CardDefaults.colors(containerColor = colorScheme.surface),
-                        shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                        modifier = Modifier
-                            .weight(1f)
-                            .tvFocusable()
-                            .then(
-                                if (settings.showStrikeHighlight) Modifier.border(1.5.dp, AccentEmerald, RoundedCornerShape(10.dp)) else Modifier
-                            )
+                        colors = CardDefaults.colors(
+                            containerColor = if (settings.showStrikeHighlight) colorScheme.surfaceVariant else colorScheme.surface,
+                            focusedContainerColor = colorScheme.surfaceVariant
+                        ),
+                        shape = CardDefaults.shape(strikeShape),
+                        border = tvSelectableCardBorder(selected = settings.showStrikeHighlight, shape = strikeShape),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -1005,6 +976,7 @@ fun MosqueSettingsScreen(
                     val modes = listOf(JumuahMode.FIXED, JumuahMode.AFTER_ZUHR)
                     for (mode in modes) {
                         val isSelected = (settings.jumuahMode == mode)
+                        val modeShape = RoundedCornerShape(10.dp)
                         Card(
                             onClick = {
                                 onSetJumuahMode(mode)
@@ -1013,16 +985,12 @@ fun MosqueSettingsScreen(
                                 }
                             },
                             colors = CardDefaults.colors(
-                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(modeShape),
+                            border = tvSelectableCardBorder(selected = isSelected, shape = modeShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
@@ -1062,6 +1030,7 @@ fun MosqueSettingsScreen(
                             2 -> stringResource(R.string.settings_jumuah_sittings_2)
                             else -> stringResource(R.string.settings_jumuah_sittings_3)
                         }
+                        val countShape = RoundedCornerShape(8.dp)
                         Card(
                             onClick = {
                                 val newTimes = when (settings.jumuahMode) {
@@ -1083,16 +1052,12 @@ fun MosqueSettingsScreen(
                                 onSetJumuahTimes(newTimes)
                             },
                             colors = CardDefaults.colors(
-                                containerColor = if (isCountSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isCountSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(8.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isCountSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(8.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(countShape),
+                            border = tvSelectableCardBorder(selected = isCountSelected, shape = countShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -1151,10 +1116,11 @@ fun MosqueSettingsScreen(
                                 }
 
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val currentIndex = presetOptions.indexOf(timeValue).coerceAtLeast(0)
+                                    val stepShape = RoundedCornerShape(6.dp)
                                     Surface(
                                         onClick = {
                                             if (currentIndex > 0) {
@@ -1163,11 +1129,11 @@ fun MosqueSettingsScreen(
                                                 onSetJumuahTimes(mutable)
                                             }
                                         },
-                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
-                                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
-                                        modifier = Modifier.tvFocusable()
+                                        shape = ClickableSurfaceDefaults.shape(stepShape),
+                                        colors = tvSelectableSurfaceColors(selected = false),
+                                        border = tvSelectableSurfaceBorder(selected = false, shape = stepShape)
                                     ) {
-                                        Text("<", style = TvTypography.ButtonText.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                        Text("-15m", style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = colorScheme.onSurface), modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                                     }
 
                                     Surface(
@@ -1178,11 +1144,11 @@ fun MosqueSettingsScreen(
                                                 onSetJumuahTimes(mutable)
                                             }
                                         },
-                                        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(4.dp)),
-                                        colors = ClickableSurfaceDefaults.colors(containerColor = colorScheme.surfaceVariant),
-                                        modifier = Modifier.tvFocusable()
+                                        shape = ClickableSurfaceDefaults.shape(stepShape),
+                                        colors = tvSelectableSurfaceColors(selected = false),
+                                        border = tvSelectableSurfaceBorder(selected = false, shape = stepShape)
                                     ) {
-                                        Text(">", style = TvTypography.ButtonText.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                                        Text("+15m", style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = colorScheme.onSurface), modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
                                     }
                                 }
                             }
@@ -1243,19 +1209,16 @@ fun MosqueSettingsScreen(
                 ) {
                     for (preset in MosqueIconPreset.entries) {
                         val isSelected = (settings.mosqueIconPreset == preset)
+                        val iconShape = RoundedCornerShape(12.dp)
                         Card(
                             onClick = { onSetMosqueIconPreset(preset) },
                             colors = CardDefaults.colors(
-                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(12.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(12.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(iconShape),
+                            border = tvSelectableCardBorder(selected = isSelected, shape = iconShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -1308,42 +1271,28 @@ fun MosqueSettingsScreen(
                     }
                 }
 
-                // 5. Mosque Name & Font Selector
+                // 5. Mosque Name (Custom editable input, default Masjiduna) & Font Selector
                 Text(
-                    text = stringResource(R.string.settings_section_mosque_identity),
+                    text = stringResource(R.string.mosque_label_name),
                     style = TvTypography.CardTitle.copy(color = AccentGold)
                 )
 
-                val namePresets = stringArrayResource(R.array.mosque_name_presets)
-                val nameScrollState = rememberScrollState()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(nameScrollState),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    for (name in namePresets) {
-                        val isSelected = (settings.mosqueName == name)
-                        Surface(
-                            onClick = { onSetMosqueName(name) },
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                                focusedContainerColor = AccentGold
-                            ),
-                            modifier = Modifier.tvFocusable()
-                        ) {
-                            Text(
-                                text = name,
-                                style = TvTypography.ButtonText.copy(
-                                    fontSize = 15.sp,
-                                    color = if (isSelected) Color.White else colorScheme.onSurface
-                                ),
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
+                val defaultMosqueName = stringResource(R.string.mosque_default_name)
+                var mosqueNameInput by remember(settings.mosqueName) {
+                    mutableStateOf(settings.mosqueName.ifBlank { defaultMosqueName })
                 }
+
+                TvEditableTextField(
+                    value = mosqueNameInput,
+                    onValueChange = {
+                        mosqueNameInput = it
+                        onSetMosqueName(it.trim().ifBlank { defaultMosqueName })
+                    },
+                    placeholder = defaultMosqueName,
+                    accentUnfocusedBorder = true,
+                    maxLength = MAX_MOSQUE_NAME_LENGTH,
+                    textStyle = TvTypography.CardTitle.copy(fontSize = 17.sp)
+                )
 
                 Text(
                     text = stringResource(R.string.settings_section_mosque_font),
@@ -1356,19 +1305,16 @@ fun MosqueSettingsScreen(
                 ) {
                     for (font in MosqueFontPreset.entries) {
                         val isSelected = (settings.mosqueFontPreset == font)
+                        val fontShape = RoundedCornerShape(10.dp)
                         Card(
                             onClick = { onSetMosqueFontPreset(font) },
                             colors = CardDefaults.colors(
-                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface
+                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
                             ),
-                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
-                                .then(
-                                    if (isSelected) Modifier.border(2.dp, AccentEmerald, RoundedCornerShape(10.dp))
-                                    else Modifier
-                                )
+                            shape = CardDefaults.shape(fontShape),
+                            border = tvSelectableCardBorder(selected = isSelected, shape = fontShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
@@ -1391,37 +1337,25 @@ fun MosqueSettingsScreen(
                     }
                 }
 
-                // 6. Subtitle / Tagline Selector
-                val subtitlePresets = stringArrayResource(R.array.mosque_subtitle_presets)
-                val subtitleScrollState = rememberScrollState()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(subtitleScrollState),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    for (subtitle in subtitlePresets) {
-                        val isSelected = (settings.mosqueSubtitle == subtitle)
-                        Surface(
-                            onClick = { onSetMosqueSubtitle(subtitle) },
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = if (isSelected) AccentEmerald else colorScheme.surface,
-                                focusedContainerColor = AccentGold
-                            ),
-                            modifier = Modifier.tvFocusable()
-                        ) {
-                            Text(
-                                text = subtitle,
-                                style = TvTypography.ButtonText.copy(
-                                    fontSize = 14.sp,
-                                    color = if (isSelected) Color.White else colorScheme.onSurface
-                                ),
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                            )
-                        }
-                    }
-                }
+                // 6. Mosque Tagline (Editable input with example hint)
+                var subtitleInput by remember(settings.mosqueSubtitle) { mutableStateOf(settings.mosqueSubtitle) }
+
+                Text(
+                    text = stringResource(R.string.mosque_label_tagline),
+                    style = TvTypography.CardTitle.copy(fontSize = 18.sp, color = colorScheme.onSurface)
+                )
+
+                TvEditableTextField(
+                    value = subtitleInput,
+                    onValueChange = {
+                        subtitleInput = it
+                        onSetMosqueSubtitle(it)
+                    },
+                    placeholder = stringResource(R.string.mosque_tagline_hint),
+                    accentUnfocusedBorder = false,
+                    maxLength = MAX_MOSQUE_TAGLINE_LENGTH,
+                    textStyle = TvTypography.BodyLabel.copy(fontSize = 15.sp)
+                )
 
                 // 7. Slideshow & Signage Poster Timing
                 Text(

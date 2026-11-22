@@ -31,7 +31,6 @@
     <!-- Mosque Icon Presets -->
     <string name="mosque_icon_dome_crescent">Dome &amp; Crescent</string>
     <string name="mosque_icon_minaret">Mosque Minaret</string>
-    <string name="mosque_icon_geometric_star">8-Point Star (Rub el Hizb)</string>
     <string name="mosque_icon_mihrab">Classic Mihrab</string>
     <string name="mosque_icon_custom">Custom Logo / USB</string>
 
@@ -88,7 +87,7 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">APPROACHING NEXT PRAYER</string>
     <string name="mosque_countdown_to_prayer">Until Prayer Time: %1$s</string>
-    <string name="mosque_default_name">Grand Mosque</string>
+    <string name="mosque_default_name">Masjiduna</string>
     <string name="mosque_default_subtitle">Straighten and close the prayer rows</string>
     <string name="mosque_hold_ok_toast">Hold OK for 3 seconds or press Menu to open Admin Settings</string>
 
@@ -145,8 +144,8 @@
 
     <!-- Settings Screen -->
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle_home">Home Mode Configuration (Interactive)</string>
-    <string name="settings_subtitle_mosque">Mosque Mode Configuration (Digital Signage)</string>
+    <string name="settings_subtitle_home">Prayer Schedule Configuration</string>
+    <string name="settings_subtitle_mosque">Mosque Digital Signage Configuration</string>
     <string name="settings_open_wizard">Launch Setup Wizard</string>
     <string name="settings_pin_warning_title">Security Warning: Default PIN (0000) In Use</string>
     <string name="settings_pin_warning_desc">The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.</string>
@@ -224,18 +223,17 @@
 
     <!-- Setup Wizard -->
     <string name="wizard_welcome">Welcome to SalatSign</string>
-    <string name="wizard_step_indicator">Android TV Initial Setup Guide (Step %1$d of %2$d)</string>
+    <string name="wizard_step_indicator">Initial Setup Guide (Step %1$d of %2$d)</string>
     <string name="wizard_step_lang_title">Step 1: Select Display Language</string>
     <string name="wizard_step_lang_desc">Choose your preferred language for the interface and announcements.</string>
     <string name="wizard_step_location_title">Step %1$d: Select City Location &amp; Timezone (Currently: %2$s)</string>
     <string name="wizard_step_method_title">Step %1$d: Prayer Calculation Method &amp; Madhab</string>
-    <string name="wizard_step_mode_title">Step %1$d: Choose Application Usage Mode</string>
     <string name="wizard_step_pin_title">Step %1$d: Admin Security PIN (TV Protection)</string>
     <string name="wizard_step_mosque_title">Step %1$d: Your Mosque Identity &amp; Emblem</string>
-    <string name="wizard_mode_home_title">HOME / PERSONAL MODE</string>
-    <string name="wizard_mode_home_desc">Interactive prayer times with D-pad calendar navigation, 15m reminders, and customizable Adhan alerts.</string>
-    <string name="wizard_mode_mosque_title">MOSQUE MODE (Digital Signage)</string>
-    <string name="wizard_mode_mosque_desc">Silent white-label public signage with prayer schedule, custom mosque logo, and announcement slideshow.</string>
+    <string name="mosque_label_name">Mosque Name</string>
+    <string name="mosque_label_icon">Mosque Icon</string>
+    <string name="mosque_label_tagline">Mosque Tagline</string>
+    <string name="mosque_tagline_hint">e.g. Welcome to Our Community, Keep rows aligned for perfection of prayer, Cleanliness is half of faith</string>
     <string name="wizard_mosque_silent_note">SalatSign is strictly silent: no audio playback or notification popups.</string>
     <string name="wizard_pin_default_title">Use Default PIN (0000)</string>
     <string name="wizard_pin_default_desc">Default PIN is 0000. You can change it at any time in Settings.</string>
@@ -251,9 +249,9 @@
     <string name="home_adhan_silent_hint">No adhan audio installed: import one from USB or storage in Settings.</string>
     <string name="home_adhan_silent_hint_dismiss">Dismiss</string>
 
-    <!-- Jumu'ah (Friday) Schedule (Mosque Mode only) -->
+    <!-- Jumu'ah (Friday) Schedule -->
     <string name="settings_section_jumuah">Jumu\'ah (Friday) Schedule</string>
-    <string name="settings_jumuah_desc">Configure Friday prayer sittings and timings. Applied in Mosque Mode only.</string>
+    <string name="settings_jumuah_desc">Configure Friday prayer sittings and timings.</string>
     <string name="settings_jumuah_mode_title">Jumu\'ah Calculation Mode</string>
     <string name="settings_jumuah_mode_fixed">Fixed Clock Time</string>
     <string name="settings_jumuah_mode_fixed_desc">Mosque holds Jumu\'ah at fixed wall-clock times year-round (e.g. 1:00 pm).</string>
@@ -274,6 +272,10 @@
     <string name="settings_jumuah_warning_after_asr">Invalid: Sitting %1$s is on or after Asr (%2$s) on %3$s</string>
     <string name="wizard_step_jumuah_title">Step %1$d: Friday Jumu\'ah Schedule</string>
     <string name="wizard_btn_skip_jumuah">Skip (Configure later in Settings)</string>
+    <string name="jumuah_add_second_sitting">+ Add 2nd Sitting</string>
+    <string name="jumuah_remove_second_sitting">Remove 2nd Sitting</string>
+    <string name="jumuah_no_schedule">No Jumu\'ah Schedule (Use Standard Dhuhr)</string>
+    <string name="jumuah_enable_schedule">Enable Jumu\'ah Schedule</string>
 
     <!-- Local Phone Controller (LAN) -->
     <string name="settings_section_phone_controller">Local Phone Controller (LAN)</string>

@@ -445,9 +445,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     }
 
     override suspend fun updateMosqueBranding(name: String, subtitle: String, logoUri: String?) {
+        val clampedName = name.trim().take(com.salatsign.tv.data.model.MAX_MOSQUE_NAME_LENGTH)
+        val clampedSubtitle = subtitle.trim().take(com.salatsign.tv.data.model.MAX_MOSQUE_TAGLINE_LENGTH)
         context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.MOSQUE_NAME] = name
-            prefs[PreferencesKeys.MOSQUE_SUBTITLE] = subtitle
+            prefs[PreferencesKeys.MOSQUE_NAME] = clampedName
+            prefs[PreferencesKeys.MOSQUE_SUBTITLE] = clampedSubtitle
             if (logoUri != null) {
                 prefs[PreferencesKeys.MOSQUE_LOGO_URI] = logoUri
             } else {

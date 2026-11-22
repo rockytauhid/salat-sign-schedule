@@ -4,6 +4,7 @@
 package com.salatsign.tv.ui.common
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.Card
-import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
@@ -73,27 +73,25 @@ fun PrayerCard(
         stringResource(item.prayer.labelRes())
     }
 
-    val cardModifier = if (item.isActive) {
-        modifier
-            .pulsingGlow(shape = RoundedCornerShape(16.dp), glowColor = AccentEmerald)
-            .tvFocusable(shape = RoundedCornerShape(16.dp))
-    } else {
-        modifier.tvFocusable(shape = RoundedCornerShape(16.dp))
+    val shape = RoundedCornerShape(16.dp)
+    val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
+    val borderModifier = when {
+        item.isActive -> Modifier.pulsingGlow(shape = shape, glowColor = AccentEmerald)
+        item.isNext -> Modifier.border(width = 2.dp, color = AccentGold.copy(alpha = 0.85f), shape = shape)
+        else -> Modifier
     }
 
-    Card(
-        onClick = {},
-        colors = CardDefaults.colors(
-            containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface,
-            focusedContainerColor = colorScheme.surface
-        ),
-        shape = CardDefaults.shape(RoundedCornerShape(16.dp)),
-        modifier = cardModifier
+    // Non-focusable display panel: prayer cards are informational only
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(containerColor, shape)
+            .then(borderModifier)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -101,8 +99,9 @@ fun PrayerCard(
             if (showArabicPrayerNames) {
                 Text(
                     text = item.prayer.arabicName,
+                    maxLines = 1,
                     style = TvTypography.ArabicTitle.copy(
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         color = if (item.isNext) AccentGold else colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 )
@@ -113,23 +112,30 @@ fun PrayerCard(
             // Localized Name
             Text(
                 text = prayerLabel,
+                maxLines = 1,
                 style = TvTypography.CardTitle.copy(
+                    fontSize = 20.sp,
                     fontWeight = if (item.isNext) FontWeight.Bold else FontWeight.Medium,
                     color = colorScheme.onSurface
                 )
             )
 
-            // Prayer Time (Large TV typography)
+            // Prayer Time (Sized cleanly so 12h "12:30 pm" never wraps or clips in 5-column TV grid)
             Text(
                 text = item.formattedTime(is24HourFormat),
+                maxLines = 1,
+                softWrap = false,
                 style = if (item.isNext) {
                     TvTypography.InactivePrayerTime.copy(
-                        fontSize = 42.sp,
+                        fontSize = if (is24HourFormat) 32.sp else 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = AccentEmerald
                     )
                 } else {
-                    TvTypography.InactivePrayerTime.copy(color = colorScheme.onSurface)
+                    TvTypography.InactivePrayerTime.copy(
+                        fontSize = if (is24HourFormat) 28.sp else 24.sp,
+                        color = colorScheme.onSurface
+                    )
                 }
             )
 

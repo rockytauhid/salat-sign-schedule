@@ -300,6 +300,13 @@ object PrayerCalculationEngine {
                         break
                     }
                 }
+                // Fajr (Subuh) ends strictly at Sunrise; between Sunrise and Dhuhr no obligatory prayer is active
+                if (identifiedActivePrayer == Prayer.SUBUH &&
+                    cached.sunriseTime != null &&
+                    !referenceTime.isBefore(cached.sunriseTime)
+                ) {
+                    identifiedActivePrayer = null
+                }
             }
         }
 
