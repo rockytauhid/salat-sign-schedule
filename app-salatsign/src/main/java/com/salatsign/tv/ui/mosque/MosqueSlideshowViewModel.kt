@@ -8,13 +8,20 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.salatsign.core.tv.R
 import com.salatsign.tv.SalatSignApp
+import com.salatsign.tv.data.model.ActiveSilentState
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerConfig
 import com.salatsign.tv.data.model.PrayerTimesDay
+import com.salatsign.tv.data.model.SilentScreenConfig
+import com.salatsign.tv.data.model.SilentWindow
+import com.salatsign.tv.data.model.SilentWindowKind
 import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
+import com.salatsign.tv.engine.SilentScreenCalculator
 import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -38,13 +45,26 @@ sealed interface SlideState {
         val slide: AnnouncementSlide,
         val durationSeconds: Int
     ) : SlideState
+    data class SilentScreen(
+        val kind: SilentWindowKind
+    ) : SlideState
 }
 
 data class MosqueSignageUiState(
     val currentSlideState: SlideState = SlideState.PrayerSchedule(60),
     val prayerTimesDay: PrayerTimesDay? = null,
     val settings: AppSettings = AppSettings(),
-    val interruptedActivePrayer: Prayer? = null
+    val interruptedActivePrayer: Prayer? = null,
+    val activeSilentState: ActiveSilentState? = null
+)
+
+private data class SilentWindowsCacheKey(
+    val date: LocalDate,
+    val prayerConfig: PrayerConfig,
+    val silentConfig: SilentScreenConfig,
+    val jumuahMode: JumuahMode,
+    val jumuahTimes: List<String>,
+    val iqamahOffsets: Map<Prayer, Int>
 )
 
 class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(application) {
@@ -68,6 +88,44 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val _tickerTime = MutableStateFlow(LocalTime.now())
     private var slideshowLoopJob: Job? = null
     private val prayerDayCache = PrayerDayCache()
+
+    @Volatile
+    private var cachedSilentKey: SilentWindowsCacheKey? = null
+    @Volatile
+    private var cachedSilentWindows: List<SilentWindow> = emptyList()
+
+    private fun evaluateSilentScreen(settings: AppSettings, nowZoned: ZonedDateTime): ActiveSilentState? {
+        val zone = nowZoned.zone
+        val manualUntil = SilentScreenCalculator.manualUntilZoned(settings.silentScreen.manualSilentUntilEpochMillis, zone)
+        // Fast path: manual override does not even need scheduled window recomputation
+        if (manualUntil != null && nowZoned.isBefore(manualUntil)) {
+            return ActiveSilentState(kind = SilentWindowKind.MANUAL, until = manualUntil)
+        }
+        val key = SilentWindowsCacheKey(
+            date = nowZoned.toLocalDate(),
+            prayerConfig = settings.prayerConfig(),
+            silentConfig = settings.silentScreen.copy(manualSilentUntilEpochMillis = 0L),
+            jumuahMode = settings.jumuahMode,
+            jumuahTimes = settings.jumuahTimes,
+            iqamahOffsets = settings.iqamahOffsets()
+        )
+        val windows = if (cachedSilentKey == key) {
+            cachedSilentWindows
+        } else {
+            val computed = SilentScreenCalculator.silentScreenWindowsAround(
+                centerDate = key.date,
+                prayerConfig = key.prayerConfig,
+                silentConfig = key.silentConfig,
+                jumuahMode = key.jumuahMode,
+                jumuahTimes = key.jumuahTimes,
+                iqamahOffsets = key.iqamahOffsets
+            )
+            cachedSilentKey = key
+            cachedSilentWindows = computed
+            computed
+        }
+        return SilentScreenCalculator.activeSilentState(nowZoned, windows, manualUntil)
+    }
 
     private fun getPrayerTimesDay(settings: AppSettings, nowZoned: ZonedDateTime): PrayerTimesDay {
         val hijriMonthNames = runCatching {
@@ -113,6 +171,15 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
                 val prayerTimes = getPrayerTimesDay(settings, nowZoned)
 
+                // Highest priority: Silent Screen ("Jumu'ah / Prayer in progress")
+                val silentNow = evaluateSilentScreen(settings, nowZoned)
+                if (silentNow != null) {
+                    _interruptedActivePrayer.value = null
+                    _slideState.value = SlideState.SilentScreen(silentNow.kind)
+                    delay(1000)
+                    continue
+                }
+
                 // Check if currently within exact prayer strike window (5 minutes)
                 val strikingPrayer = evaluateStrike(prayerTimes, now, settings.showStrikeHighlight)
 
@@ -130,11 +197,21 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 val scheduleDuration = settings.scheduleDurationSeconds.coerceAtLeast(10)
                 _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
 
-                // Wait for scheduleDuration with 1-second interval checks for exact prayer strike
+                // Wait for scheduleDuration with 1-second interval checks for silent screen or exact prayer strike
+                var interruptedBySilent = false
                 for (sec in 0 until scheduleDuration) {
                     delay(1000)
-                    val currentNow = ZonedDateTime.now(zone).toLocalTime()
-                    val strike = evaluateStrike(prayerTimes, currentNow, settings.showStrikeHighlight)
+                    val tickSettings = settingsState.value
+                    val tickZone = runCatching { ZoneId.of(tickSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                    val tickNowZoned = ZonedDateTime.now(tickZone)
+                    val tickSilent = evaluateSilentScreen(tickSettings, tickNowZoned)
+                    if (tickSilent != null) {
+                        _interruptedActivePrayer.value = null
+                        _slideState.value = SlideState.SilentScreen(tickSilent.kind)
+                        interruptedBySilent = true
+                        break
+                    }
+                    val strike = evaluateStrike(prayerTimes, tickNowZoned.toLocalTime(), tickSettings.showStrikeHighlight)
 
                     if (strike != null) {
                         _interruptedActivePrayer.value = strike
@@ -142,7 +219,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                     }
                 }
 
-                if (_interruptedActivePrayer.value != null) {
+                if (interruptedBySilent || _interruptedActivePrayer.value != null) {
                     continue
                 }
 
@@ -159,6 +236,13 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                         val slideZone = runCatching { ZoneId.of(slideSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                         val slideNowZoned = ZonedDateTime.now(slideZone)
                         val slideNow = slideNowZoned.toLocalTime()
+
+                        val startSilent = evaluateSilentScreen(slideSettings, slideNowZoned)
+                        if (startSilent != null) {
+                            _interruptedActivePrayer.value = null
+                            _slideState.value = SlideState.SilentScreen(startSilent.kind)
+                            break
+                        }
 
                         val slidePrayerTimes = getPrayerTimesDay(slideSettings, slideNowZoned)
 
@@ -178,17 +262,26 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                             durationSeconds = slideDuration
                         )
 
-                        // Wait for slideDuration with exact strike interruption check
+                        // Wait for slideDuration with silent-screen and exact-strike interruption check
                         var interrupted = false
                         for (sec in 0 until slideDuration) {
                             delay(1000)
-                            val currentNow = ZonedDateTime.now(slideZone).toLocalTime()
-                            val strike = evaluateStrike(slidePrayerTimes, currentNow, slideSettings.showStrikeHighlight)
+                            val tickSettings = settingsState.value
+                            val tickZone = runCatching { ZoneId.of(tickSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+                            val tickNowZoned = ZonedDateTime.now(tickZone)
+                            val tickSilent = evaluateSilentScreen(tickSettings, tickNowZoned)
+                            if (tickSilent != null) {
+                                _interruptedActivePrayer.value = null
+                                _slideState.value = SlideState.SilentScreen(tickSilent.kind)
+                                interrupted = true
+                                break
+                            }
+                            val strike = evaluateStrike(slidePrayerTimes, tickNowZoned.toLocalTime(), tickSettings.showStrikeHighlight)
 
                             if (strike != null) {
                                 // Silent Exact-Time Interruption: Cancel slide immediately and return to schedule
                                 _interruptedActivePrayer.value = strike
-                                _slideState.value = SlideState.PrayerSchedule(slideSettings.scheduleDurationSeconds.coerceAtLeast(10))
+                                _slideState.value = SlideState.PrayerSchedule(tickSettings.scheduleDurationSeconds.coerceAtLeast(10))
                                 interrupted = true
                                 break
                             }
@@ -213,13 +306,23 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
         val nowZoned = ZonedDateTime.now(zone)
 
         val prayerTimes = getPrayerTimesDay(settings, nowZoned)
-        val updatedPrayers = applyActivePrayerOverride(prayerTimes, activePrayer)
+        val silentActive = evaluateSilentScreen(settings, nowZoned)
+        val effectiveSlide = if (silentActive != null) {
+            SlideState.SilentScreen(silentActive.kind)
+        } else if (currentSlide is SlideState.SilentScreen) {
+            SlideState.PrayerSchedule(settings.scheduleDurationSeconds.coerceAtLeast(10))
+        } else {
+            currentSlide
+        }
+        val effectiveActivePrayer = if (silentActive != null) null else activePrayer
+        val updatedPrayers = applyActivePrayerOverride(prayerTimes, effectiveActivePrayer)
 
         MosqueSignageUiState(
-            currentSlideState = currentSlide,
+            currentSlideState = effectiveSlide,
             prayerTimesDay = prayerTimes.copy(prayers = updatedPrayers),
             settings = settings,
-            interruptedActivePrayer = activePrayer
+            interruptedActivePrayer = effectiveActivePrayer,
+            activeSilentState = silentActive
         )
     }.stateIn(
         scope = viewModelScope,

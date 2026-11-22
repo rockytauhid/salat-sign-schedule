@@ -15,9 +15,12 @@ import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.SlideContainer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.engine.CopyPrayerSilentResult
+import com.salatsign.tv.engine.SilentScreenCalculator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -194,6 +197,41 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     fun setJumuahTimes(times: List<String>) {
         viewModelScope.launch { repository.setJumuahTimes(times) }
+    }
+
+    fun setSilentJumuahEnabled(enabled: Boolean) {
+        viewModelScope.launch { repository.setSilentJumuahEnabled(enabled) }
+    }
+
+    fun setSilentJumuahLeadMinutes(minutes: Int) {
+        viewModelScope.launch { repository.setSilentJumuahLeadMinutes(minutes) }
+    }
+
+    fun setSilentJumuahDurationMinutes(minutes: Int) {
+        viewModelScope.launch { repository.setSilentJumuahDurationMinutes(minutes) }
+    }
+
+    fun setSilentDailyPrayerConfig(prayer: Prayer, config: PrayerSilentConfig) {
+        val currentIqamah = settings.value.iqamahFor(prayer)
+        val canEnable = SilentScreenCalculator.canEnableDailySilent(config.anchor, currentIqamah)
+        val safeConfig = config.sanitized().let { if (!canEnable) it.copy(enabled = false) else it }
+        viewModelScope.launch { repository.setSilentDailyPrayerConfig(prayer, safeConfig) }
+    }
+
+    fun copySilentSettingsToAllPrayers(source: PrayerSilentConfig): CopyPrayerSilentResult {
+        val result = SilentScreenCalculator.copySettingsToAllPrayers(source, settings.value.iqamahOffsets())
+        viewModelScope.launch { repository.setSilentDailyPrayerConfigs(result.updatedPrayers) }
+        return result
+    }
+
+    fun startManualSilentScreen(durationMinutes: Int) {
+        val clamped = durationMinutes.coerceIn(1, 120)
+        val until = System.currentTimeMillis() + clamped * 60_000L
+        viewModelScope.launch { repository.setManualSilentUntil(until) }
+    }
+
+    fun stopManualSilentScreen() {
+        viewModelScope.launch { repository.setManualSilentUntil(0L) }
     }
 
     fun completeSetup() {

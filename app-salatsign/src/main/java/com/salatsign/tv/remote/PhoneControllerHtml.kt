@@ -36,8 +36,13 @@ object PhoneControllerHtml {
   button { width: 100%; margin-top: 12px; padding: 11px 14px; border: 0; border-radius: 10px; background: var(--emerald); color: #052014; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
   button.secondary { background: #1c3f30; color: var(--text); }
   button.danger { background: var(--danger); color: #fff; width: auto; padding: 6px 12px; margin-top: 0; font-size: 0.85rem; }
+  button.danger-full { background: var(--danger); color: #fff; width: 100%; margin-top: 10px; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .row5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
+  .pill.active { background: #7f1d1d; color: #fecaca; }
+  .pill.idle { background: #1c3f30; color: #a7f3d0; }
   .slide-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: #071912; border: 1px solid var(--border); margin-top: 8px; }
   .slide-meta { font-size: 0.82rem; color: var(--muted); }
   .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.9rem; display: none; }
@@ -60,6 +65,18 @@ object PhoneControllerHtml {
   </div>
 
   <div id="app" class="hidden">
+    <div class="card">
+      <h2>Silent Screen (Manual Control)</h2>
+      <div id="silentStatus" class="pill idle">Inactive</div>
+      <div class="slide-meta">Immediately show "Prayer in progress" on the TV (overrides schedule and slides).</div>
+      <div class="row3">
+        <button onclick="startSilent(15)">Show 15 min</button>
+        <button onclick="startSilent(30)">Show 30 min</button>
+        <button onclick="startSilent(45)">Show 45 min</button>
+      </div>
+      <button id="stopSilentBtn" class="danger-full hidden" onclick="stopSilent()">Stop Silent Screen Now</button>
+    </div>
+
     <div class="card">
       <h2>Mosque Branding &amp; Logo</h2>
       <label>Mosque Name</label>
@@ -205,9 +222,45 @@ async function loadAll() {
     document.getElementById('iqAshr').value = d.iqamahAshr || 0;
     document.getElementById('iqMagrib').value = d.iqamahMagrib || 0;
     document.getElementById('iqIsya').value = d.iqamahIsya || 0;
+    updateSilentUi(!!d.manualSilentActive, d.manualSilentRemainingMinutes || 0);
   }
   const sl = await api('/api/v1/slides');
   if (sl.ok) renderSlides(sl.data.slides || []);
+}
+function updateSilentUi(active, remainingMinutes) {
+  const badge = document.getElementById('silentStatus');
+  const stopBtn = document.getElementById('stopSilentBtn');
+  if (active) {
+    badge.className = 'pill active';
+    badge.textContent = 'Active • ' + remainingMinutes + ' min remaining';
+    stopBtn.classList.remove('hidden');
+  } else {
+    badge.className = 'pill idle';
+    badge.textContent = 'Inactive';
+    stopBtn.classList.add('hidden');
+  }
+}
+async function startSilent(minutes) {
+  const res = await api('/api/v1/silent/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ durationMinutes: minutes })
+  });
+  if (res.ok) {
+    updateSilentUi(true, res.data.manualSilentRemainingMinutes || minutes);
+    showMsg('Silent screen started for ' + minutes + ' minutes.', true);
+  } else {
+    showMsg(res.data.message || 'Failed to start silent screen.', false);
+  }
+}
+async function stopSilent() {
+  const res = await api('/api/v1/silent/stop', { method: 'POST' });
+  if (res.ok) {
+    updateSilentUi(false, 0);
+    showMsg('Silent screen stopped.', true);
+  } else {
+    showMsg(res.data.message || 'Failed to stop silent screen.', false);
+  }
 }
 function renderSlides(slides) {
   const list = document.getElementById('slidesList');

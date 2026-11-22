@@ -183,6 +183,8 @@ class SalatSignLocalServer(
         return when {
             method == "GET" && path == "/api/v1/settings" -> handleGetSettings()
             method == "PATCH" && path == "/api/v1/settings" -> handlePatchSettings(req)
+            method == "POST" && path == "/api/v1/silent/start" -> handleStartManualSilent(req)
+            method == "POST" && path == "/api/v1/silent/stop" -> handleStopManualSilent()
             method == "GET" && path == "/api/v1/slides" -> handleGetSlides()
             method == "POST" && path == "/api/v1/slides/text" -> handleAddTextSlide(req)
             method == "POST" && path == "/api/v1/slides/image" -> handleAddImageSlide(req)
@@ -265,6 +267,9 @@ class SalatSignLocalServer(
 
     private suspend fun handleGetSettings(): HttpResponse {
         val s = settingsRepository.appSettingsFlow.first()
+        val now = nowMillisProvider()
+        val manualUntil = s.silentScreen.manualSilentUntilEpochMillis
+        val manualActive = manualUntil > now
         return jsonResponse(
             200, "OK",
             mapOf(
@@ -285,7 +290,38 @@ class SalatSignLocalServer(
                 "iqamahZuhur" to s.iqamahZuhur,
                 "iqamahAshr" to s.iqamahAshr,
                 "iqamahMagrib" to s.iqamahMagrib,
-                "iqamahIsya" to s.iqamahIsya
+                "iqamahIsya" to s.iqamahIsya,
+                "manualSilentUntilEpochMillis" to if (manualActive) manualUntil else 0L,
+                "manualSilentActive" to manualActive,
+                "manualSilentRemainingMinutes" to if (manualActive) (((manualUntil - now) + 59_999L) / 60_000L) else 0L
+            )
+        )
+    }
+
+    private suspend fun handleStartManualSilent(req: HttpRequest): HttpResponse {
+        val body = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
+        val durationMinutes = ((body["durationMinutes"] as? Number)?.toInt() ?: 15).coerceIn(1, 120)
+        val until = nowMillisProvider() + durationMinutes * 60_000L
+        settingsRepository.setManualSilentUntil(until)
+        return jsonResponse(
+            200, "OK",
+            mapOf(
+                "manualSilentActive" to true,
+                "manualSilentUntilEpochMillis" to until,
+                "durationMinutes" to durationMinutes,
+                "manualSilentRemainingMinutes" to durationMinutes
+            )
+        )
+    }
+
+    private suspend fun handleStopManualSilent(): HttpResponse {
+        settingsRepository.setManualSilentUntil(0L)
+        return jsonResponse(
+            200, "OK",
+            mapOf(
+                "manualSilentActive" to false,
+                "manualSilentUntilEpochMillis" to 0L,
+                "manualSilentRemainingMinutes" to 0
             )
         )
     }

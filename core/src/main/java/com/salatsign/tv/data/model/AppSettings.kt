@@ -256,7 +256,9 @@ data class AppSettings(
     val pinHashHex: String = "",
     val pinFailedAttempts: Int = 0,
     val pinLockedUntilEpochMillis: Long = 0L,
-    val defaultPinPromptDismissed: Boolean = false
+    val defaultPinPromptDismissed: Boolean = false,
+    // Silent Screen ("Jumu'ah / Prayer in progress") - SalatSign Mosque Mode only
+    val silentScreen: SilentScreenConfig = SilentScreenConfig()
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

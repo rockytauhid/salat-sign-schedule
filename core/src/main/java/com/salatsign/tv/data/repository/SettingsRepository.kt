@@ -25,6 +25,9 @@ import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerSilentConfig
+import com.salatsign.tv.data.model.SilentAnchor
+import com.salatsign.tv.data.model.SilentScreenConfig
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.security.PinHasher
 import kotlinx.coroutines.flow.Flow
@@ -104,6 +107,16 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val APP_LANGUAGE = stringPreferencesKey("app_language")
         val IS_24_HOUR_FORMAT = booleanPreferencesKey("is_24_hour_format")
         val SHOW_ARABIC_PRAYER_NAMES = booleanPreferencesKey("show_arabic_prayer_names")
+
+        // Silent Screen keys (SalatSign Mosque Mode only)
+        val SILENT_JUMUAH_ENABLED = booleanPreferencesKey("silent_jumuah_enabled")
+        val SILENT_JUMUAH_LEAD_MINUTES = intPreferencesKey("silent_jumuah_lead_minutes")
+        val SILENT_JUMUAH_DURATION_MINUTES = intPreferencesKey("silent_jumuah_duration_minutes")
+        val MANUAL_SILENT_UNTIL_EPOCH_MILLIS = longPreferencesKey("manual_silent_until_epoch_millis")
+        fun silentPrayerEnabledKey(prayer: Prayer) = booleanPreferencesKey("silent_enabled_${prayer.id}")
+        fun silentPrayerAnchorKey(prayer: Prayer) = stringPreferencesKey("silent_anchor_${prayer.id}")
+        fun silentPrayerLeadKey(prayer: Prayer) = intPreferencesKey("silent_lead_${prayer.id}")
+        fun silentPrayerDurationKey(prayer: Prayer) = intPreferencesKey("silent_duration_${prayer.id}")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -189,6 +202,38 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val pinLockedUntil = preferences[PreferencesKeys.PIN_LOCKED_UNTIL_EPOCH_MILLIS] ?: 0L
             val defaultPinPromptDismissed = preferences[PreferencesKeys.DEFAULT_PIN_PROMPT_DISMISSED] ?: false
 
+            val silentJumuahEnabled = preferences[PreferencesKeys.SILENT_JUMUAH_ENABLED] ?: true
+            val silentJumuahLead = (preferences[PreferencesKeys.SILENT_JUMUAH_LEAD_MINUTES] ?: 0)
+                .coerceIn(SilentScreenConfig.MIN_LEAD_MINUTES, SilentScreenConfig.MAX_LEAD_MINUTES)
+            val silentJumuahDuration = (preferences[PreferencesKeys.SILENT_JUMUAH_DURATION_MINUTES]
+                ?: SilentScreenConfig.DEFAULT_JUMUAH_DURATION_MINUTES)
+                .coerceIn(SilentScreenConfig.MIN_JUMUAH_DURATION_MINUTES, SilentScreenConfig.MAX_JUMUAH_DURATION_MINUTES)
+            val manualSilentUntil = (preferences[PreferencesKeys.MANUAL_SILENT_UNTIL_EPOCH_MILLIS] ?: 0L)
+                .coerceAtLeast(0L)
+            val silentDailyMap = Prayer.entries.associateWith { prayer ->
+                val enabled = preferences[PreferencesKeys.silentPrayerEnabledKey(prayer)] ?: false
+                val anchorStr = preferences[PreferencesKeys.silentPrayerAnchorKey(prayer)] ?: SilentAnchor.IQAMAH.name
+                val anchor = runCatching { SilentAnchor.valueOf(anchorStr) }.getOrDefault(SilentAnchor.IQAMAH)
+                val lead = (preferences[PreferencesKeys.silentPrayerLeadKey(prayer)] ?: 0)
+                    .coerceIn(PrayerSilentConfig.MIN_LEAD_MINUTES, PrayerSilentConfig.MAX_LEAD_MINUTES)
+                val duration = (preferences[PreferencesKeys.silentPrayerDurationKey(prayer)]
+                    ?: PrayerSilentConfig.DEFAULT_DURATION_MINUTES)
+                    .coerceIn(PrayerSilentConfig.MIN_DURATION_MINUTES, PrayerSilentConfig.MAX_DURATION_MINUTES)
+                PrayerSilentConfig(
+                    enabled = enabled,
+                    anchor = anchor,
+                    leadMinutes = lead,
+                    durationMinutes = duration
+                )
+            }
+            val silentScreenConfig = SilentScreenConfig(
+                jumuahEnabled = silentJumuahEnabled,
+                jumuahLeadMinutes = silentJumuahLead,
+                jumuahDurationMinutes = silentJumuahDuration,
+                dailyPrayers = silentDailyMap,
+                manualSilentUntilEpochMillis = manualSilentUntil
+            )
+
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
@@ -241,7 +286,8 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 pinFailedAttempts = pinFailedAttempts,
                 pinLockedUntilEpochMillis = pinLockedUntil,
                 defaultPinPromptDismissed = defaultPinPromptDismissed,
-                adhanHintDismissed = adhanHintDismissed
+                adhanHintDismissed = adhanHintDismissed,
+                silentScreen = silentScreenConfig
             )
         }
 
@@ -375,6 +421,13 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 Prayer.ASHR -> prefs[PreferencesKeys.IQAMAH_ASHR] = clamped
                 Prayer.MAGRIB -> prefs[PreferencesKeys.IQAMAH_MAGRIB] = clamped
                 Prayer.ISYA -> prefs[PreferencesKeys.IQAMAH_ISYA] = clamped
+            }
+            if (clamped == 0) {
+                val anchorStr = prefs[PreferencesKeys.silentPrayerAnchorKey(prayer)] ?: SilentAnchor.IQAMAH.name
+                val anchor = runCatching { SilentAnchor.valueOf(anchorStr) }.getOrDefault(SilentAnchor.IQAMAH)
+                if (anchor == SilentAnchor.IQAMAH) {
+                    prefs[PreferencesKeys.silentPrayerEnabledKey(prayer)] = false
+                }
             }
         }
     }
@@ -579,6 +632,54 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.FRIDAY_ADHAN_TIMING] = timing.name
+        }
+    }
+
+    override suspend fun setSilentJumuahEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SILENT_JUMUAH_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setSilentJumuahLeadMinutes(minutes: Int) {
+        val clamped = minutes.coerceIn(SilentScreenConfig.MIN_LEAD_MINUTES, SilentScreenConfig.MAX_LEAD_MINUTES)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SILENT_JUMUAH_LEAD_MINUTES] = clamped
+        }
+    }
+
+    override suspend fun setSilentJumuahDurationMinutes(minutes: Int) {
+        val clamped = minutes.coerceIn(SilentScreenConfig.MIN_JUMUAH_DURATION_MINUTES, SilentScreenConfig.MAX_JUMUAH_DURATION_MINUTES)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SILENT_JUMUAH_DURATION_MINUTES] = clamped
+        }
+    }
+
+    override suspend fun setSilentDailyPrayerConfig(prayer: Prayer, config: PrayerSilentConfig) {
+        val clean = config.sanitized()
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.silentPrayerEnabledKey(prayer)] = clean.enabled
+            prefs[PreferencesKeys.silentPrayerAnchorKey(prayer)] = clean.anchor.name
+            prefs[PreferencesKeys.silentPrayerLeadKey(prayer)] = clean.leadMinutes
+            prefs[PreferencesKeys.silentPrayerDurationKey(prayer)] = clean.durationMinutes
+        }
+    }
+
+    override suspend fun setSilentDailyPrayerConfigs(configs: Map<Prayer, PrayerSilentConfig>) {
+        context.dataStore.edit { prefs ->
+            for ((prayer, cfg) in configs) {
+                val clean = cfg.sanitized()
+                prefs[PreferencesKeys.silentPrayerEnabledKey(prayer)] = clean.enabled
+                prefs[PreferencesKeys.silentPrayerAnchorKey(prayer)] = clean.anchor.name
+                prefs[PreferencesKeys.silentPrayerLeadKey(prayer)] = clean.leadMinutes
+                prefs[PreferencesKeys.silentPrayerDurationKey(prayer)] = clean.durationMinutes
+            }
+        }
+    }
+
+    override suspend fun setManualSilentUntil(epochMillis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.MANUAL_SILENT_UNTIL_EPOCH_MILLIS] = epochMillis.coerceAtLeast(0L)
         }
     }
 }

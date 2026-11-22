@@ -14,6 +14,7 @@ import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.SlideContainer
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
@@ -99,6 +100,25 @@ class SalatSignLocalServerTest {
         override suspend fun setJumuahMode(mode: JumuahMode) { state.value = state.value.copy(jumuahMode = mode) }
         override suspend fun setJumuahTimes(times: List<String>) { state.value = state.value.copy(jumuahTimes = times) }
         override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {}
+        override suspend fun setSilentJumuahEnabled(enabled: Boolean) {
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(jumuahEnabled = enabled))
+        }
+        override suspend fun setSilentJumuahLeadMinutes(minutes: Int) {
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(jumuahLeadMinutes = minutes))
+        }
+        override suspend fun setSilentJumuahDurationMinutes(minutes: Int) {
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(jumuahDurationMinutes = minutes))
+        }
+        override suspend fun setSilentDailyPrayerConfig(prayer: Prayer, config: PrayerSilentConfig) {
+            val updated = state.value.silentScreen.dailyPrayers.toMutableMap().apply { put(prayer, config) }
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(dailyPrayers = updated))
+        }
+        override suspend fun setSilentDailyPrayerConfigs(configs: Map<Prayer, PrayerSilentConfig>) {
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(dailyPrayers = configs))
+        }
+        override suspend fun setManualSilentUntil(epochMillis: Long) {
+            state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(manualSilentUntilEpochMillis = epochMillis))
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {
@@ -251,6 +271,51 @@ class SalatSignLocalServerTest {
         )
         assertEquals(200, delResp.statusCode)
         assertEquals(0, contentRepo.slidesFlow.value.slides.size)
+    }
+
+    @Test
+    fun manualSilentScreen_requiresAuthAndStartsStopsCleanly() = runBlocking {
+        val now = 1_700_000_000_000L
+        val (server, settingsRepo, _) = createServer(nowProvider = { now })
+
+        // Unauthenticated start/stop must be rejected
+        assertEquals(401, server.handleRequest(HttpRequest("POST", "/api/v1/silent/start")).statusCode)
+        assertEquals(401, server.handleRequest(HttpRequest("POST", "/api/v1/silent/stop")).statusCode)
+
+        val authResp = server.handleRequest(
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
+        )
+        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
+        val authHeaders = mapOf("authorization" to "Bearer $token")
+
+        // Start manual silent screen for 30 minutes
+        val startResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/silent/start",
+                headers = authHeaders,
+                body = """{"durationMinutes":30}""".toByteArray()
+            )
+        )
+        assertEquals(200, startResp.statusCode)
+        val expectedUntil = now + 30 * 60_000L
+        assertEquals(expectedUntil, settingsRepo.current.silentScreen.manualSilentUntilEpochMillis)
+        val startJson = SimpleJson.parseObject(startResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals(true, startJson["manualSilentActive"])
+        assertEquals(expectedUntil, startJson["manualSilentUntilEpochMillis"])
+
+        // GET /api/v1/settings reports manual silent screen active
+        val getResp = server.handleRequest(HttpRequest("GET", "/api/v1/settings", headers = authHeaders))
+        val getJson = SimpleJson.parseObject(getResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals(true, getJson["manualSilentActive"])
+        assertEquals(30L, getJson["manualSilentRemainingMinutes"])
+
+        // Stop manual silent screen
+        val stopResp = server.handleRequest(HttpRequest("POST", "/api/v1/silent/stop", headers = authHeaders))
+        assertEquals(200, stopResp.statusCode)
+        assertEquals(0L, settingsRepo.current.silentScreen.manualSilentUntilEpochMillis)
+        val stopJson = SimpleJson.parseObject(stopResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals(false, stopJson["manualSilentActive"])
     }
 
     @Test

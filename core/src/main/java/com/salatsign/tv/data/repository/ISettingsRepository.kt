@@ -12,6 +12,7 @@ import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 
@@ -71,4 +72,11 @@ interface ISettingsRepository {
     suspend fun setJumuahMode(mode: JumuahMode)
     suspend fun setJumuahTimes(times: List<String>)
     suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming)
+    // Silent Screen settings (Mosque / SalatSign)
+    suspend fun setSilentJumuahEnabled(enabled: Boolean)
+    suspend fun setSilentJumuahLeadMinutes(minutes: Int)
+    suspend fun setSilentJumuahDurationMinutes(minutes: Int)
+    suspend fun setSilentDailyPrayerConfig(prayer: Prayer, config: PrayerSilentConfig)
+    suspend fun setSilentDailyPrayerConfigs(configs: Map<Prayer, PrayerSilentConfig>)
+    suspend fun setManualSilentUntil(epochMillis: Long)
 }

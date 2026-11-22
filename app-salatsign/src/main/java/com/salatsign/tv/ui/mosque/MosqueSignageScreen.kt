@@ -133,6 +133,13 @@ fun MosqueSignageScreen(
                         uiState = uiState
                     )
                 }
+                is SlideState.SilentScreen -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF0E1110))
+                    )
+                }
             }
         }
 
