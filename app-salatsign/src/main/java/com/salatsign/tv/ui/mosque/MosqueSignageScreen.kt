@@ -134,16 +134,12 @@ fun MosqueSignageScreen(
                     )
                 }
                 is SlideState.SilentScreen -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFF0E1110))
-                    )
+                    SilentScreen(kind = slideState.kind)
                 }
             }
         }
 
-        // Sliding remote-control instruction banner when user taps D-pad or OK
+        // Sliding remote-control instruction banner when user taps D-pad or OK (neutral low-glare styling)
         AnimatedVisibility(
             visible = showAdminHint,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(tween(250)),
@@ -154,8 +150,8 @@ fun MosqueSignageScreen(
         ) {
             Row(
                 modifier = Modifier
-                    .background(Color(0xFF0A2218).copy(alpha = 0.94f), RoundedCornerShape(14.dp))
-                    .border(1.5.dp, AccentGold.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
+                    .background(Color(0xFF151B18).copy(alpha = 0.94f), RoundedCornerShape(14.dp))
+                    .border(1.2.dp, Color(0xFF4B5563), RoundedCornerShape(14.dp))
                     .padding(horizontal = 24.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -163,7 +159,7 @@ fun MosqueSignageScreen(
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = null,
-                    tint = AccentGold,
+                    tint = Color(0xFFD1D5DB),
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -171,7 +167,7 @@ fun MosqueSignageScreen(
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = Color(0xFFF3F4F6)
                     )
                 )
             }

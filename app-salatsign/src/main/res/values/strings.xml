@@ -1,4 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">SalatSign</string>
+
+    <!-- Silent Screen ("Jumu'ah / Prayer in progress") -->
+    <string name="silent_title_jumuah">Jumu\'ah in progress</string>
+    <string name="silent_title_prayer">Prayer in progress</string>
+    <string name="silent_no_talking">Please keep silent</string>
+    <string name="silent_phone">Switch off or silence your phone</string>
+    <string name="silent_icon_no_talking_desc">No talking sign</string>
+    <string name="silent_icon_phone_desc">Switch off or silence phone sign</string>
+
+    <!-- Silent Screen Settings (SalatSign only) -->
+    <string name="settings_section_silent_screen">Silent Screen</string>
+    <string name="settings_silent_manual_title">Manual Control</string>
+    <string name="settings_silent_manual_desc">Show \"Prayer in progress\" immediately on the TV (overrides schedule and slides).</string>
+    <string name="settings_silent_manual_active">Silent screen active (%1$d min remaining)</string>
+    <string name="settings_silent_show_now_mins">Show %1$d min</string>
+    <string name="settings_silent_stop_now">Stop Now</string>
+    <string name="settings_silent_jumuah_title">Friday Jumu\'ah Silent Screen</string>
+    <string name="settings_silent_jumuah_desc">Automatically displays \"Jumu\'ah in progress\" for every configured Jumu\'ah sitting.</string>
+    <string name="settings_silent_jumuah_unconfigured">Configure at least one Jumu\'ah sitting above to activate.</string>
+    <string name="settings_silent_enabled">Enabled</string>
+    <string name="settings_silent_disabled">Disabled</string>
+    <string name="settings_silent_lead_label">Start before (minutes)</string>
+    <string name="settings_silent_duration_label">Duration (minutes)</string>
+    <string name="settings_silent_daily_title">Daily Prayers (Optional)</string>
+    <string name="settings_silent_daily_desc">Select a prayer to configure its silent screen. Friday Dhuhr uses Jumu\'ah settings only.</string>
+    <string name="settings_silent_anchor_label">Start trigger</string>
+    <string name="settings_silent_anchor_iqamah">Iqamah</string>
+    <string name="settings_silent_anchor_adhan">Adhan</string>
+    <string name="settings_silent_iqamah_required">Set an iqamah time first</string>
+    <string name="settings_silent_summary_off">Off</string>
+    <string name="settings_silent_summary_on">%1$s • %2$d min</string>
+    <string name="settings_silent_copy_all">Copy these settings to all prayers</string>
+    <string name="settings_silent_copied_all">Copied settings to all 5 prayers.</string>
+    <string name="settings_silent_copied_partial">Copied to %1$d prayers (%2$d need an iqamah time first).</string>
+    <string name="settings_silent_done">Done</string>
 </resources>
