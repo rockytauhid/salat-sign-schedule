@@ -173,3 +173,39 @@ This document tracks test cases that require real Android TV hardware or emulato
    - SoC memory and CPU on 2016 TV hardware are constrained.
    - Slide images imported from USB must be downscaled to 1080p before caching.
    - Coil image cache and memory footprint must remain lightweight.
+
+---
+
+## MT-6.1: Mosque Silent Screen ("Jumu'ah / Prayer in progress") & Phone Controller Override
+
+**Objective:** Verify that SalatSign (`com.salatsign.tv`) replaces the prayer schedule and announcement slideshow with the calm, low-glare dark Silent Screen during configured Jumu'ah sittings, enabled daily prayers, and manual Start/Stop overrides (from both TV Settings and the Local Phone Controller), and persists active manual mode across restarts.
+
+### Test Setup
+- Device: Sony Bravia KD-55X9300D (Android 8.0.0, API 26) or Android TV Emulator running **SalatSign** (`com.salatsign.tv`).
+- Confirm **Light Theme (Day)** is active to verify the Silent Screen stays dark during daytime.
+- Configure at least one Friday Jumu'ah sitting (e.g. `13:00`) and at least one daily prayer Iqamah offset (e.g. Subuh `10 min`, Maghrib `0 min`).
+
+### Test Procedure A: Manual Start, Auto-Close, Hint Banner & Restart Persistence
+1. Open Admin Settings (`MENU` or 3-second `OK` hold + PIN).
+2. Scroll to **Silent Screen → Manual Control** and select **Show 15 min**.
+3. **Verify:**
+   - Settings closes immediately and the TV displays the dark `"Prayer in progress"` screen with the **No talking** (`Please keep silent`) and **Phone off** (`Switch off or silence your phone`) icons/labels, readable from the back of the hall without glare.
+   - No clock, mosque logo, announcements, or ornaments are visible.
+   - Pressing a D-pad arrow or Back does **not** exit the app and displays the neutral dark 4-second admin hint banner (`Hold OK for 3 seconds or press Menu to open Admin Settings`).
+4. Force-stop and relaunch SalatSign (`adb shell am force-stop com.salatsign.tv && adb shell am start -n com.salatsign.tv/.MainActivity`).
+5. **Verify:** The Silent Screen returns automatically because `manualSilentUntil` is persisted in DataStore.
+6. Open Admin Settings (`MENU` + PIN), scroll to **Silent Screen → Manual Control**, verify `"Silent screen active (... min remaining)"` is shown, and click **Stop Now**.
+7. Close Settings -> **Verify:** Normal schedule/slideshow resumes immediately.
+
+### Test Procedure B: Local Phone Controller Manual Start & Stop
+1. Enable **Local Phone Controller (LAN)** in TV Settings and open the displayed URL on a phone browser on the same Wi-Fi.
+2. Sign in with the Mosque Admin PIN.
+3. Under **Silent Screen (Manual Control)**, tap **Show 15 min**.
+4. **Verify:** The TV immediately switches to `"Prayer in progress"`, and the phone UI updates to `Active • 15 min remaining` with the red **Stop Silent Screen Now** button.
+5. Tap **Stop Silent Screen Now** on the phone -> **Verify:** The TV immediately returns to the normal schedule/slideshow.
+
+### Test Procedure C: Scheduled Jumu'ah & Daily Prayer Windows
+1. In TV Settings under **Silent Screen → Friday Jumu'ah Silent Screen**, confirm it is **Enabled** (default `0 min` lead, `45 min` duration) and verify the TV shows `"Jumu'ah in progress"` at the configured Friday sitting time and returns to the slideshow after 45 minutes.
+2. Under **Daily Prayers (Optional)**, select a prayer without Iqamah (e.g. Maghrib = `0 min`) with anchor **Iqamah** -> **Verify:** Toggle cannot be enabled and displays `"Set an iqamah time first"`.
+3. Select a prayer with Iqamah (e.g. Subuh = `10 min`), enable it (`Iqamah`, `0 min` lead, `15 min` duration), and click **Copy these settings to all prayers** -> **Verify:** Status message confirms prayers with Iqamah were enabled while prayers without Iqamah were skipped.
+4. At that prayer's Iqamah time -> **Verify:** TV shows `"Prayer in progress"` for the configured duration and automatically resumes the slideshow afterward.

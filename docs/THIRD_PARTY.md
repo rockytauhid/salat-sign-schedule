@@ -14,7 +14,7 @@ This document tracks all external libraries, SDKs, fonts, and assets used in Sal
 | **Google Material Components** | `com.google.android.material:material` | 1.12.0 | Apache-2.0 | Compatible with GPL-3.0 | Material design components |
 | **Jetpack Compose BOM** | `androidx.compose:compose-bom` | 2024.11.00 | Apache-2.0 | Compatible with GPL-3.0 | Bill of Materials for Compose UI libraries |
 | **Jetpack Compose UI** | `androidx.compose.ui:ui` | BOM | Apache-2.0 | Compatible with GPL-3.0 | Declarative UI toolkit |
-| **Compose Material Icons** | `androidx.compose.material:material-icons-extended` | BOM | Apache-2.0 | Compatible with GPL-3.0 | Directional, control, and setting icons |
+| **Compose Material Icons** | `androidx.compose.material:material-icons-extended` | BOM | Apache-2.0 | Compatible with GPL-3.0 | Directional, control, setting, and Silent Screen (`VoiceOverOff`, `MobileOff`) vector icons |
 | **Jetpack Compose for TV (Foundation)** | `androidx.tv:tv-foundation` | 1.0.0-alpha12 | Apache-2.0 | Compatible with GPL-3.0 | 10-foot TV directional navigation and focus modifiers |
 | **Jetpack Compose for TV (Material)** | `androidx.tv:tv-material` | 1.0.0 | Apache-2.0 | Compatible with GPL-3.0 | TV-optimized cards, surfaces, buttons, and typography |
 | **Activity Compose** | `androidx.activity:activity-compose` | 1.9.3 | Apache-2.0 | Compatible with GPL-3.0 | Integration between Android Activity lifecycle and Compose |

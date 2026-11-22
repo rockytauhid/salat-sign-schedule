@@ -266,6 +266,16 @@ private fun SalatSignMainContent(
                 onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
                 onSetJumuahMode = { settingsViewModel.setJumuahMode(it) },
                 onSetJumuahTimes = { settingsViewModel.setJumuahTimes(it) },
+                onSetSilentJumuahEnabled = { settingsViewModel.setSilentJumuahEnabled(it) },
+                onSetSilentJumuahLeadMinutes = { settingsViewModel.setSilentJumuahLeadMinutes(it) },
+                onSetSilentJumuahDurationMinutes = { settingsViewModel.setSilentJumuahDurationMinutes(it) },
+                onSetSilentDailyPrayerConfig = { prayer, cfg -> settingsViewModel.setSilentDailyPrayerConfig(prayer, cfg) },
+                onCopySilentSettingsToAllPrayers = { settingsViewModel.copySilentSettingsToAllPrayers(it) },
+                onStartManualSilentScreen = { mins ->
+                    settingsViewModel.startManualSilentScreen(mins)
+                    onCloseSettings()
+                },
+                onStopManualSilentScreen = { settingsViewModel.stopManualSilentScreen() },
                 isPhoneControllerRunning = isPhoneControllerRunning,
                 phoneControllerUrl = phoneControllerUrl,
                 onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },

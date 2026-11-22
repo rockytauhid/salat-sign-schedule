@@ -92,8 +92,10 @@ import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
+import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
+import com.salatsign.tv.engine.CopyPrayerSilentResult
 import com.salatsign.tv.engine.JumuahCalculator
 import com.salatsign.tv.engine.JumuahWarningReason
 import com.salatsign.tv.ui.common.CountryCitySelector
@@ -154,6 +156,15 @@ fun MosqueSettingsScreen(
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
     onSetJumuahMode: (JumuahMode) -> Unit,
     onSetJumuahTimes: (List<String>) -> Unit,
+    onSetSilentJumuahEnabled: (Boolean) -> Unit = {},
+    onSetSilentJumuahLeadMinutes: (Int) -> Unit = {},
+    onSetSilentJumuahDurationMinutes: (Int) -> Unit = {},
+    onSetSilentDailyPrayerConfig: (Prayer, PrayerSilentConfig) -> Unit = { _, _ -> },
+    onCopySilentSettingsToAllPrayers: (PrayerSilentConfig) -> CopyPrayerSilentResult = {
+        CopyPrayerSilentResult(emptyMap(), 0, emptyList())
+    },
+    onStartManualSilentScreen: (Int) -> Unit = {},
+    onStopManualSilentScreen: () -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -1566,6 +1577,18 @@ fun MosqueSettingsScreen(
                         }
                     }
                 }
+
+                // 7b. Silent Screen ("Jumu'ah / Prayer in progress")
+                SilentScreenSettingsSection(
+                    settings = settings,
+                    onSetSilentJumuahEnabled = onSetSilentJumuahEnabled,
+                    onSetSilentJumuahLeadMinutes = onSetSilentJumuahLeadMinutes,
+                    onSetSilentJumuahDurationMinutes = onSetSilentJumuahDurationMinutes,
+                    onSetSilentDailyPrayerConfig = onSetSilentDailyPrayerConfig,
+                    onCopySilentSettingsToAllPrayers = onCopySilentSettingsToAllPrayers,
+                    onStartManualSilentScreen = onStartManualSilentScreen,
+                    onStopManualSilentScreen = onStopManualSilentScreen
+                )
 
                 // 8. Mosque Admin PIN Security
                 Text(
