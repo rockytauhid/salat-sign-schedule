@@ -76,6 +76,7 @@
     <string name="settings_image_slide_edit_title">Edit Image Slide</string>
     <string name="settings_image_slide_change_file">Change Image (USB)</string>
     <string name="settings_image_slide_title_placeholder">e.g., Ramadan Fundraising Poster</string>
+    <string name="settings_image_slide_empty_title_error">Please enter a slide title before saving.</string>
     <string name="settings_slide_edit_btn">Edit</string>
     <string name="settings_slide_save_changes">Save Changes</string>
     <string name="settings_text_slide_title_label">Title</string>

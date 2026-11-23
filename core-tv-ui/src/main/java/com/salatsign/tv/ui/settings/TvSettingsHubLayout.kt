@@ -4,6 +4,7 @@
 package com.salatsign.tv.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,9 +32,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -43,7 +45,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,6 +75,7 @@ data class SettingsHubCategory(
  * Guarantees identical layout, focus ergonomics, and visual design across both
  * SalatSign and SalatSchedule (AGENTS.md Rule 5).
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TvSettingsHubScaffold(
     categories: List<SettingsHubCategory>,
@@ -87,12 +89,12 @@ fun TvSettingsHubScaffold(
     content: @Composable ColumnScope.(selectedCategory: SettingsHubCategory) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val focusManager = LocalFocusManager.current
     val railScrollState = rememberScrollState()
     val paneScrollState = rememberScrollState()
     val railRequesters = remember(categories.map { it.id }) {
         categories.associate { it.id to FocusRequester() }
     }
+    val rightPaneFocusRequester = remember { FocusRequester() }
     var isRightPaneFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -219,11 +221,15 @@ fun TvSettingsHubScaffold(
                     .weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                // Left Category Rail
+                // Left Category Rail — entering from outside (e.g. pressing Left from Right Pane) always restores the active category
                 Column(
                     modifier = Modifier
                         .width(272.dp)
                         .fillMaxHeight()
+                        .focusProperties {
+                            enter = { railRequesters[activeCategory.id] ?: FocusRequester.Default }
+                        }
+                        .focusGroup()
                         .verticalScroll(railScrollState)
                         .padding(vertical = 4.dp, horizontal = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -235,7 +241,7 @@ fun TvSettingsHubScaffold(
                         Surface(
                             onClick = {
                                 onSelectCategory(cat.id)
-                                focusManager.moveFocus(FocusDirection.Right)
+                                runCatching { rightPaneFocusRequester.requestFocus() }
                             },
                             shape = ClickableSurfaceDefaults.shape(railShape),
                             scale = tvSurfaceScale(1.02f),
@@ -244,6 +250,9 @@ fun TvSettingsHubScaffold(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(if (requester != null) Modifier.focusRequester(requester) else Modifier)
+                                .focusProperties {
+                                    right = rightPaneFocusRequester
+                                }
                                 .onFocusChanged { focusState ->
                                     if (focusState.isFocused) {
                                         isRightPaneFocused = false
@@ -309,11 +318,13 @@ fun TvSettingsHubScaffold(
                         .background(colorScheme.onSurface.copy(alpha = 0.14f))
                 )
 
-                // Right Content Pane
+                // Right Content Pane — entering from the Left Rail always lands on the topmost focusable control
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .focusRequester(rightPaneFocusRequester)
+                        .focusGroup()
                         .onFocusChanged { focusState ->
                             isRightPaneFocused = focusState.hasFocus
                         }

@@ -78,14 +78,11 @@ fun ImageSlideEditorDialog(
     val isEditing = existingSlide != null
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val defaultTitle = remember(existingSlide?.id, imageFileName) {
-        existingSlide?.title?.ifBlank { null }
-            ?: imageFileName.substringBeforeLast('.').replace('_', ' ').replace('-', ' ').trim().ifBlank { "Poster" }
-    }
-    var title by remember(existingSlide?.id) { mutableStateOf(defaultTitle) }
+    var title by remember(existingSlide?.id) { mutableStateOf(existingSlide?.title ?: "") }
     var durationSeconds by remember(existingSlide?.id) {
         mutableIntStateOf(existingSlide?.durationSeconds ?: 15)
     }
+    var validationError by remember { mutableStateOf(false) }
 
     val titleFocusRequester = remember { FocusRequester() }
     val scrollState = rememberScrollState()
@@ -257,6 +254,7 @@ fun ImageSlideEditorDialog(
                         onValueChange = {
                             onUserInteraction()
                             title = it
+                            if (validationError) validationError = false
                         },
                         placeholder = stringResource(AppR.string.settings_image_slide_title_placeholder),
                         leadingIcon = Icons.Default.Edit,
@@ -301,6 +299,17 @@ fun ImageSlideEditorDialog(
                     }
                 }
 
+                if (validationError) {
+                    Text(
+                        text = stringResource(AppR.string.settings_image_slide_empty_title_error),
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colorScheme.error
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // Actions: Cancel & Save
@@ -328,8 +337,12 @@ fun ImageSlideEditorDialog(
 
                     Surface(
                         onClick = {
-                            val cleanTitle = title.trim().ifBlank { "Poster" }
-                            onSave(cleanTitle, imageFileName, durationSeconds)
+                            val cleanTitle = title.trim()
+                            if (cleanTitle.isEmpty()) {
+                                validationError = true
+                            } else {
+                                onSave(cleanTitle, imageFileName, durationSeconds)
+                            }
                         },
                         shape = ClickableSurfaceDefaults.shape(actionShape),
                         scale = tvSurfaceScale(1.03f),

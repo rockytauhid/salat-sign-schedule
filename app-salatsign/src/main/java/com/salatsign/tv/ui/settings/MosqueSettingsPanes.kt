@@ -32,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -706,39 +708,74 @@ fun MosqueSlideshowPane(
         enabledBuiltIns = rotationPlan.enabledBuiltInCount
     )
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = stringResource(
-                AppR.string.settings_slides_in_rotation,
-                rotationPlan.allocatedCount,
-                SlideBudget.MAX_ROTATION_SLIDES
-            ),
-            style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
-        )
-        val breakdownParts = buildList {
-            if (rotationPlan.enabledAnnouncementCount == 1) {
-                add(stringResource(AppR.string.settings_slides_breakdown_announcement_one))
-            } else if (rotationPlan.enabledAnnouncementCount > 1) {
-                add(stringResource(AppR.string.settings_slides_breakdown_announcements, rotationPlan.enabledAnnouncementCount))
+    val addImageFocusRequester = remember { FocusRequester() }
+    val slideActionShape = RoundedCornerShape(8.dp)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    AppR.string.settings_slides_in_rotation,
+                    rotationPlan.allocatedCount,
+                    SlideBudget.MAX_ROTATION_SLIDES
+                ),
+                style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+            )
+            val breakdownParts = buildList {
+                if (rotationPlan.enabledAnnouncementCount == 1) {
+                    add(stringResource(AppR.string.settings_slides_breakdown_announcement_one))
+                } else if (rotationPlan.enabledAnnouncementCount > 1) {
+                    add(stringResource(AppR.string.settings_slides_breakdown_announcements, rotationPlan.enabledAnnouncementCount))
+                }
+                for (bi in builtIns.filter { it.enabled }) {
+                    add(
+                        when (bi.id) {
+                            BuiltInSlideId.ISLAMIC_CALENDAR -> stringResource(AppR.string.settings_slides_builtin_islamic_calendar)
+                            BuiltInSlideId.QURAN_VERSE -> stringResource(AppR.string.settings_slides_builtin_quran_verse)
+                        }
+                    )
+                }
             }
-            for (bi in builtIns.filter { it.enabled }) {
-                add(
-                    when (bi.id) {
-                        BuiltInSlideId.ISLAMIC_CALENDAR -> stringResource(AppR.string.settings_slides_builtin_islamic_calendar)
-                        BuiltInSlideId.QURAN_VERSE -> stringResource(AppR.string.settings_slides_builtin_quran_verse)
-                    }
+            val breakdownText = if (breakdownParts.isEmpty()) {
+                stringResource(AppR.string.settings_slides_breakdown_none)
+            } else {
+                breakdownParts.joinToString(", ")
+            }
+            Text(
+                text = "$breakdownText  •  ${stringResource(AppR.string.settings_slides_stored_library, slides.size, SlideBudget.MAX_STORED_ANNOUNCEMENTS)}",
+                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+            )
+        }
+
+        if (slides.isNotEmpty()) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Surface(
+                onClick = {
+                    // Move focus inside the Slideshow pane before removing this button so focus never jumps to the Left Rail
+                    runCatching { addImageFocusRequester.requestFocus() }
+                    onClearSlides()
+                },
+                shape = ClickableSurfaceDefaults.shape(slideActionShape),
+                scale = tvSurfaceScale(1.03f),
+                colors = tvSelectableSurfaceColors(selected = false),
+                border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape)
+            ) {
+                Text(
+                    text = "${stringResource(R.string.settings_btn_clear_slides)} (${slides.size})",
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color(0xFFEF4444)),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                 )
             }
         }
-        val breakdownText = if (breakdownParts.isEmpty()) {
-            stringResource(AppR.string.settings_slides_breakdown_none)
-        } else {
-            breakdownParts.joinToString(", ")
-        }
-        Text(
-            text = "$breakdownText  •  ${stringResource(AppR.string.settings_slides_stored_library, slides.size, SlideBudget.MAX_STORED_ANNOUNCEMENTS)}",
-            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
-        )
     }
 
     if (slideLimitError) {
@@ -773,18 +810,26 @@ fun MosqueSlideshowPane(
         }
     }
 
-    val slideActionShape = RoundedCornerShape(8.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         Surface(
             onClick = { onAddImageSlideClick(canAddEnabledSlide) },
             shape = ClickableSurfaceDefaults.shape(slideActionShape),
-            scale = tvSurfaceScale(1.03f),
+            scale = tvSurfaceScale(1.02f),
             colors = tvSelectableSurfaceColors(selected = false),
-            border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape)
+            border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape),
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(addImageFocusRequester)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AddPhotoAlternate,
@@ -793,20 +838,29 @@ fun MosqueSlideshowPane(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.settings_btn_add_image_slide), style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface))
+                Text(
+                    text = stringResource(R.string.settings_btn_add_image_slide),
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                )
             }
         }
 
         Surface(
             onClick = { onAddTextSlideClick(canAddEnabledSlide) },
             shape = ClickableSurfaceDefaults.shape(slideActionShape),
-            scale = tvSurfaceScale(1.03f),
+            scale = tvSurfaceScale(1.02f),
             colors = tvSelectableSurfaceColors(selected = false),
-            border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape)
+            border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape),
+            modifier = Modifier.weight(1f)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.NoteAdd,
@@ -820,23 +874,9 @@ fun MosqueSlideshowPane(
                         if (canAddEnabledSlide) R.string.settings_btn_add_text_slide
                         else AppR.string.settings_slides_add_disabled
                     ),
+                    maxLines = 1,
+                    softWrap = false,
                     style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                )
-            }
-        }
-
-        if (slides.isNotEmpty()) {
-            Surface(
-                onClick = onClearSlides,
-                shape = ClickableSurfaceDefaults.shape(slideActionShape),
-                scale = tvSurfaceScale(1.03f),
-                colors = tvSelectableSurfaceColors(selected = false),
-                border = tvSelectableSurfaceBorder(selected = false, shape = slideActionShape)
-            ) {
-                Text(
-                    text = "${stringResource(R.string.settings_btn_clear_slides)} (${slides.size})",
-                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = Color(0xFFEF4444)),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }
