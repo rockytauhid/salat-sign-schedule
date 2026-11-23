@@ -55,7 +55,7 @@ object SilentScreenPalette {
     val IconColor: Color = Color(0xFFC8D2CE)  // ~12.0:1 contrast vs Background
     val LabelColor: Color = Color(0xFFBFC8C4) // ~10.8:1 contrast vs Background
 
-    val IconSize = 136.dp
+    val IconSize = 96.dp
 
     val TitleStyle: TextStyle = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -70,8 +70,8 @@ object SilentScreenPalette {
     val LabelStyle: TextStyle = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontSize = 19.sp,
+        lineHeight = 26.sp,
         color = LabelColor,
         textAlign = TextAlign.Center
     )
@@ -133,11 +133,11 @@ fun SilentScreen(
                 maxLines = 2
             )
 
-            Spacer(modifier = Modifier.height(52.dp))
+            Spacer(modifier = Modifier.height(44.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(0.84f),
-                horizontalArrangement = Arrangement.spacedBy(56.dp, Alignment.CenterHorizontally),
+                modifier = Modifier.fillMaxWidth(0.76f),
+                horizontalArrangement = Arrangement.spacedBy(48.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.Top
             ) {
                 SilentInstructionItem(
@@ -175,7 +175,7 @@ private fun SilentInstructionItem(
             tint = SilentScreenPalette.IconColor,
             modifier = Modifier.size(SilentScreenPalette.IconSize)
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = label,
             style = SilentScreenPalette.LabelStyle,

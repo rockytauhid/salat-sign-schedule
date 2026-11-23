@@ -68,6 +68,7 @@ import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
+import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.getMosqueTitleStyle
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
@@ -549,125 +550,56 @@ fun MosqueAnnouncementView(
     uiState: MosqueSignageUiState
 ) {
     val context = LocalContext.current
-    val prayerTimes = uiState.prayerTimesDay
+    val colorScheme = MaterialTheme.colorScheme
+    val imageFile = if (slide.type == com.salatsign.tv.data.model.SlideType.IMAGE) {
+        slide.imageFile?.let { java.io.File(context.filesDir, "content/images/$it") }
+    } else {
+        null
+    }
+    val hasValidImage = imageFile != null && imageFile.exists()
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        when (slide.type) {
-            com.salatsign.tv.data.model.SlideType.TEXT -> {
-                MosqueTextSlideContent(
-                    slide = slide,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            com.salatsign.tv.data.model.SlideType.IMAGE -> {
-                val imageFile = slide.imageFile?.let { java.io.File(context.filesDir, "content/images/$it") }
-                if (imageFile != null && imageFile.exists()) {
-                    AsyncImage(
-                        model = imageFile,
-                        contentDescription = slide.title.ifBlank { stringResource(R.string.desc_announcement_slide) },
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    MosqueTextSlideContent(
-                        slide = slide,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-        }
+        if (hasValidImage) {
+            // Image slide: full-bleed image only, with zero overlays
+            AsyncImage(
+                model = imageFile,
+                contentDescription = slide.title.ifBlank { stringResource(R.string.desc_announcement_slide) },
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // Text announcement slide
+            MosqueTextSlideContent(
+                slide = slide,
+                modifier = Modifier.fillMaxSize()
+            )
 
-        // Overlay: Bottom floating prayer mini-bar with live clock so congregation always sees time
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xDD000000), Color(0xF5000000))
-                    )
-                )
-                .padding(horizontal = 48.dp, vertical = 20.dp)
-        ) {
+            // Subtle mosque sign-off (icon + name) in the bottom-right corner
+            val signOffName = uiState.settings.mosqueName.ifBlank {
+                stringResource(R.string.mosque_default_name)
+            }
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 48.dp, bottom = 27.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Left: Slide Title or Mosque Name
-                Column {
-                    if (slide.title.isNotBlank()) {
-                        Text(
-                            text = slide.title,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp, color = Color.White)
-                        )
-                    } else if (uiState.settings.mosqueName.isNotBlank()) {
-                        Text(
-                            text = uiState.settings.mosqueName,
-                            style = getMosqueTitleStyle(uiState.settings.mosqueFontPreset, Color.White).copy(fontSize = 28.sp)
-                        )
-                    }
-                    if (uiState.settings.mosqueSubtitle.isNotBlank()) {
-                        Text(
-                            text = uiState.settings.mosqueSubtitle,
-                            style = TvTypography.Subtitle.copy(fontSize = 18.sp, color = AccentGold)
-                        )
-                    }
-                }
-
-                // Center: 5 Prayers mini times
-                if (prayerTimes != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        for (p in prayerTimes.prayers) {
-                            val prayerLabel = if (p.prayer == Prayer.ZUHUR && p.isFriday) {
-                                stringResource(R.string.prayer_jumuah)
-                            } else {
-                                stringResource(p.prayer.labelRes())
-                            }
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = prayerLabel,
-                                    style = TvTypography.BodyLabel.copy(
-                                        fontSize = 14.sp,
-                                        fontWeight = if (p.isNext) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (p.isNext) AccentGold else Color(0xFFD1D5DB)
-                                    )
-                                )
-                                Text(
-                                    text = p.formattedTime(uiState.settings.is24HourFormat),
-                                    style = TvTypography.BodyLabel.copy(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (p.isNext) AccentEmerald else Color.White
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Right: Hijri Date
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = prayerTimes?.hijriDate ?: "",
-                        style = TvTypography.Subtitle.copy(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AccentGold
-                        )
-                    )
-                    Text(
-                        text = prayerTimes?.gregorianDate ?: "",
-                        style = TvTypography.BodyLabel.copy(fontSize = 16.sp, color = Color.White)
-                    )
-                }
+                MosqueEmblemIcon(
+                    preset = uiState.settings.mosqueIconPreset,
+                    customLogoUri = uiState.settings.mosqueLogoUri,
+                    size = 32.dp
+                )
+                Text(
+                    text = signOffName,
+                    maxLines = 1,
+                    style = getMosqueTitleStyle(
+                        uiState.settings.mosqueFontPreset,
+                        colorScheme.onSurface.copy(alpha = 0.82f)
+                    ).copy(fontSize = 20.sp)
+                )
             }
         }
     }
@@ -690,7 +622,7 @@ fun MosqueTextSlideContent(
                     )
                 )
             )
-            .padding(horizontal = 80.dp, vertical = 60.dp),
+            .padding(start = 80.dp, end = 80.dp, top = 60.dp, bottom = 84.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
