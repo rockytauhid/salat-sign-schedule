@@ -826,8 +826,10 @@ fun HomeSettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     val prayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
+                    val adhanShape = RoundedCornerShape(10.dp)
                     for (prayer in prayers) {
                         val currentOption = settings.adhanFor(prayer)
+                        val isAudible = currentOption.type != AdhanAudioType.SILENT
                         Card(
                             onClick = {
                                 val nextOption = when (currentOption.type) {
@@ -837,14 +839,19 @@ fun HomeSettingsScreen(
                                 }
                                 onSetAdhanAudio(prayer, nextOption)
                             },
-                            colors = CardDefaults.colors(containerColor = colorScheme.surface),
-                            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .tvFocusable()
+                            colors = CardDefaults.colors(
+                                containerColor = if (isAudible) colorScheme.surfaceVariant else colorScheme.surface,
+                                focusedContainerColor = colorScheme.surfaceVariant
+                            ),
+                            shape = CardDefaults.shape(adhanShape),
+                            scale = tvCardScale(1.02f),
+                            border = tvSelectableCardBorder(selected = isAudible, shape = adhanShape),
+                            modifier = Modifier.weight(1f)
                         ) {
                             Column(
-                                modifier = Modifier.padding(14.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
@@ -857,7 +864,7 @@ fun HomeSettingsScreen(
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (currentOption.type == AdhanAudioType.SILENT) Color(0xFFEF4444) else AccentEmerald
+                                        color = if (currentOption.type == AdhanAudioType.SILENT) Color(0xFFDC2626) else colorScheme.primary
                                     )
                                 )
                             }
@@ -879,19 +886,22 @@ fun HomeSettingsScreen(
                                 activePickerKind = ImportKind.CUSTOM_ADHAN
                             },
                             shape = ClickableSurfaceDefaults.shape(usbShape),
+                            scale = tvSurfaceScale(1.02f),
                             colors = tvSelectableSurfaceColors(containerColor = colorScheme.surfaceVariant),
                             border = tvSelectableSurfaceBorder(shape = usbShape),
                             modifier = Modifier.weight(1f)
                         ) {
                             Row(
-                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Usb,
                                     contentDescription = null,
-                                    tint = AccentGold,
+                                    tint = colorScheme.secondary,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
