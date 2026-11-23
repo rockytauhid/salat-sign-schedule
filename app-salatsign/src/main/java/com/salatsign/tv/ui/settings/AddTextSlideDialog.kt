@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,7 +63,8 @@ const val MAX_TEXT_SLIDE_LINES = 6
 fun AddTextSlideDialog(
     canAddEnabledSlide: Boolean,
     onSave: (title: String, body: String, durationSeconds: Int, enabled: Boolean) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onUserInteraction: () -> Unit = {}
 ) {
     val colorScheme = MaterialTheme.colorScheme
     var title by remember { mutableStateOf("") }
@@ -92,7 +94,11 @@ fun AddTextSlideDialog(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.72f))
-                .padding(horizontal = 48.dp, vertical = 27.dp),
+                .padding(horizontal = 48.dp, vertical = 27.dp)
+                .onPreviewKeyEvent {
+                    onUserInteraction()
+                    false
+                },
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -150,6 +156,7 @@ fun AddTextSlideDialog(
                     TvEditableTextField(
                         value = title,
                         onValueChange = {
+                            onUserInteraction()
                             title = it
                             if (validationError) validationError = false
                         },
@@ -177,6 +184,7 @@ fun AddTextSlideDialog(
                         val newLineBtnShape = RoundedCornerShape(8.dp)
                         Surface(
                             onClick = {
+                                onUserInteraction()
                                 if (canAddNewLine) {
                                     body = "$body\n"
                                     if (validationError) validationError = false
@@ -221,6 +229,7 @@ fun AddTextSlideDialog(
                     TvEditableTextField(
                         value = body,
                         onValueChange = {
+                            onUserInteraction()
                             body = it
                             if (validationError) validationError = false
                         },
@@ -245,7 +254,10 @@ fun AddTextSlideDialog(
                         for (dur in durations) {
                             val isSelected = durationSeconds == dur
                             Surface(
-                                onClick = { durationSeconds = dur },
+                                onClick = {
+                                    onUserInteraction()
+                                    durationSeconds = dur
+                                },
                                 shape = ClickableSurfaceDefaults.shape(durShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = isSelected),

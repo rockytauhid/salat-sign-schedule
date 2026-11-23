@@ -202,10 +202,13 @@ fun MosqueSettingsScreen(
     var addTextSlideCanEnable by remember { mutableStateOf(true) }
 
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val recordInteraction = { lastInteractionTime = System.currentTimeMillis() }
+    val isModalOpen = activePickerKind != null || showAddTextSlideDialog || showChangePinDialog
 
-    // Auto-close Settings after 2 minutes of inactivity and return to signage/home
-    LaunchedEffect(lastInteractionTime) {
-        delay(120_000L)
+    // Auto-close Settings after inactivity and return to signage/home.
+    // Extended to 5 minutes (and reset on every keystroke/remote press inside dialogs) while composing or picking files.
+    LaunchedEffect(lastInteractionTime, isModalOpen) {
+        delay(if (isModalOpen) 300_000L else 120_000L)
         onClose()
     }
 
@@ -1319,6 +1322,7 @@ fun MosqueSettingsScreen(
                 TvEditableTextField(
                     value = mosqueNameInput,
                     onValueChange = {
+                        recordInteraction()
                         mosqueNameInput = it
                         onSetMosqueName(it.trim().ifBlank { defaultMosqueName })
                     },
@@ -1387,6 +1391,7 @@ fun MosqueSettingsScreen(
                 TvEditableTextField(
                     value = subtitleInput,
                     onValueChange = {
+                        recordInteraction()
                         subtitleInput = it
                         onSetMosqueSubtitle(it)
                     },
@@ -2082,8 +2087,10 @@ fun MosqueSettingsScreen(
                     activePickerKind = null
                                     },
                 onDismiss = {
+                    recordInteraction()
                     activePickerKind = null
-                                    }
+                },
+                onUserInteraction = recordInteraction
             )
         }
 
@@ -2092,10 +2099,15 @@ fun MosqueSettingsScreen(
             AddTextSlideDialog(
                 canAddEnabledSlide = addTextSlideCanEnable,
                 onSave = { title, body, durationSeconds, enabled ->
+                    recordInteraction()
                     onAddTextSlide(title, body, durationSeconds, enabled)
                     showAddTextSlideDialog = false
                 },
-                onDismiss = { showAddTextSlideDialog = false }
+                onDismiss = {
+                    recordInteraction()
+                    showAddTextSlideDialog = false
+                },
+                onUserInteraction = recordInteraction
             )
         }
 

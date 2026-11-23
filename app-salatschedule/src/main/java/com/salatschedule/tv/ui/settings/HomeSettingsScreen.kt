@@ -150,9 +150,10 @@ fun HomeSettingsScreen(
     var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    // Auto-close Settings after 2 minutes of inactivity and return to signage/home
-    LaunchedEffect(lastInteractionTime) {
-        delay(120_000L)
+    // Auto-close Settings after inactivity and return to home (extended while USB picker is open)
+    val isPickerOpen = activePickerKind != null
+    LaunchedEffect(lastInteractionTime, isPickerOpen) {
+        delay(if (isPickerOpen) 300_000L else 120_000L)
         onClose()
     }
 
@@ -1072,7 +1073,8 @@ fun HomeSettingsScreen(
                 onDismiss = {
                     activePickerKind = null
                     pickerTargetPrayer = null
-                }
+                },
+                onUserInteraction = { lastInteractionTime = System.currentTimeMillis() }
             )
         }
 

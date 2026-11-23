@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -82,7 +83,8 @@ fun StorageFilePickerScreen(
     title: String,
     onFileImported: (relativeFileName: String) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUserInteraction: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -228,6 +230,10 @@ fun StorageFilePickerScreen(
                 .fillMaxSize()
                 .background(colorScheme.background)
                 .padding(horizontal = 48.dp, vertical = 27.dp) // 10-foot TV overscan safety
+                .onPreviewKeyEvent {
+                    onUserInteraction()
+                    false
+                }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // Header: Title, Optional System Picker Button, and Close Button
