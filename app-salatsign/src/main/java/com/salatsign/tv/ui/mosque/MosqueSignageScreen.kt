@@ -133,6 +133,12 @@ fun MosqueSignageScreen(
                         uiState = uiState
                     )
                 }
+                is SlideState.IslamicCalendar -> {
+                    IslamicCalendarSlide(
+                        rows = slideState.rows,
+                        uiState = uiState
+                    )
+                }
                 is SlideState.SilentScreen -> {
                     SilentScreen(kind = slideState.kind)
                 }

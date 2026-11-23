@@ -280,6 +280,9 @@ private fun SalatSignMainContent(
                     onCloseSettings()
                 },
                 onStopManualSilentScreen = { settingsViewModel.stopManualSilentScreen() },
+                onSetIslamicCalendarSlideEnabled = { settingsViewModel.setIslamicCalendarSlideEnabled(it) },
+                onSetIslamicCalendarSlideDurationSeconds = { settingsViewModel.setIslamicCalendarSlideDurationSeconds(it) },
+                onToggleIslamicEvent = { settingsViewModel.toggleIslamicEvent(it) },
                 isPhoneControllerRunning = isPhoneControllerRunning,
                 phoneControllerUrl = phoneControllerUrl,
                 onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },

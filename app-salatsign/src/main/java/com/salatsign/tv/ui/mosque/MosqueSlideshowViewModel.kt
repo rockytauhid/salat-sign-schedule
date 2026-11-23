@@ -11,6 +11,7 @@ import com.salatsign.tv.SalatSignApp
 import com.salatsign.tv.data.model.ActiveSilentState
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.ClassifiedIslamicEvent
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig
@@ -18,7 +19,9 @@ import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.data.model.SilentScreenConfig
 import com.salatsign.tv.data.model.SilentWindow
 import com.salatsign.tv.data.model.SilentWindowKind
+import com.salatsign.tv.engine.BuiltInSlideId
 import com.salatsign.tv.engine.DailyPrayerCacheKey
+import com.salatsign.tv.engine.IslamicCalendarSlideRows
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
 import com.salatsign.tv.engine.RotationSlideItem
@@ -45,6 +48,10 @@ sealed interface SlideState {
     data class AnnouncementImage(
         val slideIndex: Int,
         val slide: AnnouncementSlide,
+        val durationSeconds: Int
+    ) : SlideState
+    data class IslamicCalendar(
+        val rows: List<ClassifiedIslamicEvent>,
         val durationSeconds: Int
     ) : SlideState
     data class SilentScreen(
@@ -231,7 +238,19 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 val filterToday = ZonedDateTime.now(currentZone).toLocalDate()
                 val allSlides = contentRepository.slidesFlow.value.slides
                 val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
-                val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(currentSettings)
+                val calendarSlideRows = if (currentSettings.islamicCalendarSlideEnabled) {
+                    IslamicCalendarSlideRows.compute(
+                        today = filterToday,
+                        enabledIds = currentSettings.enabledIslamicEventIds,
+                        adjustmentDays = currentSettings.hijriOffsetDays
+                    )
+                } else {
+                    emptyList()
+                }
+                val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(
+                    settings = currentSettings,
+                    islamicCalendarHasContent = calendarSlideRows.isNotEmpty()
+                )
                 val rotationPlan = SlideshowRotationBuilder.build(activeSlides, builtInRegistrations)
 
                 if (rotationPlan.runtimeItems.isNotEmpty()) {
@@ -271,8 +290,26 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                                 dur
                             }
                             is RotationSlideItem.BuiltIn -> {
-                                // Built-in slide renderers are wired in IC-4 (Islamic Calendar) and QV-3 (Quran Verse)
-                                continue
+                                when (item.id) {
+                                    BuiltInSlideId.ISLAMIC_CALENDAR -> {
+                                        val freshRows = IslamicCalendarSlideRows.compute(
+                                            today = slideNowZoned.toLocalDate(),
+                                            enabledIds = slideSettings.enabledIslamicEventIds,
+                                            adjustmentDays = slideSettings.hijriOffsetDays
+                                        )
+                                        if (freshRows.isEmpty()) continue
+                                        val dur = slideSettings.islamicCalendarSlideDurationSeconds.coerceIn(10, 60)
+                                        _slideState.value = SlideState.IslamicCalendar(
+                                            rows = freshRows,
+                                            durationSeconds = dur
+                                        )
+                                        dur
+                                    }
+                                    BuiltInSlideId.QURAN_VERSE -> {
+                                        // Wired in QV-3 (Offline Quran Verse Slide)
+                                        continue
+                                    }
+                                }
                             }
                         }
 

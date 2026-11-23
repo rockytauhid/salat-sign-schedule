@@ -209,3 +209,22 @@ This document tracks test cases that require real Android TV hardware or emulato
 2. Under **Daily Prayers (Optional)**, select a prayer without Iqamah (e.g. Maghrib = `0 min`) with anchor **Iqamah** -> **Verify:** Toggle cannot be enabled and displays `"Set an iqamah time first"`.
 3. Select a prayer with Iqamah (e.g. Subuh = `10 min`), enable it (`Iqamah`, `0 min` lead, `15 min` duration), and click **Copy these settings to all prayers** -> **Verify:** Status message confirms prayers with Iqamah were enabled while prayers without Iqamah were skipped.
 4. At that prayer's Iqamah time -> **Verify:** TV shows `"Prayer in progress"` for the configured duration and automatically resumes the slideshow afterward.
+
+---
+
+## MT-6.2: Islamic Calendar Events & 6-Slide Rotation Limit
+
+**Objective:** Verify the navigable Islamic Calendar screen in **SalatSchedule** (`com.salatschedule.tv`), the read-only Islamic Calendar built-in slide in **SalatSign** (`com.salatsign.tv`), and the 6-slide rotation limit across announcements and built-in slides.
+
+### Test Procedure A: SalatSchedule Home Islamic Calendar Screen (Human Tasks C2, C3)
+1. Launch **SalatSchedule** and verify the **"Islamic Calendar"** button appears in the header beside Settings (and the subtle `"Next: …"` summary line appears below the header).
+2. Select **Islamic Calendar** -> **Verify:** Opens on the current Hijri year, scrolled so the `TODAY` or `NEXT` row is visible, with distinct star/badge/outline marks and dimmed past events readable from viewing distance (`C3`).
+3. Press Left/Right D-pad to browse ±3 Hijri years -> **Verify:** Clamped at ±3 years with limit notice; **Today** button returns to the current Hijri year.
+4. Open Settings -> **Islamic Calendar Events**, toggle events on/off, and change **Hijri Date Offset** (`-2..+2`) -> **Verify:** Calendar dates shift accurately and match local community dates (`C2`).
+
+### Test Procedure B: SalatSign Islamic Calendar Slide & 6-Slide Budget (Human Task C4)
+1. Launch **SalatSign**, open Admin Settings, and scroll to **Slides in rotation**.
+2. Enable **Islamic Calendar Slide** (`15s` default) -> **Verify:** Counter updates (e.g., `Slides in rotation: 1 of 6 (Islamic calendar)`).
+3. Close Settings -> **Verify:** After the Prayer Schedule and any enabled announcement slides, the read-only Islamic Calendar slide appears with at most 6 rows, clear TODAY/NEXT/PAST marks, readable from the back of the hall (`C4`), and no truncated event names.
+4. Disable all 16 Islamic events -> **Verify:** Slide is skipped cleanly at runtime (no blank slide) while still occupying 1 slot until the slide toggle itself is disabled.
+5. Add/enable announcements until reaching 6 total slots -> **Verify:** Trying to add/enable a 7th slot shows the refusal message, while saving as **Disabled** is still allowed up to 30 stored announcements.

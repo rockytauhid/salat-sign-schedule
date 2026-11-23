@@ -297,6 +297,32 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch { repository.setManualSilentUntil(0L) }
     }
 
+    fun setIslamicCalendarSlideEnabled(enabled: Boolean): Boolean {
+        if (enabled && !settings.value.islamicCalendarSlideEnabled) {
+            if (!SlideBudget.canEnableBuiltIn(
+                    enabledAnnouncements = currentEnabledAnnouncementCount(),
+                    enabledBuiltIns = currentEnabledBuiltInCount()
+                )
+            ) {
+                _slideLimitError.value = true
+                return false
+            }
+        }
+        _slideLimitError.value = false
+        viewModelScope.launch { repository.setIslamicCalendarSlideEnabled(enabled) }
+        return true
+    }
+
+    fun setIslamicCalendarSlideDurationSeconds(seconds: Int) {
+        viewModelScope.launch { repository.setIslamicCalendarSlideDurationSeconds(seconds) }
+    }
+
+    fun toggleIslamicEvent(eventId: String) {
+        val current = settings.value.enabledIslamicEventIds
+        val updated = if (eventId in current) current - eventId else current + eventId
+        viewModelScope.launch { repository.setEnabledIslamicEventIds(updated) }
+    }
+
     fun completeSetup() {
         viewModelScope.launch {
             repository.setMosqueMode(true)

@@ -103,6 +103,7 @@ import com.salatsign.tv.engine.SlideBudget
 import com.salatsign.tv.engine.SlideshowRotationBuilder
 import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
 import com.salatsign.tv.ui.common.CountryCitySelector
+import com.salatsign.tv.ui.common.IslamicEventTogglesSection
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
 import com.salatsign.tv.ui.common.PinDialogMode
@@ -173,6 +174,9 @@ fun MosqueSettingsScreen(
     },
     onStartManualSilentScreen: (Int) -> Unit = {},
     onStopManualSilentScreen: () -> Unit = {},
+    onSetIslamicCalendarSlideEnabled: (Boolean) -> Unit = {},
+    onSetIslamicCalendarSlideDurationSeconds: (Int) -> Unit = {},
+    onToggleIslamicEvent: (String) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -1715,7 +1719,126 @@ fun MosqueSettingsScreen(
                     }
                 }
 
-                // 7b. Silent Screen ("Jumu'ah / Prayer in progress")
+                // 7b. Islamic Calendar Slide (Built-in Slide, 1 slot of 6)
+                Text(
+                    text = stringResource(R.string.islamic_cal_slide_section),
+                    style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorScheme.surface, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        val calToggleShape = RoundedCornerShape(10.dp)
+                        Card(
+                            onClick = { onSetIslamicCalendarSlideEnabled(!settings.islamicCalendarSlideEnabled) },
+                            colors = CardDefaults.colors(
+                                containerColor = if (settings.islamicCalendarSlideEnabled) colorScheme.surfaceVariant else colorScheme.background,
+                                focusedContainerColor = colorScheme.surfaceVariant
+                            ),
+                            shape = CardDefaults.shape(calToggleShape),
+                            scale = tvCardScale(1.0f),
+                            border = tvSelectableCardBorder(selected = settings.islamicCalendarSlideEnabled, shape = calToggleShape),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(R.string.islamic_cal_slide_enable_title),
+                                        style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.islamic_cal_slide_enable_desc),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            if (settings.islamicCalendarSlideEnabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.16f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            if (settings.islamicCalendarSlideEnabled) AppR.string.settings_silent_enabled
+                                            else AppR.string.settings_silent_disabled
+                                        ),
+                                        style = TvTypography.ButtonText.copy(
+                                            fontSize = 13.sp,
+                                            color = if (settings.islamicCalendarSlideEnabled) Color.White else colorScheme.onSurface
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        if (settings.islamicCalendarSlideEnabled) {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = stringResource(R.string.islamic_cal_slide_duration_label),
+                                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    val durShape = RoundedCornerShape(8.dp)
+                                    for (secs in listOf(10, 15, 20, 30, 45, 60)) {
+                                        val selected = settings.islamicCalendarSlideDurationSeconds == secs
+                                        Surface(
+                                            onClick = { onSetIslamicCalendarSlideDurationSeconds(secs) },
+                                            shape = ClickableSurfaceDefaults.shape(durShape),
+                                            scale = tvSurfaceScale(1.01f),
+                                            colors = tvSelectableSurfaceColors(selected = selected, containerColor = colorScheme.background),
+                                            border = tvSelectableSurfaceBorder(selected = selected, shape = durShape),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 8.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "${secs}s",
+                                                    style = TvTypography.ButtonText.copy(
+                                                        fontSize = 13.sp,
+                                                        color = if (selected) colorScheme.primary else colorScheme.onSurface
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 7c. Islamic Calendar Events (Shared toggles)
+                Text(
+                    text = stringResource(R.string.islamic_cal_settings_section),
+                    style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+                )
+                IslamicEventTogglesSection(
+                    enabledIds = settings.enabledIslamicEventIds,
+                    hijriOffsetDays = settings.hijriOffsetDays,
+                    onToggleEvent = onToggleIslamicEvent
+                )
+
+                // 7d. Silent Screen ("Jumu'ah / Prayer in progress")
                 SilentScreenSettingsSection(
                     settings = settings,
                     onSetSilentJumuahEnabled = onSetSilentJumuahEnabled,

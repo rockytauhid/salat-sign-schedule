@@ -14,14 +14,13 @@ import com.salatsign.tv.engine.BuiltInSlideRegistration
 object BuiltInSlideRegistry {
     fun registrationsFor(
         settings: AppSettings,
-        islamicCalendarEnabled: Boolean = false,
         islamicCalendarHasContent: Boolean = true,
         quranVerseEnabled: Boolean = false,
         quranVerseHasContent: Boolean = true
     ): List<BuiltInSlideRegistration> = listOf(
         BuiltInSlideRegistration(
             id = BuiltInSlideId.ISLAMIC_CALENDAR,
-            enabled = islamicCalendarEnabled,
+            enabled = settings.islamicCalendarSlideEnabled,
             hasContent = islamicCalendarHasContent,
             displayName = "Islamic Calendar"
         ),
