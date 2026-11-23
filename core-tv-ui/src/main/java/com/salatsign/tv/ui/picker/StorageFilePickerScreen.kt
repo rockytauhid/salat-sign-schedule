@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -49,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -228,14 +231,23 @@ fun StorageFilePickerScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(colorScheme.background)
+                .background(Color.Black.copy(alpha = 0.72f))
                 .padding(horizontal = 48.dp, vertical = 27.dp) // 10-foot TV overscan safety
                 .onPreviewKeyEvent {
                     onUserInteraction()
                     false
-                }
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 820.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+                    .background(colorScheme.background, RoundedCornerShape(16.dp))
+                    .border(2.dp, colorScheme.primary, RoundedCornerShape(16.dp))
+                    .padding(24.dp)
+            ) {
                 // Header: Title, Optional System Picker Button, and Close Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -245,7 +257,7 @@ fun StorageFilePickerScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = title,
-                            style = TvTypography.HeaderTitle.copy(fontSize = 28.sp, color = colorScheme.primary)
+                            style = TvTypography.HeaderTitle.copy(fontSize = 24.sp, color = colorScheme.primary)
                         )
                         Text(
                             text = when (kind) {
