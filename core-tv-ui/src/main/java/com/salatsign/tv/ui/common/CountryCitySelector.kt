@@ -151,8 +151,9 @@ fun CountryCitySelector(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScrollBleed(6.dp)
                     .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 countries.forEachIndexed { idx, country ->

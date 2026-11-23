@@ -97,6 +97,7 @@ import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.displayLabel
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.CountryCitySelector
+import com.salatsign.tv.ui.common.horizontalScrollBleed
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
@@ -486,8 +487,9 @@ fun HomeSettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScrollBleed(6.dp)
                     .horizontalScroll(methodScrollState)
-                    .padding(vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val methods = listOf(

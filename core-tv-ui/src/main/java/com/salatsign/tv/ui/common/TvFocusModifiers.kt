@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
@@ -96,6 +98,31 @@ fun tvSelectableSurfaceBorder(
     },
     focusedBorder = Border(border = BorderStroke(2.5.dp, MaterialTheme.colorScheme.secondary), shape = shape)
 )
+
+/**
+ * Expands a horizontally scrollable row's clip bounds outward by [bleed] on both left and right
+ * edges while keeping its reported layout width unchanged. Pair with matching inner
+ * `.padding(horizontal = bleed)` inside `.horizontalScroll(...)` so the first and last chips align
+ * flush with sibling controls without clipping androidx.tv.material3's outward focus/selection border.
+ */
+fun Modifier.horizontalScrollBleed(bleed: Dp = 6.dp): Modifier = this.layout { measurable, constraints ->
+    val bleedPx = bleed.roundToPx()
+    val expandedMax = if (constraints.hasBoundedWidth) {
+        constraints.maxWidth + bleedPx * 2
+    } else {
+        Constraints.Infinity
+    }
+    val expandedMin = (constraints.minWidth + bleedPx * 2).coerceAtMost(expandedMax)
+    val placeable = measurable.measure(
+        constraints.copy(minWidth = expandedMin, maxWidth = expandedMax)
+    )
+    layout(
+        width = (placeable.width - bleedPx * 2).coerceAtLeast(0),
+        height = placeable.height
+    ) {
+        placeable.place(x = -bleedPx, y = 0)
+    }
+}
 
 /**
  * Controlled focus scale for TV Cards (overrides androidx.tv.material3's aggressive 1.1x default
