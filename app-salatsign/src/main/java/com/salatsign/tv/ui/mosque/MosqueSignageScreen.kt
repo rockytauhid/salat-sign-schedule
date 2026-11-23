@@ -704,7 +704,7 @@ fun MosqueTextSlideContent(
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
-                        color = AccentGold,
+                        color = colorScheme.secondary,
                         textAlign = TextAlign.Center,
                         textDirection = TextDirection.ContentOrLtr
                     )

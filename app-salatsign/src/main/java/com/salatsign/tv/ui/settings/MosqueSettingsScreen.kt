@@ -198,6 +198,8 @@ fun MosqueSettingsScreen(
 
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var showChangePinDialog by remember { mutableStateOf(false) }
+    var showAddTextSlideDialog by remember { mutableStateOf(false) }
+    var addTextSlideCanEnable by remember { mutableStateOf(true) }
 
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
@@ -1264,7 +1266,12 @@ fun MosqueSettingsScreen(
                         val isSelected = (settings.mosqueIconPreset == preset)
                         val iconShape = RoundedCornerShape(14.dp)
                         Card(
-                            onClick = { onSetMosqueIconPreset(preset) },
+                            onClick = {
+                                onSetMosqueIconPreset(preset)
+                                if (preset == MosqueIconPreset.CUSTOM) {
+                                    activePickerKind = ImportKind.MOSQUE_LOGO
+                                }
+                            },
                             colors = CardDefaults.colors(
                                 containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
                                 focusedContainerColor = colorScheme.surfaceVariant
@@ -1290,41 +1297,10 @@ fun MosqueSettingsScreen(
                                     style = TvTypography.BodyLabel.copy(
                                         fontSize = 13.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) AccentEmerald else colorScheme.onSurface
+                                        color = if (isSelected) colorScheme.primary else colorScheme.onSurface
                                     )
                                 )
                             }
-                        }
-                    }
-                }
-
-                if (settings.mosqueIconPreset == MosqueIconPreset.CUSTOM) {
-                    val uploadShape = RoundedCornerShape(8.dp)
-                    Surface(
-                        onClick = { activePickerKind = ImportKind.MOSQUE_LOGO },
-                        shape = ClickableSurfaceDefaults.shape(uploadShape),
-                        scale = tvSurfaceScale(1.03f),
-                        colors = tvSelectableSurfaceColors(selected = false),
-                        border = tvSelectableSurfaceBorder(selected = false, shape = uploadShape)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Upload,
-                                contentDescription = null,
-                                tint = AccentGold,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (!settings.mosqueLogoUri.isNullOrBlank())
-                                    stringResource(R.string.settings_custom_logo_active)
-                                else
-                                    stringResource(R.string.settings_btn_import_logo_usb),
-                                style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
-                            )
                         }
                     }
                 }
@@ -1571,12 +1547,9 @@ fun MosqueSettingsScreen(
 
                     Surface(
                         onClick = {
-                            onAddTextSlide(
-                                context.getString(R.string.mosque_default_name),
-                                context.getString(R.string.mosque_strike_admonition),
-                                15,
-                                canAddEnabledSlide
-                            )
+                            onClearSlideLimitError()
+                            addTextSlideCanEnable = canAddEnabledSlide
+                            showAddTextSlideDialog = true
                         },
                         shape = ClickableSurfaceDefaults.shape(slideActionShape),
                         scale = tvSurfaceScale(1.03f),
@@ -2111,6 +2084,18 @@ fun MosqueSettingsScreen(
                 onDismiss = {
                     activePickerKind = null
                                     }
+            )
+        }
+
+        // Overlay: Add Text Announcement Slide Dialog
+        if (showAddTextSlideDialog) {
+            AddTextSlideDialog(
+                canAddEnabledSlide = addTextSlideCanEnable,
+                onSave = { title, body, durationSeconds, enabled ->
+                    onAddTextSlide(title, body, durationSeconds, enabled)
+                    showAddTextSlideDialog = false
+                },
+                onDismiss = { showAddTextSlideDialog = false }
             )
         }
 
