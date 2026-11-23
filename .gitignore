@@ -15,3 +15,9 @@ local.properties
 *.keystore
 *.apk
 *.aab
+
+# Raw downloaded Quran source corpora (checksums tracked in tools/sources/CHECKSUMS.txt)
+tools/sources/*.txt
+tools/sources/*.xml
+!tools/sources/CHECKSUMS.txt
+!tools/sources/AMIRI_QURAN_OFL.txt

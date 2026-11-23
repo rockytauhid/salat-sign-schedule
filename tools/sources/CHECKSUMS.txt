@@ -1,0 +1,7 @@
+# SHA-256 checksums of verified upstream Quran source files used by tools/build_quran_data.py
+# Verified Unicode codepoint count in extracted Uthmani Arabic subset: 54
+bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8  tools/sources/quran-uthmani.txt
+a1778a1a56695d9b59ae910809ec46d9f4a55f05961de51cd56e6ebcf9040883  tools/sources/en.sahih.txt
+70428e875c50c3c42d3829654d2bd386e146f0fa68cc20c34fdd4ea3b53e21a8  tools/sources/id.indonesian.txt
+8867c1d88191472adec9db694b3cd9f135b1a2ef580574d32cf888dcb22c5c7a  tools/sources/quran-data.xml
+b32e3b24e2a943b8acbf6ab8d5499bfed737d5176091b7341a8c1e7fbcdeb0fa  tools/sources/AMIRI_QURAN_OFL.txt
