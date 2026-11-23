@@ -137,7 +137,14 @@ class SalatSignLocalServerTest {
             return Result.success(next)
         }
 
-        override suspend fun updateSlide(slide: AnnouncementSlide): Result<SlideContainer> = Result.success(_slides.value)
+        override suspend fun updateSlide(slide: AnnouncementSlide): Result<SlideContainer> {
+            val next = SlideContainer(
+                revision = _slides.value.revision + 1,
+                slides = _slides.value.slides.map { if (it.id == slide.id) slide else it }
+            )
+            _slides.value = next
+            return Result.success(next)
+        }
 
         override suspend fun deleteSlide(slideId: String): Result<SlideContainer> {
             val next = SlideContainer(
@@ -316,6 +323,57 @@ class SalatSignLocalServerTest {
         assertEquals(0L, settingsRepo.current.silentScreen.manualSilentUntilEpochMillis)
         val stopJson = SimpleJson.parseObject(stopResp.body.toString(StandardCharsets.UTF_8))
         assertEquals(false, stopJson["manualSilentActive"])
+    }
+
+    @Test
+    fun slideBudget_refusesSeventhEnabledSlide_allowsDisabledAndReEnableAfterDisable() = runBlocking {
+        var now = 1_700_000_000_000L
+        val (server, _, contentRepo) = createServer(nowProvider = { now++ })
+        val authResp = server.handleRequest(HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray()))
+        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
+        val authHeaders = mapOf("authorization" to "Bearer $token")
+
+        // Add 6 enabled slides -> all succeed
+        var firstSlideId = ""
+        repeat(6) { idx ->
+            val r = server.handleRequest(
+                HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S$idx","body":"B$idx"}""".toByteArray())
+            )
+            assertEquals(201, r.statusCode)
+            if (idx == 0) {
+                firstSlideId = SimpleJson.parseObject(r.body.toString(StandardCharsets.UTF_8))["id"] as String
+            }
+        }
+
+        // 7th enabled slide is refused with 409 Conflict
+        val seventhEnabled = server.handleRequest(
+            HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S7","body":"B7","enabled":true}""".toByteArray())
+        )
+        assertEquals(409, seventhEnabled.statusCode)
+
+        // 7th slide saved as disabled is allowed
+        val seventhDisabled = server.handleRequest(
+            HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S7","body":"B7","enabled":false}""".toByteArray())
+        )
+        assertEquals(201, seventhDisabled.statusCode)
+        val seventhId = SimpleJson.parseObject(seventhDisabled.body.toString(StandardCharsets.UTF_8))["id"] as String
+        assertEquals(7, contentRepo.slidesFlow.value.slides.size)
+
+        // Trying to enable 7th while 6 are enabled -> refused (409)
+        assertEquals(
+            409,
+            server.handleRequest(HttpRequest("PATCH", "/api/v1/slides/$seventhId", headers = authHeaders, body = """{"enabled":true}""".toByteArray())).statusCode
+        )
+
+        // Disable 1st slide, then enable 7th -> succeeds (200)
+        assertEquals(
+            200,
+            server.handleRequest(HttpRequest("PATCH", "/api/v1/slides/$firstSlideId", headers = authHeaders, body = """{"enabled":false}""".toByteArray())).statusCode
+        )
+        assertEquals(
+            200,
+            server.handleRequest(HttpRequest("PATCH", "/api/v1/slides/$seventhId", headers = authHeaders, body = """{"enabled":true}""".toByteArray())).statusCode
+        )
     }
 
     @Test

@@ -21,8 +21,12 @@ import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
 import com.salatsign.tv.engine.SilentScreenCalculator
+import com.salatsign.tv.engine.SlideBudget
+import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -44,8 +48,21 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     val slides: StateFlow<SlideContainer> = contentRepository.slidesFlow
 
+    private val _slideLimitError = MutableStateFlow(false)
+    val slideLimitError: StateFlow<Boolean> = _slideLimitError.asStateFlow()
+
     val isPhoneControllerRunning: StateFlow<Boolean> = app.localServer.isRunning
     val phoneControllerUrl: StateFlow<String?> = app.phoneControllerUrl
+
+    fun clearSlideLimitError() {
+        _slideLimitError.value = false
+    }
+
+    private fun currentEnabledBuiltInCount(): Int =
+        BuiltInSlideRegistry.registrationsFor(settings.value).count { it.enabled }
+
+    private fun currentEnabledAnnouncementCount(): Int =
+        contentRepository.slidesFlow.value.slides.count { it.enabled }
 
     fun setPhoneControllerEnabled(enabled: Boolean) {
         app.setPhoneControllerEnabled(enabled)
@@ -120,6 +137,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun clearSlides() {
+        _slideLimitError.value = false
         viewModelScope.launch {
             val current = contentRepository.slidesFlow.value
             contentRepository.replaceAll(current.revision, emptyList())
@@ -127,33 +145,78 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun deleteSlide(slideId: String) {
+        _slideLimitError.value = false
         viewModelScope.launch { contentRepository.deleteSlide(slideId) }
     }
 
-    fun addTextSlide(title: String, body: String, durationSeconds: Int) {
+    fun toggleSlideEnabled(slideId: String): Boolean {
+        val current = contentRepository.slidesFlow.value.slides.firstOrNull { it.id == slideId } ?: return false
+        val targetEnabled = !current.enabled
+        if (targetEnabled && !SlideBudget.canEnableOrAddAnnouncement(
+                enabledAnnouncements = currentEnabledAnnouncementCount(),
+                enabledBuiltIns = currentEnabledBuiltInCount()
+            )
+        ) {
+            _slideLimitError.value = true
+            return false
+        }
+        _slideLimitError.value = false
+        viewModelScope.launch { contentRepository.updateSlide(current.copy(enabled = targetEnabled)) }
+        return true
+    }
+
+    fun addTextSlide(title: String, body: String, durationSeconds: Int, enabled: Boolean = true): Boolean {
+        if (enabled && !SlideBudget.canEnableOrAddAnnouncement(
+                enabledAnnouncements = currentEnabledAnnouncementCount(),
+                enabledBuiltIns = currentEnabledBuiltInCount()
+            )
+        ) {
+            _slideLimitError.value = true
+            return false
+        }
+        _slideLimitError.value = false
         viewModelScope.launch {
+            val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
             val slide = AnnouncementSlide(
                 id = "slide_${System.currentTimeMillis()}",
                 type = SlideType.TEXT,
                 title = title,
                 body = body,
-                durationSeconds = durationSeconds.coerceIn(3, 120)
+                durationSeconds = durationSeconds.coerceIn(3, 120),
+                enabled = enabled,
+                sortOrder = nextOrder
             )
             contentRepository.addSlide(slide)
         }
+        return true
     }
 
-    fun addImageSlide(title: String, imageFile: String, durationSeconds: Int) {
+    fun addImageSlide(title: String, imageFile: String, durationSeconds: Int, enabled: Boolean = true): Boolean {
+        val effectiveEnabled = if (enabled && !SlideBudget.canEnableOrAddAnnouncement(
+                enabledAnnouncements = currentEnabledAnnouncementCount(),
+                enabledBuiltIns = currentEnabledBuiltInCount()
+            )
+        ) {
+            _slideLimitError.value = true
+            false
+        } else {
+            _slideLimitError.value = false
+            enabled
+        }
         viewModelScope.launch {
+            val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
             val slide = AnnouncementSlide(
                 id = "slide_${System.currentTimeMillis()}",
                 type = SlideType.IMAGE,
                 title = title,
                 imageFile = imageFile,
-                durationSeconds = durationSeconds.coerceIn(3, 120)
+                durationSeconds = durationSeconds.coerceIn(3, 120),
+                enabled = effectiveEnabled,
+                sortOrder = nextOrder
             )
             contentRepository.addSlide(slide)
         }
+        return effectiveEnabled
     }
 
     fun setCustomLogo(relativeFileName: String) {

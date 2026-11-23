@@ -36,4 +36,18 @@
     <string name="settings_silent_copied_all">Copied settings to all 5 prayers.</string>
     <string name="settings_silent_copied_partial">Copied to %1$d prayers (%2$d need an iqamah time first).</string>
     <string name="settings_silent_done">Done</string>
+
+    <!-- 6-Slide Rotation Limit (SalatSign only) -->
+    <string name="settings_slides_in_rotation">Slides in rotation: %1$d of %2$d</string>
+    <string name="settings_slides_stored_library">Stored announcements: %1$d of %2$d</string>
+    <string name="settings_slides_limit_refused">The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first.</string>
+    <string name="settings_slides_over_limit_warning">%1$d slide(s) are not shown because of the 6-slide limit: %2$s</string>
+    <string name="settings_slides_add_disabled">Add Text Slide (Disabled)</string>
+    <string name="settings_slides_status_enabled">Active</string>
+    <string name="settings_slides_status_disabled">Disabled</string>
+    <string name="settings_slides_breakdown_announcements">%1$d announcements</string>
+    <string name="settings_slides_breakdown_announcement_one">1 announcement</string>
+    <string name="settings_slides_breakdown_none">No slides enabled (schedule only)</string>
+    <string name="settings_slides_builtin_islamic_calendar">Islamic calendar</string>
+    <string name="settings_slides_builtin_quran_verse">Quran verse</string>
 </resources>

@@ -21,7 +21,9 @@ import com.salatsign.tv.data.model.SilentWindowKind
 import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
+import com.salatsign.tv.engine.RotationSlideItem
 import com.salatsign.tv.engine.SilentScreenCalculator
+import com.salatsign.tv.engine.SlideshowRotationBuilder
 import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -223,14 +225,17 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                     continue
                 }
 
-                // Step 2: Transition through Announcement Slides
+                // Step 2: Transition through Rotation Items (first 6 slots: enabled announcements by sortOrder, then built-in slides)
                 val currentSettings = settingsState.value
                 val currentZone = runCatching { ZoneId.of(currentSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                 val filterToday = ZonedDateTime.now(currentZone).toLocalDate()
                 val allSlides = contentRepository.slidesFlow.value.slides
                 val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
-                if (activeSlides.isNotEmpty()) {
-                    for ((index, slide) in activeSlides.withIndex()) {
+                val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(currentSettings)
+                val rotationPlan = SlideshowRotationBuilder.build(activeSlides, builtInRegistrations)
+
+                if (rotationPlan.runtimeItems.isNotEmpty()) {
+                    for ((index, item) in rotationPlan.runtimeItems.withIndex()) {
                         // Recompute today and prayerTimes at the start of every slide
                         val slideSettings = settingsState.value
                         val slideZone = runCatching { ZoneId.of(slideSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
@@ -255,12 +260,21 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                             break
                         }
 
-                        val slideDuration = slide.durationSeconds.coerceAtLeast(3)
-                        _slideState.value = SlideState.AnnouncementImage(
-                            slideIndex = index,
-                            slide = slide,
-                            durationSeconds = slideDuration
-                        )
+                        val slideDuration = when (item) {
+                            is RotationSlideItem.Announcement -> {
+                                val dur = item.slide.durationSeconds.coerceAtLeast(3)
+                                _slideState.value = SlideState.AnnouncementImage(
+                                    slideIndex = index,
+                                    slide = item.slide,
+                                    durationSeconds = dur
+                                )
+                                dur
+                            }
+                            is RotationSlideItem.BuiltIn -> {
+                                // Built-in slide renderers are wired in IC-4 (Islamic Calendar) and QV-3 (Quran Verse)
+                                continue
+                            }
+                        }
 
                         // Wait for slideDuration with silent-screen and exact-strike interruption check
                         var interrupted = false

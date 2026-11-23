@@ -80,6 +80,7 @@ import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.salatsign.tv.BuildConfig
 import com.salatsign.core.tv.R
+import com.salatsign.tv.R as AppR
 import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppLanguage
@@ -98,6 +99,9 @@ import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
 import com.salatsign.tv.engine.JumuahCalculator
 import com.salatsign.tv.engine.JumuahWarningReason
+import com.salatsign.tv.engine.SlideBudget
+import com.salatsign.tv.engine.SlideshowRotationBuilder
+import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
 import com.salatsign.tv.ui.common.CountryCitySelector
 import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.PinDialog
@@ -145,10 +149,13 @@ fun MosqueSettingsScreen(
     phoneControllerUrl: String? = null,
     onTogglePhoneController: (Boolean) -> Unit = {},
     onSetScheduleDuration: (Int) -> Unit,
-    onAddTextSlide: (String, String, Int) -> Unit,
+    onAddTextSlide: (String, String, Int, Boolean) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
+    onToggleSlideEnabled: (String) -> Unit = {},
     onDeleteSlide: (String) -> Unit,
     onClearSlides: () -> Unit,
+    slideLimitError: Boolean = false,
+    onClearSlideLimitError: () -> Unit = {},
     onSetCustomLogo: (String) -> Unit,
     onChangeAdminPin: (String) -> Unit,
     onDismissDefaultPinPrompt: () -> Unit,
@@ -1436,15 +1443,102 @@ fun MosqueSettingsScreen(
                     }
                 }
 
-                Text(
-                    text = stringResource(R.string.settings_section_slides, slides.size, 10),
-                    style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+                val builtIns = BuiltInSlideRegistry.registrationsFor(settings)
+                val rotationPlan = SlideshowRotationBuilder.build(slides, builtIns)
+                val enabledBuiltInCount = rotationPlan.enabledBuiltInCount
+                val canAddEnabledSlide = SlideBudget.canEnableOrAddAnnouncement(
+                    enabledAnnouncements = rotationPlan.enabledAnnouncementCount,
+                    enabledBuiltIns = enabledBuiltInCount
                 )
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(
+                            AppR.string.settings_slides_in_rotation,
+                            rotationPlan.allocatedCount,
+                            SlideBudget.MAX_ROTATION_SLIDES
+                        ),
+                        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+                    )
+                    val breakdownParts = buildList {
+                        if (rotationPlan.enabledAnnouncementCount == 1) {
+                            add(stringResource(AppR.string.settings_slides_breakdown_announcement_one))
+                        } else if (rotationPlan.enabledAnnouncementCount > 1) {
+                            add(stringResource(AppR.string.settings_slides_breakdown_announcements, rotationPlan.enabledAnnouncementCount))
+                        }
+                        for (bi in builtIns.filter { it.enabled }) {
+                            add(
+                                when (bi.id) {
+                                    com.salatsign.tv.engine.BuiltInSlideId.ISLAMIC_CALENDAR ->
+                                        stringResource(AppR.string.settings_slides_builtin_islamic_calendar)
+                                    com.salatsign.tv.engine.BuiltInSlideId.QURAN_VERSE ->
+                                        stringResource(AppR.string.settings_slides_builtin_quran_verse)
+                                }
+                            )
+                        }
+                    }
+                    val breakdownText = if (breakdownParts.isEmpty()) {
+                        stringResource(AppR.string.settings_slides_breakdown_none)
+                    } else {
+                        breakdownParts.joinToString(", ")
+                    }
+                    Text(
+                        text = "$breakdownText  •  ${stringResource(AppR.string.settings_slides_stored_library, slides.size, SlideBudget.MAX_STORED_ANNOUNCEMENTS)}",
+                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+                    )
+                }
+
+                if (slideLimitError) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFEF4444).copy(alpha = 0.14f), RoundedCornerShape(10.dp))
+                            .border(1.dp, Color(0xFFDC2626).copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = stringResource(AppR.string.settings_slides_limit_refused),
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurface
+                            )
+                        )
+                    }
+                }
+
+                if (rotationPlan.isOverLimit) {
+                    val hiddenNames = (rotationPlan.hiddenAnnouncements.map { it.title.ifBlank { "(Untitled)" } } +
+                        rotationPlan.hiddenBuiltIns.map { it.displayName }).joinToString(", ")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colorScheme.secondary.copy(alpha = 0.14f), RoundedCornerShape(10.dp))
+                            .border(1.dp, colorScheme.secondary.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                AppR.string.settings_slides_over_limit_warning,
+                                rotationPlan.hiddenCount,
+                                hiddenNames
+                            ),
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurface
+                            )
+                        )
+                    }
+                }
 
                 val slideActionShape = RoundedCornerShape(8.dp)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Surface(
-                        onClick = { activePickerKind = ImportKind.SLIDE_IMAGE },
+                        onClick = {
+                            onClearSlideLimitError()
+                            activePickerKind = ImportKind.SLIDE_IMAGE
+                        },
                         shape = ClickableSurfaceDefaults.shape(slideActionShape),
                         scale = tvSurfaceScale(1.03f),
                         colors = tvSelectableSurfaceColors(selected = false),
@@ -1457,7 +1551,7 @@ fun MosqueSettingsScreen(
                             Icon(
                                 imageVector = Icons.Default.AddPhotoAlternate,
                                 contentDescription = null,
-                                tint = AccentEmerald,
+                                tint = colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1470,7 +1564,8 @@ fun MosqueSettingsScreen(
                             onAddTextSlide(
                                 context.getString(R.string.mosque_default_name),
                                 context.getString(R.string.mosque_strike_admonition),
-                                15
+                                15,
+                                canAddEnabledSlide
                             )
                         },
                         shape = ClickableSurfaceDefaults.shape(slideActionShape),
@@ -1485,11 +1580,17 @@ fun MosqueSettingsScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.NoteAdd,
                                 contentDescription = null,
-                                tint = AccentGold,
+                                tint = colorScheme.secondary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.settings_btn_add_text_slide), style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface))
+                            Text(
+                                text = stringResource(
+                                    if (canAddEnabledSlide) R.string.settings_btn_add_text_slide
+                                    else AppR.string.settings_slides_add_disabled
+                                ),
+                                style = TvTypography.ButtonText.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                            )
                         }
                     }
 
@@ -1516,7 +1617,10 @@ fun MosqueSettingsScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (slide.enabled) colorScheme.surfaceVariant else colorScheme.surface,
+                                        RoundedCornerShape(8.dp)
+                                    )
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -1527,21 +1631,29 @@ fun MosqueSettingsScreen(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .background(colorScheme.surface, RoundedCornerShape(4.dp))
+                                                .background(colorScheme.background, RoundedCornerShape(4.dp))
                                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "#${index + 1} ${if (slide.type == SlideType.IMAGE) "IMG" else "TXT"}",
-                                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = AccentEmerald, fontWeight = FontWeight.Bold)
+                                                style = TvTypography.BodyLabel.copy(
+                                                    fontSize = 12.sp,
+                                                    color = if (slide.enabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.55f),
+                                                    fontWeight = FontWeight.Bold
+                                                )
                                             )
                                         }
                                         Text(
                                             text = slide.title.ifBlank { "(Untitled)" },
-                                            style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                                            style = TvTypography.BodyLabel.copy(
+                                                fontSize = 15.sp,
+                                                color = if (slide.enabled) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
                                         )
                                         Text(
                                             text = "(${slide.durationSeconds}s)",
@@ -1549,29 +1661,52 @@ fun MosqueSettingsScreen(
                                         )
                                     }
 
-                                    val delShape = RoundedCornerShape(6.dp)
-                                    Surface(
-                                        onClick = { onDeleteSlide(slide.id) },
-                                        shape = ClickableSurfaceDefaults.shape(delShape),
-                                        scale = tvSurfaceScale(1.03f),
-                                        colors = tvSelectableSurfaceColors(selected = false),
-                                        border = tvSelectableSurfaceBorder(selected = false, shape = delShape)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        val btnShape = RoundedCornerShape(6.dp)
+                                        Surface(
+                                            onClick = { onToggleSlideEnabled(slide.id) },
+                                            shape = ClickableSurfaceDefaults.shape(btnShape),
+                                            scale = tvSurfaceScale(1.03f),
+                                            colors = tvSelectableSurfaceColors(selected = slide.enabled),
+                                            border = tvSelectableSurfaceBorder(selected = slide.enabled, shape = btnShape)
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = stringResource(R.string.btn_delete),
-                                                tint = Color(0xFFEF4444),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
                                             Text(
-                                                text = stringResource(R.string.btn_delete),
-                                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = Color(0xFFEF4444))
+                                                text = stringResource(
+                                                    if (slide.enabled) AppR.string.settings_slides_status_enabled
+                                                    else AppR.string.settings_slides_status_disabled
+                                                ),
+                                                style = TvTypography.BodyLabel.copy(
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (slide.enabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.7f)
+                                                ),
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                             )
+                                        }
+
+                                        Surface(
+                                            onClick = { onDeleteSlide(slide.id) },
+                                            shape = ClickableSurfaceDefaults.shape(btnShape),
+                                            scale = tvSurfaceScale(1.03f),
+                                            colors = tvSelectableSurfaceColors(selected = false),
+                                            border = tvSelectableSurfaceBorder(selected = false, shape = btnShape)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = stringResource(R.string.btn_delete),
+                                                    tint = Color(0xFFEF4444),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = stringResource(R.string.btn_delete),
+                                                    style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = Color(0xFFEF4444))
+                                                )
+                                            }
                                         }
                                     }
                                 }

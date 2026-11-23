@@ -202,6 +202,7 @@ private fun SalatSignMainContent(
     val settings by settingsViewModel.settings.collectAsState()
     val mosqueUiState by mosqueViewModel.uiState.collectAsState()
     val slideContainer by settingsViewModel.slides.collectAsState()
+    val slideLimitError by settingsViewModel.slideLimitError.collectAsState()
     val isPhoneControllerRunning by settingsViewModel.isPhoneControllerRunning.collectAsState()
     val phoneControllerUrl by settingsViewModel.phoneControllerUrl.collectAsState()
     val view = LocalView.current
@@ -254,10 +255,13 @@ private fun SalatSignMainContent(
                 onSetMosqueIconPreset = { settingsViewModel.setMosqueIconPreset(it) },
                 onSetMosqueFontPreset = { settingsViewModel.setMosqueFontPreset(it) },
                 onSetScheduleDuration = { settingsViewModel.setScheduleDuration(it) },
-                onAddTextSlide = { title, body, dur -> settingsViewModel.addTextSlide(title, body, dur) },
+                onAddTextSlide = { title, body, dur, enabled -> settingsViewModel.addTextSlide(title, body, dur, enabled) },
                 onAddImageSlide = { title, imgFile, dur -> settingsViewModel.addImageSlide(title, imgFile, dur) },
+                onToggleSlideEnabled = { settingsViewModel.toggleSlideEnabled(it) },
                 onDeleteSlide = { settingsViewModel.deleteSlide(it) },
                 onClearSlides = { settingsViewModel.clearSlides() },
+                slideLimitError = slideLimitError,
+                onClearSlideLimitError = { settingsViewModel.clearSlideLimitError() },
                 onSetCustomLogo = { settingsViewModel.setCustomLogo(it) },
                 onChangeAdminPin = { settingsViewModel.setAdminPin(it) },
                 onDismissDefaultPinPrompt = { settingsViewModel.dismissDefaultPinPrompt() },

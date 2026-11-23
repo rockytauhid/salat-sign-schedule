@@ -14,8 +14,10 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.repository.IContentRepository
 import com.salatsign.tv.data.repository.ISettingsRepository
+import com.salatsign.tv.engine.SlideBudget
 import com.salatsign.tv.security.PinHasher
 import com.salatsign.tv.security.PinVerifyResult
+import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -188,6 +190,10 @@ class SalatSignLocalServer(
             method == "GET" && path == "/api/v1/slides" -> handleGetSlides()
             method == "POST" && path == "/api/v1/slides/text" -> handleAddTextSlide(req)
             method == "POST" && path == "/api/v1/slides/image" -> handleAddImageSlide(req)
+            method == "PATCH" && path.startsWith("/api/v1/slides/") -> {
+                val id = URLDecoder.decode(path.removePrefix("/api/v1/slides/"), "UTF-8")
+                handlePatchSlide(id, req)
+            }
             method == "DELETE" && path.startsWith("/api/v1/slides/") -> {
                 val id = URLDecoder.decode(path.removePrefix("/api/v1/slides/"), "UTF-8")
                 handleDeleteSlide(id)
@@ -368,8 +374,11 @@ class SalatSignLocalServer(
         return handleGetSettings()
     }
 
-    private fun handleGetSlides(): HttpResponse {
+    private suspend fun handleGetSlides(): HttpResponse {
         val container = contentRepository.slidesFlow.value
+        val settings = settingsRepository.appSettingsFlow.first()
+        val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
+        val enabledAnnouncements = container.slides.count { it.enabled }
         val slides = container.slides.map { slide ->
             mapOf(
                 "id" to slide.id,
@@ -377,10 +386,20 @@ class SalatSignLocalServer(
                 "title" to slide.title,
                 "body" to slide.body,
                 "imageFile" to slide.imageFile,
-                "durationSeconds" to slide.durationSeconds
+                "durationSeconds" to slide.durationSeconds,
+                "enabled" to slide.enabled,
+                "sortOrder" to slide.sortOrder
             )
         }
-        return jsonResponse(200, "OK", mapOf("revision" to container.revision, "slides" to slides))
+        return jsonResponse(
+            200, "OK",
+            mapOf(
+                "revision" to container.revision,
+                "usedSlots" to SlideBudget.usedSlots(enabledAnnouncements, enabledBuiltIns),
+                "maxRotationSlides" to SlideBudget.MAX_ROTATION_SLIDES,
+                "slides" to slides
+            )
+        )
     }
 
     private suspend fun handleAddTextSlide(req: HttpRequest): HttpResponse {
@@ -390,17 +409,33 @@ class SalatSignLocalServer(
         if (title.isEmpty() && text.isEmpty()) {
             return jsonResponse(400, "Bad Request", mapOf("error" to "empty_slide", "message" to "Slide title or body is required"))
         }
+        val enabled = (body["enabled"] as? Boolean) ?: true
+        val settings = settingsRepository.appSettingsFlow.first()
+        val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
+        val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
+        if (enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
+            return jsonResponse(
+                409, "Conflict",
+                mapOf(
+                    "error" to "slide_limit_reached",
+                    "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
+                )
+            )
+        }
         val duration = ((body["durationSeconds"] as? Number)?.toInt() ?: 15).coerceIn(3, 120)
+        val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
             id = "slide_${nowMillisProvider()}",
             type = SlideType.TEXT,
             title = title,
             body = text,
-            durationSeconds = duration
+            durationSeconds = duration,
+            enabled = enabled,
+            sortOrder = nextOrder
         )
         val result = contentRepository.addSlide(slide)
         return if (result.isSuccess) {
-            jsonResponse(201, "Created", mapOf("id" to slide.id, "slideCount" to result.getOrThrow().slides.size))
+            jsonResponse(201, "Created", mapOf("id" to slide.id, "enabled" to slide.enabled, "slideCount" to result.getOrThrow().slides.size))
         } else {
             jsonResponse(400, "Bad Request", mapOf("error" to "add_failed", "message" to (result.exceptionOrNull()?.message ?: "Failed to add slide")))
         }
@@ -410,24 +445,68 @@ class SalatSignLocalServer(
         if (req.body.isEmpty()) {
             return jsonResponse(400, "Bad Request", mapOf("error" to "empty_image", "message" to "Image payload is empty"))
         }
+        val enabled = req.queryParams["enabled"]?.equals("false", ignoreCase = true)?.not() ?: true
+        val settings = settingsRepository.appSettingsFlow.first()
+        val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
+        val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
+        if (enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
+            return jsonResponse(
+                409, "Conflict",
+                mapOf(
+                    "error" to "slide_limit_reached",
+                    "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
+                )
+            )
+        }
         val title = req.queryParams["title"]?.takeIf { it.isNotBlank() } ?: "Announcement"
         val duration = (req.queryParams["duration"]?.toIntOrNull() ?: 15).coerceIn(3, 120)
         val imported = slideImageImporter.importImage(req.body, ImageTargetType.SLIDE)
         val processed = imported.getOrElse { err ->
             return jsonResponse(400, "Bad Request", mapOf("error" to "image_invalid", "message" to (err.message ?: "Invalid image")))
         }
+        val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
             id = "slide_${nowMillisProvider()}",
             type = SlideType.IMAGE,
             title = title,
             imageFile = processed.relativeFileName,
-            durationSeconds = duration
+            durationSeconds = duration,
+            enabled = enabled,
+            sortOrder = nextOrder
         )
         val added = contentRepository.addSlide(slide)
         return if (added.isSuccess) {
-            jsonResponse(201, "Created", mapOf("id" to slide.id, "imageFile" to processed.relativeFileName))
+            jsonResponse(201, "Created", mapOf("id" to slide.id, "enabled" to slide.enabled, "imageFile" to processed.relativeFileName))
         } else {
             jsonResponse(400, "Bad Request", mapOf("error" to "add_failed", "message" to (added.exceptionOrNull()?.message ?: "Failed to add slide")))
+        }
+    }
+
+    private suspend fun handlePatchSlide(slideId: String, req: HttpRequest): HttpResponse {
+        val current = contentRepository.slidesFlow.value.slides.firstOrNull { it.id == slideId }
+            ?: return jsonResponse(404, "Not Found", mapOf("error" to "not_found", "message" to "Slide not found"))
+        val patch = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
+        val targetEnabled = (patch["enabled"] as? Boolean) ?: current.enabled
+        if (targetEnabled && !current.enabled) {
+            val settings = settingsRepository.appSettingsFlow.first()
+            val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
+            val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
+            if (!SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
+                return jsonResponse(
+                    409, "Conflict",
+                    mapOf(
+                        "error" to "slide_limit_reached",
+                        "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
+                    )
+                )
+            }
+        }
+        val updated = current.copy(enabled = targetEnabled)
+        val res = contentRepository.updateSlide(updated)
+        return if (res.isSuccess) {
+            jsonResponse(200, "OK", mapOf("id" to updated.id, "enabled" to updated.enabled))
+        } else {
+            jsonResponse(400, "Bad Request", mapOf("error" to "update_failed", "message" to (res.exceptionOrNull()?.message ?: "Failed to update slide")))
         }
     }
 
