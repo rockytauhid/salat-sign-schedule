@@ -51,6 +51,7 @@ import androidx.tv.material3.Text
 import com.salatsign.core.tv.R as CoreR
 import com.salatschedule.tv.service.AdhanPlaybackService
 import com.salatschedule.tv.service.PrayerAlarmScheduler
+import com.salatschedule.tv.ui.calendar.IslamicCalendarScreen
 import com.salatschedule.tv.ui.home.HomeScreen
 import com.salatschedule.tv.ui.home.HomeViewModel
 import com.salatschedule.tv.ui.settings.HomeSettingsScreen
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: HomeSettingsViewModel by viewModels()
 
     private val isSettingsOpen = mutableStateOf(false)
+    private val isCalendarOpen = mutableStateOf(false)
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -156,8 +158,17 @@ class MainActivity : ComponentActivity() {
                     homeViewModel = homeViewModel,
                     settingsViewModel = settingsViewModel,
                     isSettingsOpen = isSettingsOpen.value,
-                    onOpenSettings = { isSettingsOpen.value = true },
+                    isCalendarOpen = isCalendarOpen.value,
+                    onOpenSettings = {
+                        isCalendarOpen.value = false
+                        isSettingsOpen.value = true
+                    },
                     onCloseSettings = { isSettingsOpen.value = false },
+                    onOpenCalendar = {
+                        isSettingsOpen.value = false
+                        isCalendarOpen.value = true
+                    },
+                    onCloseCalendar = { isCalendarOpen.value = false },
                     onStopAdhan = { stopAdhan() }
                 )
             }
@@ -194,8 +205,11 @@ private fun SalatScheduleMainContent(
     homeViewModel: HomeViewModel,
     settingsViewModel: HomeSettingsViewModel,
     isSettingsOpen: Boolean,
+    isCalendarOpen: Boolean,
     onOpenSettings: () -> Unit,
     onCloseSettings: () -> Unit,
+    onOpenCalendar: () -> Unit,
+    onCloseCalendar: () -> Unit,
     onStopAdhan: () -> Unit
 ) {
     val settings by settingsViewModel.settings.collectAsState()
@@ -204,6 +218,8 @@ private fun SalatScheduleMainContent(
 
     if (isSettingsOpen) {
         BackHandler { onCloseSettings() }
+    } else if (isCalendarOpen) {
+        BackHandler { onCloseCalendar() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -236,11 +252,19 @@ private fun SalatScheduleMainContent(
                     onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
                     onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
                     onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
+                    onToggleIslamicEvent = { settingsViewModel.toggleIslamicEvent(it) },
+                    onSetShowNextEventOnHome = { settingsViewModel.setShowNextEventOnHome(it) },
                     onRestartSetupWizard = {
                         onCloseSettings()
                         settingsViewModel.restartSetupWizard()
                     },
                     onBack = onCloseSettings
+                )
+            }
+            isCalendarOpen -> {
+                IslamicCalendarScreen(
+                    settings = settings,
+                    onBack = onCloseCalendar
                 )
             }
             else -> {
@@ -249,6 +273,7 @@ private fun SalatScheduleMainContent(
                     onPreviousDay = { homeViewModel.previousDay() },
                     onNextDay = { homeViewModel.nextDay() },
                     onTodayClick = { homeViewModel.resetToToday() },
+                    onOpenCalendar = onOpenCalendar,
                     onOpenSettings = onOpenSettings,
                     onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
                 )

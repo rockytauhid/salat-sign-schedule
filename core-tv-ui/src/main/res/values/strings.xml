@@ -284,4 +284,53 @@
     <string name="settings_phone_controller_desc">Open the address below on a phone connected to the same Wi-Fi to manage slides, branding, and Jumu\'ah times using your Admin PIN.</string>
     <string name="settings_phone_controller_url">Open on phone: %1$s</string>
     <string name="settings_phone_controller_no_wifi">Connect this TV to Wi-Fi or Ethernet to get a local LAN address.</string>
+    <!-- Islamic Calendar Events (Shared: SalatSchedule Screen & SalatSign Slide) -->
+    <string name="islamic_cal_title">Islamic Calendar</string>
+    <string name="islamic_cal_button">Islamic Calendar</string>
+    <string name="islamic_cal_year_ah">%1$d AH</string>
+    <string name="islamic_cal_next_summary">Next: %1$s, %2$s</string>
+    <string name="islamic_cal_moon_note">Dates are calculated and may differ by a day depending on moon sighting. Adjust in Settings, Hijri date adjustment.</string>
+    <string name="islamic_cal_moon_note_short">Dates are calculated and may differ by a day depending on moon sighting.</string>
+    <string name="islamic_cal_badge_today">TODAY</string>
+    <string name="islamic_cal_badge_next">NEXT</string>
+    <string name="islamic_cal_rel_today">Today</string>
+    <string name="islamic_cal_rel_tomorrow">in 1 day</string>
+    <string name="islamic_cal_rel_in_days">in %1$d days</string>
+    <string name="islamic_cal_rel_yesterday">1 day ago</string>
+    <string name="islamic_cal_rel_days_ago">%1$d days ago</string>
+    <string name="islamic_cal_prev_year">Prev Year</string>
+    <string name="islamic_cal_next_year">Next Year</string>
+    <string name="islamic_cal_today_btn">Today</string>
+    <string name="islamic_cal_limit_past">Limit reached (3 years back)</string>
+    <string name="islamic_cal_limit_future">Limit reached (3 years ahead)</string>
+    <string name="islamic_cal_empty">No Islamic calendar events are enabled. Enable events in Settings.</string>
+    <string name="islamic_cal_group_major">Major</string>
+    <string name="islamic_cal_group_common">Commonly observed</string>
+    <string name="islamic_cal_group_fasting">Fasting and other days</string>
+    <string name="islamic_cal_settings_section">Islamic Calendar Events</string>
+    <string name="islamic_cal_settings_show_home">Show next event on Home screen</string>
+    <string name="islamic_cal_settings_show_home_desc">Display a compact summary line for the next upcoming Islamic event on Home.</string>
+    <string name="islamic_cal_settings_hijri_hint">Current Hijri date adjustment: %1$s day(s). Change in the Hijri Date Adjustment section above.</string>
+    <string name="islamic_cal_slide_section">Islamic Calendar Slide</string>
+    <string name="islamic_cal_slide_enable_title">Show Islamic Calendar Slide in Rotation</string>
+    <string name="islamic_cal_slide_enable_desc">Uses 1 of the 6 slideshow slots. Automatically skipped if no events qualify.</string>
+    <string name="islamic_cal_slide_duration_label">Slide duration (seconds)</string>
+
+    <!-- 16 Islamic Event Names (English en-AU) -->
+    <string name="islamic_event_new_year">Islamic New Year</string>
+    <string name="islamic_event_ashura">Day of Ashura</string>
+    <string name="islamic_event_ramadan_start">Start of Ramadan</string>
+    <string name="islamic_event_eid_fitr">Eid al-Fitr</string>
+    <string name="islamic_event_arafah">Day of Arafah</string>
+    <string name="islamic_event_eid_adha">Eid al-Adha</string>
+    <string name="islamic_event_mawlid">Mawlid an-Nabi</string>
+    <string name="islamic_event_isra_miraj">Isra and Mi\'raj</string>
+    <string name="islamic_event_nisfu_shaban">Nisfu Sha\'ban</string>
+    <string name="islamic_event_nuzul_quran">Nuzul al-Quran</string>
+    <string name="islamic_event_last_ten_ramadan">Last ten days of Ramadan</string>
+    <string name="islamic_event_tasua">Tasu\'a</string>
+    <string name="islamic_event_six_shawwal">Six days of Shawwal</string>
+    <string name="islamic_event_white_days">White Days (Ayyam al-Bid)</string>
+    <string name="islamic_event_first_ten_dhulhijjah">First ten days of Dhu al-Hijjah</string>
+    <string name="islamic_event_tashreeq">Days of Tashreeq</string>
 </resources>

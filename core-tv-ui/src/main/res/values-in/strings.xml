@@ -284,4 +284,53 @@
     <string name="settings_phone_controller_desc">Buka alamat di bawah pada ponsel di jaringan Wi-Fi yang sama untuk mengelola slide, identitas masjid, dan jadwal Jumat menggunakan PIN Admin.</string>
     <string name="settings_phone_controller_url">Buka di ponsel: %1$s</string>
     <string name="settings_phone_controller_no_wifi">Hubungkan TV ini ke Wi-Fi atau Ethernet untuk mendapatkan alamat LAN lokal.</string>
+    <!-- Islamic Calendar Events (Indonesian pending owner review - Task C1) -->
+    <string name="islamic_cal_title">Kalender Islam</string>
+    <string name="islamic_cal_button">Kalender Islam</string>
+    <string name="islamic_cal_year_ah">%1$d H</string>
+    <string name="islamic_cal_next_summary">Berikutnya: %1$s, %2$s</string>
+    <string name="islamic_cal_moon_note">Tanggal dihitung secara hisab dan dapat berbeda satu hari bergantung pada rukyatul hilal. Sesuaikan di Pengaturan, Penyesuaian Tanggal Hijriah.</string>
+    <string name="islamic_cal_moon_note_short">Tanggal dihitung secara hisab dan dapat berbeda satu hari bergantung pada rukyatul hilal.</string>
+    <string name="islamic_cal_badge_today">HARI INI</string>
+    <string name="islamic_cal_badge_next">BERIKUTNYA</string>
+    <string name="islamic_cal_rel_today">Hari ini</string>
+    <string name="islamic_cal_rel_tomorrow">dalam 1 hari</string>
+    <string name="islamic_cal_rel_in_days">dalam %1$d hari</string>
+    <string name="islamic_cal_rel_yesterday">1 hari lalu</string>
+    <string name="islamic_cal_rel_days_ago">%1$d hari lalu</string>
+    <string name="islamic_cal_prev_year">Tahun Lalu</string>
+    <string name="islamic_cal_next_year">Tahun Depan</string>
+    <string name="islamic_cal_today_btn">Hari Ini</string>
+    <string name="islamic_cal_limit_past">Batas tercapai (3 tahun ke belakang)</string>
+    <string name="islamic_cal_limit_future">Batas tercapai (3 tahun ke depan)</string>
+    <string name="islamic_cal_empty">Tidak ada hari besar Islam yang aktif. Aktifkan di Pengaturan.</string>
+    <string name="islamic_cal_group_major">Hari Besar Utama</string>
+    <string name="islamic_cal_group_common">Umum Diperingati</string>
+    <string name="islamic_cal_group_fasting">Puasa dan Hari Lainnya</string>
+    <string name="islamic_cal_settings_section">Hari Besar Kalender Islam</string>
+    <string name="islamic_cal_settings_show_home">Tampilkan hari besar berikutnya di layar Beranda</string>
+    <string name="islamic_cal_settings_show_home_desc">Menampilkan ringkasan singkat hari besar Islam berikutnya di Beranda.</string>
+    <string name="islamic_cal_settings_hijri_hint">Penyesuaian tanggal Hijriah saat ini: %1$s hari. Ubah di bagian Penyesuaian Tanggal Hijriah di atas.</string>
+    <string name="islamic_cal_slide_section">Slide Kalender Islam</string>
+    <string name="islamic_cal_slide_enable_title">Tampilkan Slide Kalender Islam dalam Rotasi</string>
+    <string name="islamic_cal_slide_enable_desc">Menggunakan 1 dari 6 slot slideshow. Dilewati otomatis jika tidak ada acara yang aktif.</string>
+    <string name="islamic_cal_slide_duration_label">Durasi slide (detik)</string>
+
+    <!-- 16 Islamic Event Names (Indonesian - pending owner review C1) -->
+    <string name="islamic_event_new_year">Tahun Baru Islam</string>
+    <string name="islamic_event_ashura">Hari Asyura</string>
+    <string name="islamic_event_ramadan_start">Awal Ramadan</string>
+    <string name="islamic_event_eid_fitr">Idul Fitri</string>
+    <string name="islamic_event_arafah">Hari Arafah</string>
+    <string name="islamic_event_eid_adha">Idul Adha</string>
+    <string name="islamic_event_mawlid">Maulid Nabi Muhammad SAW</string>
+    <string name="islamic_event_isra_miraj">Isra Mi\'raj</string>
+    <string name="islamic_event_nisfu_shaban">Nisfu Sya\'ban</string>
+    <string name="islamic_event_nuzul_quran">Nuzulul Quran</string>
+    <string name="islamic_event_last_ten_ramadan">Sepuluh hari terakhir Ramadan</string>
+    <string name="islamic_event_tasua">Tasu\'a</string>
+    <string name="islamic_event_six_shawwal">Puasa enam hari Syawal</string>
+    <string name="islamic_event_white_days">Ayyamul Bidh</string>
+    <string name="islamic_event_first_ten_dhulhijjah">Sepuluh hari pertama Dzulhijjah</string>
+    <string name="islamic_event_tashreeq">Hari Tasyrik</string>
 </resources>

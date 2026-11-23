@@ -144,6 +144,16 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch { repository.setShowArabicPrayerNames(enabled) }
     }
 
+    fun toggleIslamicEvent(eventId: String) {
+        val current = settings.value.enabledIslamicEventIds
+        val updated = if (eventId in current) current - eventId else current + eventId
+        viewModelScope.launch { repository.setEnabledIslamicEventIds(updated) }
+    }
+
+    fun setShowNextEventOnHome(show: Boolean) {
+        viewModelScope.launch { repository.setShowNextEventOnHome(show) }
+    }
+
     fun completeSetup() {
         viewModelScope.launch {
             repository.setMosqueMode(false)

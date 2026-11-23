@@ -97,6 +97,7 @@ import com.salatsign.tv.ui.common.MosqueEmblemIcon
 import com.salatsign.tv.ui.common.displayLabel
 import com.salatsign.tv.ui.common.getMosqueFontFamily
 import com.salatsign.tv.ui.common.CountryCitySelector
+import com.salatsign.tv.ui.common.IslamicEventTogglesSection
 import com.salatsign.tv.ui.common.horizontalScrollBleed
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
@@ -133,6 +134,8 @@ fun HomeSettingsScreen(
     onSetAppLanguage: (AppLanguage) -> Unit,
     onSet24HourFormat: (Boolean) -> Unit,
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
+    onToggleIslamicEvent: (String) -> Unit = {},
+    onSetShowNextEventOnHome: (Boolean) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -900,6 +903,67 @@ fun HomeSettingsScreen(
                         }
                     }
                 }
+
+            // ================= SECTION: ISLAMIC CALENDAR EVENTS =================
+            Text(
+                text = stringResource(R.string.islamic_cal_settings_section),
+                style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+            )
+
+            val nextHomeShape = RoundedCornerShape(12.dp)
+            Card(
+                onClick = { onSetShowNextEventOnHome(!settings.showNextEventOnHome) },
+                colors = CardDefaults.colors(
+                    containerColor = if (settings.showNextEventOnHome) colorScheme.surfaceVariant else colorScheme.surface,
+                    focusedContainerColor = colorScheme.surfaceVariant
+                ),
+                shape = CardDefaults.shape(nextHomeShape),
+                scale = tvCardScale(1.0f),
+                border = tvSelectableCardBorder(selected = settings.showNextEventOnHome, shape = nextHomeShape),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.islamic_cal_settings_show_home),
+                            style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                        )
+                        Text(
+                            text = stringResource(R.string.islamic_cal_settings_show_home_desc),
+                            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                if (settings.showNextEventOnHome) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.16f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (settings.showNextEventOnHome) "ON" else "OFF",
+                            style = TvTypography.ButtonText.copy(
+                                fontSize = 13.sp,
+                                color = if (settings.showNextEventOnHome) Color.White else colorScheme.onSurface
+                            )
+                        )
+                    }
+                }
+            }
+
+            IslamicEventTogglesSection(
+                enabledIds = settings.enabledIslamicEventIds,
+                hijriOffsetDays = settings.hijriOffsetDays,
+                onToggleEvent = onToggleIslamicEvent
+            )
 
             // ================= SECTION: ABOUT & CREDITS (Phase 7.1) =================
             Text(

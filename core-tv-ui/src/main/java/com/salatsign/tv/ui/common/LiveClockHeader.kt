@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.runtime.Composable
@@ -77,6 +78,7 @@ fun LiveClockHeader(
     onPreviousDay: () -> Unit = {},
     onNextDay: () -> Unit = {},
     onTodayClick: () -> Unit = {},
+    onCalendarClick: (() -> Unit)? = null,
     onSettingsClick: () -> Unit = {},
     initialFocusRequester: FocusRequester? = null
 ) {
@@ -334,6 +336,36 @@ fun LiveClockHeader(
                                     tint = colorScheme.onSurface,
                                     modifier = Modifier.size(16.dp)
                                 )
+                            }
+                        }
+
+                        // Islamic Calendar Button in Home Mode
+                        if (onCalendarClick != null) {
+                            val calShape = RoundedCornerShape(8.dp)
+                            Surface(
+                                onClick = onCalendarClick,
+                                shape = ClickableSurfaceDefaults.shape(calShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = false),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = calShape),
+                                modifier = Modifier.pointerInput(onCalendarClick) { detectTapGestures { onCalendarClick() } }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarMonth,
+                                        contentDescription = stringResource(R.string.islamic_cal_button),
+                                        tint = colorScheme.secondary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = stringResource(R.string.islamic_cal_button),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                    )
+                                }
                             }
                         }
 

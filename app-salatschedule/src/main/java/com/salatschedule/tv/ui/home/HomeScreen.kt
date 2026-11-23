@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.WbSunny
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,8 +49,11 @@ import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
+import com.salatsign.tv.engine.IslamicCalendarState
 import com.salatsign.tv.ui.common.LiveClockHeader
 import com.salatsign.tv.ui.common.PrayerCardsRow
+import com.salatsign.tv.ui.common.formatRelativeDaysLabel
+import com.salatsign.tv.ui.common.islamicEventNameRes
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvFocusable
@@ -56,6 +61,8 @@ import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.EmeraldLight
 import com.salatsign.tv.ui.theme.TvTypography
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @Composable
 fun HomeScreen(
@@ -63,11 +70,33 @@ fun HomeScreen(
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onTodayClick: () -> Unit,
+    onOpenCalendar: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onDismissAdhanHint: () -> Unit = {}
 ) {
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+
+    val nextIslamicEvent = remember(
+        uiState.selectedDate,
+        uiState.settings.zoneId,
+        uiState.settings.hijriOffsetDays,
+        uiState.settings.enabledIslamicEventIds,
+        uiState.settings.showNextEventOnHome
+    ) {
+        if (!uiState.settings.showNextEventOnHome) {
+            null
+        } else {
+            val zone = runCatching { ZoneId.of(uiState.settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
+            val today = ZonedDateTime.now(zone).toLocalDate()
+            IslamicCalendarState.nextEvent(
+                today = today,
+                adjustmentDays = uiState.settings.hijriOffsetDays,
+                enabledIds = uiState.settings.enabledIslamicEventIds
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         initialFocusRequester.requestFocus()
@@ -97,9 +126,39 @@ fun HomeScreen(
                 onPreviousDay = onPreviousDay,
                 onNextDay = onNextDay,
                 onTodayClick = onTodayClick,
+                onCalendarClick = onOpenCalendar,
                 onSettingsClick = onOpenSettings,
                 initialFocusRequester = initialFocusRequester
             )
+
+            // Optional subtle next Islamic event line
+            if (nextIslamicEvent != null) {
+                val eventName = stringResource(islamicEventNameRes(nextIslamicEvent.occurrence.eventId))
+                val rel = formatRelativeDaysLabel(nextIslamicEvent.daysRelativeToToday, context)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = colorScheme.secondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.islamic_cal_next_summary, eventName, rel),
+                        maxLines = 1,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.onBackground.copy(alpha = 0.85f)
+                        )
+                    )
+                }
+            }
 
             // One-time Adhan Silent hint (F1)
             if (!uiState.settings.hasConfiguredAudibleAdhan() && !uiState.settings.adhanHintDismissed) {
