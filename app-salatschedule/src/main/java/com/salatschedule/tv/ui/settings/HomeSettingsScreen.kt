@@ -39,14 +39,19 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +80,9 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.salatschedule.tv.BuildConfig
+import com.salatschedule.tv.R as AppR
+import com.salatschedule.tv.service.AdhanPreviewPlayer
+import com.salatschedule.tv.service.AdhanPreviewState
 import com.salatsign.core.tv.R
 import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.model.AdhanAudioOption
@@ -150,9 +158,21 @@ fun HomeSettingsScreen(
     var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    // Auto-close Settings after inactivity and return to home (extended while USB picker is open)
+    val adhanPreviewPlayer = remember(context) { AdhanPreviewPlayer(context) }
+    val adhanPreviewState by adhanPreviewPlayer.state.collectAsState()
+    val adhanPreviewError by adhanPreviewPlayer.errorMessage.collectAsState()
+    var selectedTestPrayer by remember { mutableStateOf(Prayer.SUBUH) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            adhanPreviewPlayer.stop()
+        }
+    }
+
+    // Auto-close Settings after inactivity and return to home (paused while previewing Adhan, extended while USB picker is open)
     val isPickerOpen = activePickerKind != null
-    LaunchedEffect(lastInteractionTime, isPickerOpen) {
+    LaunchedEffect(lastInteractionTime, isPickerOpen, adhanPreviewState) {
+        if (adhanPreviewState == AdhanPreviewState.PLAYING) return@LaunchedEffect
         delay(if (isPickerOpen) 300_000L else 120_000L)
         onClose()
     }
@@ -910,6 +930,183 @@ fun HomeSettingsScreen(
                                     text = stringResource(R.string.settings_btn_usb_file),
                                     style = TvTypography.BodyLabel.copy(fontSize = 11.sp, color = colorScheme.onSurface)
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // Adhan Audio Test Bar (Select Prayer + Play/Pause + Stop)
+                val testOption = settings.adhanFor(selectedTestPrayer)
+                val isTestSilent = testOption.type == AdhanAudioType.SILENT
+                val isPlayingPreview = adhanPreviewState == AdhanPreviewState.PLAYING
+                val isPausedPreview = adhanPreviewState == AdhanPreviewState.PAUSED
+
+                LaunchedEffect(selectedTestPrayer, testOption) {
+                    if (isTestSilent && adhanPreviewState != AdhanPreviewState.STOPPED) {
+                        adhanPreviewPlayer.stop()
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorScheme.surface, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 14.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                    contentDescription = null,
+                                    tint = colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = stringResource(AppR.string.settings_adhan_test_label),
+                                    style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.onSurface)
+                                )
+                            }
+
+                            val statusText = when {
+                                adhanPreviewError != null -> adhanPreviewError!!
+                                isPlayingPreview -> stringResource(AppR.string.settings_adhan_test_playing, testOption.displayLabel())
+                                isPausedPreview -> stringResource(AppR.string.settings_adhan_test_paused, testOption.displayLabel())
+                                isTestSilent -> stringResource(AppR.string.settings_adhan_test_silent_hint)
+                                else -> "${stringResource(selectedTestPrayer.labelRes())} • ${testOption.displayLabel()}"
+                            }
+                            Text(
+                                text = statusText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isPlayingPreview) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = when {
+                                        adhanPreviewError != null -> colorScheme.error
+                                        isPlayingPreview -> colorScheme.primary
+                                        isPausedPreview -> colorScheme.secondary
+                                        else -> colorScheme.onSurface.copy(alpha = 0.72f)
+                                    }
+                                )
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Prayer selector pills
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val testPrayers = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA)
+                                val pillShape = RoundedCornerShape(8.dp)
+                                for (p in testPrayers) {
+                                    val isSelected = selectedTestPrayer == p
+                                    Surface(
+                                        onClick = {
+                                            lastInteractionTime = System.currentTimeMillis()
+                                            if (selectedTestPrayer != p) {
+                                                adhanPreviewPlayer.stop()
+                                                selectedTestPrayer = p
+                                            }
+                                        },
+                                        shape = ClickableSurfaceDefaults.shape(pillShape),
+                                        scale = tvSurfaceScale(1.03f),
+                                        colors = tvSelectableSurfaceColors(selected = isSelected),
+                                        border = tvSelectableSurfaceBorder(selected = isSelected, shape = pillShape)
+                                    ) {
+                                        Text(
+                                            text = stringResource(p.labelRes()),
+                                            style = TvTypography.BodyLabel.copy(
+                                                fontSize = 13.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) colorScheme.primary else colorScheme.onSurface
+                                            ),
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Play/Pause + Stop transport controls
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                val ctrlShape = RoundedCornerShape(8.dp)
+                                Surface(
+                                    onClick = {
+                                        lastInteractionTime = System.currentTimeMillis()
+                                        adhanPreviewPlayer.togglePlayPause(testOption)
+                                    },
+                                    enabled = !isTestSilent,
+                                    shape = ClickableSurfaceDefaults.shape(ctrlShape),
+                                    scale = tvSurfaceScale(1.03f),
+                                    colors = tvSelectableSurfaceColors(selected = isPlayingPreview),
+                                    border = tvSelectableSurfaceBorder(selected = isPlayingPreview, shape = ctrlShape)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlayingPreview) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = stringResource(
+                                                if (isPlayingPreview) AppR.string.settings_adhan_btn_pause
+                                                else AppR.string.settings_adhan_btn_play
+                                            ),
+                                            tint = if (isTestSilent) colorScheme.onSurface.copy(alpha = 0.35f) else colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = stringResource(
+                                                if (isPlayingPreview) AppR.string.settings_adhan_btn_pause
+                                                else AppR.string.settings_adhan_btn_play
+                                            ),
+                                            style = TvTypography.ButtonText.copy(
+                                                fontSize = 14.sp,
+                                                color = if (isTestSilent) colorScheme.onSurface.copy(alpha = 0.35f) else colorScheme.onSurface
+                                            )
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    onClick = {
+                                        lastInteractionTime = System.currentTimeMillis()
+                                        adhanPreviewPlayer.stop()
+                                    },
+                                    shape = ClickableSurfaceDefaults.shape(ctrlShape),
+                                    scale = tvSurfaceScale(1.03f),
+                                    colors = tvSelectableSurfaceColors(selected = false),
+                                    border = tvSelectableSurfaceBorder(selected = false, shape = ctrlShape)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Stop,
+                                            contentDescription = stringResource(AppR.string.settings_adhan_btn_stop),
+                                            tint = if (adhanPreviewState != AdhanPreviewState.STOPPED) Color(0xFFEF4444) else colorScheme.onSurface.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = stringResource(AppR.string.settings_adhan_btn_stop),
+                                            style = TvTypography.ButtonText.copy(
+                                                fontSize = 14.sp,
+                                                color = if (adhanPreviewState != AdhanPreviewState.STOPPED) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

@@ -50,6 +50,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
 import com.salatsign.tv.R as AppR
+import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.repository.ContentRepository
 import com.salatsign.tv.ui.common.TvEditableTextField
 import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
@@ -62,14 +63,18 @@ const val MAX_TEXT_SLIDE_LINES = 6
 @Composable
 fun AddTextSlideDialog(
     canAddEnabledSlide: Boolean,
+    existingSlide: AnnouncementSlide? = null,
     onSave: (title: String, body: String, durationSeconds: Int, enabled: Boolean) -> Unit,
     onDismiss: () -> Unit,
     onUserInteraction: () -> Unit = {}
 ) {
+    val isEditing = existingSlide != null
     val colorScheme = MaterialTheme.colorScheme
-    var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
-    var durationSeconds by remember { mutableIntStateOf(15) }
+    var title by remember(existingSlide?.id) { mutableStateOf(existingSlide?.title ?: "") }
+    var body by remember(existingSlide?.id) { mutableStateOf(existingSlide?.body ?: "") }
+    var durationSeconds by remember(existingSlide?.id) {
+        mutableIntStateOf(existingSlide?.durationSeconds ?: 15)
+    }
     var validationError by remember { mutableStateOf(false) }
 
     val titleFocusRequester = remember { FocusRequester() }
@@ -117,18 +122,21 @@ fun AddTextSlideDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.NoteAdd,
+                        imageVector = if (isEditing) Icons.Default.Edit else Icons.AutoMirrored.Filled.NoteAdd,
                         contentDescription = null,
                         tint = colorScheme.secondary,
                         modifier = Modifier.size(26.dp)
                     )
                     Text(
-                        text = stringResource(AppR.string.settings_text_slide_dialog_title),
+                        text = stringResource(
+                            if (isEditing) AppR.string.settings_text_slide_edit_title
+                            else AppR.string.settings_text_slide_dialog_title
+                        ),
                         style = TvTypography.HeaderTitle.copy(fontSize = 24.sp, color = colorScheme.primary)
                     )
                 }
 
-                if (!canAddEnabledSlide) {
+                if (!isEditing && !canAddEnabledSlide) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -319,7 +327,12 @@ fun AddTextSlideDialog(
                             if (cleanTitle.isEmpty() && cleanBody.isEmpty()) {
                                 validationError = true
                             } else {
-                                onSave(cleanTitle, cleanBody, durationSeconds, canAddEnabledSlide)
+                                onSave(
+                                    cleanTitle,
+                                    cleanBody,
+                                    durationSeconds,
+                                    existingSlide?.enabled ?: canAddEnabledSlide
+                                )
                             }
                         },
                         shape = ClickableSurfaceDefaults.shape(actionShape),
@@ -328,7 +341,10 @@ fun AddTextSlideDialog(
                         border = tvSelectableSurfaceBorder(selected = true, shape = actionShape)
                     ) {
                         Text(
-                            text = stringResource(AppR.string.settings_text_slide_save),
+                            text = stringResource(
+                                if (isEditing) AppR.string.settings_slide_save_changes
+                                else AppR.string.settings_text_slide_save
+                            ),
                             style = TvTypography.ButtonText.copy(
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,

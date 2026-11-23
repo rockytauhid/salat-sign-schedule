@@ -153,6 +153,7 @@ fun MosqueSettingsScreen(
     onSetScheduleDuration: (Int) -> Unit,
     onAddTextSlide: (String, String, Int, Boolean) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
+    onUpdateSlide: (AnnouncementSlide) -> Unit = {},
     onToggleSlideEnabled: (String) -> Unit = {},
     onDeleteSlide: (String) -> Unit,
     onClearSlides: () -> Unit,
@@ -199,11 +200,20 @@ fun MosqueSettingsScreen(
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var showChangePinDialog by remember { mutableStateOf(false) }
     var showAddTextSlideDialog by remember { mutableStateOf(false) }
+    var editingTextSlide by remember { mutableStateOf<AnnouncementSlide?>(null) }
+    var pendingImageSlideFile by remember { mutableStateOf<String?>(null) }
+    var editingImageSlide by remember { mutableStateOf<AnnouncementSlide?>(null) }
+    var pickingReplacementForImageEdit by remember { mutableStateOf(false) }
     var addTextSlideCanEnable by remember { mutableStateOf(true) }
 
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val recordInteraction = { lastInteractionTime = System.currentTimeMillis() }
-    val isModalOpen = activePickerKind != null || showAddTextSlideDialog || showChangePinDialog
+    val isModalOpen = activePickerKind != null ||
+        showAddTextSlideDialog ||
+        editingTextSlide != null ||
+        pendingImageSlideFile != null ||
+        editingImageSlide != null ||
+        showChangePinDialog
 
     // Auto-close Settings after inactivity and return to signage/home.
     // Extended to 5 minutes (and reset on every keystroke/remote press inside dialogs) while composing or picking files.
@@ -1528,6 +1538,8 @@ fun MosqueSettingsScreen(
                     Surface(
                         onClick = {
                             onClearSlideLimitError()
+                            addTextSlideCanEnable = canAddEnabledSlide
+                            pickingReplacementForImageEdit = false
                             activePickerKind = ImportKind.SLIDE_IMAGE
                         },
                         shape = ClickableSurfaceDefaults.shape(slideActionShape),
@@ -1651,6 +1663,43 @@ fun MosqueSettingsScreen(
 
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         val btnShape = RoundedCornerShape(6.dp)
+                                        Surface(
+                                            onClick = {
+                                                recordInteraction()
+                                                onClearSlideLimitError()
+                                                if (slide.type == SlideType.IMAGE) {
+                                                    editingImageSlide = slide
+                                                } else {
+                                                    editingTextSlide = slide
+                                                }
+                                            },
+                                            shape = ClickableSurfaceDefaults.shape(btnShape),
+                                            scale = tvSurfaceScale(1.03f),
+                                            colors = tvSelectableSurfaceColors(selected = false),
+                                            border = tvSelectableSurfaceBorder(selected = false, shape = btnShape)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = stringResource(AppR.string.settings_slide_edit_btn),
+                                                    tint = colorScheme.secondary,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = stringResource(AppR.string.settings_slide_edit_btn),
+                                                    style = TvTypography.BodyLabel.copy(
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = colorScheme.onSurface
+                                                    )
+                                                )
+                                            }
+                                        }
+
                                         Surface(
                                             onClick = { onToggleSlideEnabled(slide.id) },
                                             shape = ClickableSurfaceDefaults.shape(btnShape),
@@ -2080,7 +2129,12 @@ fun MosqueSettingsScreen(
                         ImportKind.MOSQUE_LOGO -> onSetCustomLogo(fileName)
                         ImportKind.CUSTOM_ADHAN -> {}
                         ImportKind.SLIDE_IMAGE -> {
-                            onAddImageSlide("Poster", fileName, 15)
+                            if (pickingReplacementForImageEdit && editingImageSlide != null) {
+                                editingImageSlide = editingImageSlide!!.copy(imageFile = fileName)
+                                pickingReplacementForImageEdit = false
+                            } else {
+                                pendingImageSlideFile = fileName
+                            }
                         }
                         null -> {}
                     }
@@ -2088,24 +2142,79 @@ fun MosqueSettingsScreen(
                                     },
                 onDismiss = {
                     recordInteraction()
+                    pickingReplacementForImageEdit = false
                     activePickerKind = null
                 },
                 onUserInteraction = recordInteraction
             )
         }
 
-        // Overlay: Add Text Announcement Slide Dialog
-        if (showAddTextSlideDialog) {
+        // Overlay: Add / Edit Text Announcement Slide Dialog
+        if (showAddTextSlideDialog || editingTextSlide != null) {
+            val targetEditSlide = editingTextSlide
             AddTextSlideDialog(
                 canAddEnabledSlide = addTextSlideCanEnable,
+                existingSlide = targetEditSlide,
                 onSave = { title, body, durationSeconds, enabled ->
                     recordInteraction()
-                    onAddTextSlide(title, body, durationSeconds, enabled)
+                    if (targetEditSlide != null) {
+                        onUpdateSlide(
+                            targetEditSlide.copy(
+                                title = title,
+                                body = body,
+                                durationSeconds = durationSeconds
+                            )
+                        )
+                    } else {
+                        onAddTextSlide(title, body, durationSeconds, enabled)
+                    }
                     showAddTextSlideDialog = false
+                    editingTextSlide = null
                 },
                 onDismiss = {
                     recordInteraction()
                     showAddTextSlideDialog = false
+                    editingTextSlide = null
+                },
+                onUserInteraction = recordInteraction
+            )
+        }
+
+        // Overlay: Add / Edit Image Slide Dialog
+        val activeImageFile = editingImageSlide?.imageFile ?: pendingImageSlideFile
+        if (activePickerKind == null && activeImageFile != null && (editingImageSlide != null || pendingImageSlideFile != null)) {
+            val targetEditImage = editingImageSlide
+            ImageSlideEditorDialog(
+                imageFileName = activeImageFile,
+                canAddEnabledSlide = addTextSlideCanEnable,
+                existingSlide = targetEditImage,
+                onRequestChangeImage = {
+                    recordInteraction()
+                    pickingReplacementForImageEdit = targetEditImage != null
+                    activePickerKind = ImportKind.SLIDE_IMAGE
+                },
+                onSave = { title, imageFile, durationSeconds ->
+                    recordInteraction()
+                    if (targetEditImage != null) {
+                        onUpdateSlide(
+                            targetEditImage.copy(
+                                title = title,
+                                imageFile = imageFile,
+                                durationSeconds = durationSeconds
+                            )
+                        )
+                    } else {
+                        onAddImageSlide(title, imageFile, durationSeconds)
+                    }
+                    pendingImageSlideFile = null
+                    editingImageSlide = null
+                    pickingReplacementForImageEdit = false
+                },
+                onDismiss = {
+                    recordInteraction()
+                    pendingImageSlideFile = null
+                    editingImageSlide = null
+                    pickingReplacementForImageEdit = false
                 },
                 onUserInteraction = recordInteraction
             )

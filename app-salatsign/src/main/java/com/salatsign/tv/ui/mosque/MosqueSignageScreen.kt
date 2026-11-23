@@ -15,6 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,11 +52,14 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
@@ -550,7 +554,6 @@ fun MosqueAnnouncementView(
     uiState: MosqueSignageUiState
 ) {
     val context = LocalContext.current
-    val colorScheme = MaterialTheme.colorScheme
     val imageFile = if (slide.type == com.salatsign.tv.data.model.SlideType.IMAGE) {
         slide.imageFile?.let { java.io.File(context.filesDir, "content/images/$it") }
     } else {
@@ -570,40 +573,33 @@ fun MosqueAnnouncementView(
                 contentScale = ContentScale.Crop
             )
         } else {
-            // Text announcement slide
+            // Text announcement slide: clean full-screen auto-fitted text with zero overlays
             MosqueTextSlideContent(
                 slide = slide,
                 modifier = Modifier.fillMaxSize()
             )
-
-            // Subtle mosque sign-off (icon + name) in the bottom-right corner
-            val signOffName = uiState.settings.mosqueName.ifBlank {
-                stringResource(R.string.mosque_default_name)
-            }
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 48.dp, bottom = 27.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                MosqueEmblemIcon(
-                    preset = uiState.settings.mosqueIconPreset,
-                    customLogoUri = uiState.settings.mosqueLogoUri,
-                    size = 32.dp
-                )
-                Text(
-                    text = signOffName,
-                    maxLines = 1,
-                    style = getMosqueTitleStyle(
-                        uiState.settings.mosqueFontPreset,
-                        colorScheme.onSurface.copy(alpha = 0.82f)
-                    ).copy(fontSize = 20.sp)
-                )
-            }
         }
     }
 }
+
+private data class TextSlideTypographyStep(
+    val titleSp: Int,
+    val titleLineHeightSp: Int,
+    val bodySp: Int,
+    val bodyLineHeightSp: Int,
+    val gapDp: Int
+)
+
+private val TEXT_SLIDE_STEPS = listOf(
+    TextSlideTypographyStep(48, 58, 32, 46, 24),
+    TextSlideTypographyStep(44, 54, 28, 40, 20),
+    TextSlideTypographyStep(40, 48, 26, 36, 18),
+    TextSlideTypographyStep(36, 44, 24, 34, 16),
+    TextSlideTypographyStep(32, 40, 22, 30, 14),
+    TextSlideTypographyStep(28, 36, 20, 28, 12),
+    TextSlideTypographyStep(24, 32, 18, 25, 10),
+    TextSlideTypographyStep(22, 28, 16, 22, 8)
+)
 
 @Composable
 fun MosqueTextSlideContent(
@@ -611,8 +607,10 @@ fun MosqueTextSlideContent(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .background(
                 brush = Brush.radialGradient(
@@ -622,34 +620,78 @@ fun MosqueTextSlideContent(
                     )
                 )
             )
-            .padding(start = 80.dp, end = 80.dp, top = 60.dp, bottom = 84.dp),
+            .padding(horizontal = 64.dp, vertical = 42.dp),
         contentAlignment = Alignment.Center
     ) {
+        val availableWidthPx = with(density) { (maxWidth * 0.90f).roundToPx().coerceAtLeast(1) }
+        val availableHeightPx = with(density) { maxHeight.roundToPx().coerceAtLeast(1) }
+        val hasTitle = slide.title.isNotBlank()
+        val hasBody = slide.body.isNotBlank()
+
+        val chosenStep = remember(slide.title, slide.body, availableWidthPx, availableHeightPx) {
+            val widthConstraint = Constraints(maxWidth = availableWidthPx)
+            TEXT_SLIDE_STEPS.firstOrNull { step ->
+                val titleHeight = if (hasTitle) {
+                    textMeasurer.measure(
+                        text = slide.title,
+                        style = TvTypography.HeaderTitle.copy(
+                            fontSize = step.titleSp.sp,
+                            lineHeight = step.titleLineHeightSp.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            textDirection = TextDirection.ContentOrLtr
+                        ),
+                        constraints = widthConstraint
+                    ).size.height
+                } else 0
+
+                val bodyHeight = if (hasBody) {
+                    textMeasurer.measure(
+                        text = slide.body,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = step.bodySp.sp,
+                            lineHeight = step.bodyLineHeightSp.sp,
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.Center,
+                            textDirection = TextDirection.ContentOrLtr
+                        ),
+                        constraints = widthConstraint
+                    ).size.height
+                } else 0
+
+                val gapPx = if (hasTitle && hasBody) with(density) { step.gapDp.dp.roundToPx() } else 0
+                (titleHeight + gapPx + bodyHeight) <= availableHeightPx
+            } ?: TEXT_SLIDE_STEPS.last()
+        }
+
         Column(
-            modifier = Modifier.fillMaxWidth(0.85f),
+            modifier = Modifier.fillMaxWidth(0.90f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            if (slide.title.isNotBlank()) {
+            if (hasTitle) {
                 Text(
                     text = slide.title,
                     style = TvTypography.HeaderTitle.copy(
-                        fontSize = 48.sp,
+                        fontSize = chosenStep.titleSp.sp,
+                        lineHeight = chosenStep.titleLineHeightSp.sp,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.secondary,
                         textAlign = TextAlign.Center,
                         textDirection = TextDirection.ContentOrLtr
                     )
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                if (hasBody) {
+                    Spacer(modifier = Modifier.height(chosenStep.gapDp.dp))
+                }
             }
 
-            if (slide.body.isNotBlank()) {
+            if (hasBody) {
                 Text(
                     text = slide.body,
                     style = TvTypography.BodyLabel.copy(
-                        fontSize = 30.sp,
-                        lineHeight = 44.sp,
+                        fontSize = chosenStep.bodySp.sp,
+                        lineHeight = chosenStep.bodyLineHeightSp.sp,
                         fontWeight = FontWeight.Normal,
                         color = colorScheme.onSurface,
                         textAlign = TextAlign.Center,

@@ -2,4 +2,13 @@
 <resources>
     <string name="app_name" translatable="false">SalatSchedule</string>
     <string name="about_credit" translatable="false">SalatSchedule by Rocky Adam Tauhid</string>
+
+    <!-- Adhan Audio Preview Controls (SalatSchedule only) -->
+    <string name="settings_adhan_test_label">Test Adhan Audio</string>
+    <string name="settings_adhan_btn_play">Play</string>
+    <string name="settings_adhan_btn_pause">Pause</string>
+    <string name="settings_adhan_btn_stop">Stop</string>
+    <string name="settings_adhan_test_silent_hint">Selected prayer is set to Silent. Pick Default or USB/File above to test.</string>
+    <string name="settings_adhan_test_playing">Playing %1$s…</string>
+    <string name="settings_adhan_test_paused">Paused (%1$s)</string>
 </resources>

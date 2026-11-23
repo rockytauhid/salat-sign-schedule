@@ -222,6 +222,15 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         return effectiveEnabled
     }
 
+    fun updateSlide(slide: AnnouncementSlide) {
+        _slideLimitError.value = false
+        viewModelScope.launch {
+            contentRepository.updateSlide(
+                slide.copy(durationSeconds = slide.durationSeconds.coerceIn(3, 120))
+            )
+        }
+    }
+
     fun setCustomLogo(relativeFileName: String) {
         viewModelScope.launch {
             repository.setMosqueIconPreset(MosqueIconPreset.CUSTOM)

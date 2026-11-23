@@ -131,47 +131,23 @@ fun LiveClockHeader(
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     val displayName = mosqueName.ifBlank { stringResource(R.string.mosque_default_name) }
                     val baseTitleStyle = getMosqueTitleStyle(mosqueFontPreset, colorScheme.onBackground)
                     val adaptiveNameSize = when {
-                        displayName.length <= 16 -> baseTitleStyle.fontSize
-                        displayName.length <= 24 -> 27.sp
-                        displayName.length <= 31 -> 23.sp
+                        displayName.length <= 20 -> baseTitleStyle.fontSize
+                        displayName.length <= 28 -> 27.sp
+                        displayName.length <= 36 -> 23.sp
                         else -> 20.sp
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            text = displayName,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = baseTitleStyle.copy(fontSize = adaptiveNameSize),
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        if (shortCityName.isNotBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .background(colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = 9.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = shortCityName,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    style = TvTypography.BodyLabel.copy(
-                                        fontSize = 13.sp,
-                                        color = colorScheme.primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = displayName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = baseTitleStyle.copy(fontSize = adaptiveNameSize)
+                    )
 
                     if (mosqueSubtitle.isNotBlank()) {
                         Text(
@@ -179,11 +155,30 @@ fun LiveClockHeader(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = TvTypography.Subtitle.copy(
-                                fontSize = 19.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = colorScheme.secondary
                             )
                         )
+                    }
+
+                    if (shortCityName.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .background(colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 9.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = shortCityName,
+                                maxLines = 1,
+                                softWrap = false,
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = 13.sp,
+                                    color = colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
                     }
                 }
             }

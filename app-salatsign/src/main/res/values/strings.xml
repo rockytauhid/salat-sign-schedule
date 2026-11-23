@@ -69,8 +69,15 @@
     <string name="about_quran_en">English translation: Saheeh International, via Tanzil.net</string>
     <string name="about_quran_id">Indonesian translation: Kementerian Agama Republik Indonesia</string>
 
-    <!-- Add Text Announcement Slide Dialog (SalatSign only) -->
+    <!-- Add / Edit Announcement Slide Dialogs (SalatSign only) -->
     <string name="settings_text_slide_dialog_title">Add Text Announcement Slide</string>
+    <string name="settings_text_slide_edit_title">Edit Text Announcement Slide</string>
+    <string name="settings_image_slide_dialog_title">Add Image Slide</string>
+    <string name="settings_image_slide_edit_title">Edit Image Slide</string>
+    <string name="settings_image_slide_change_file">Change Image (USB)</string>
+    <string name="settings_image_slide_title_placeholder">e.g., Ramadan Fundraising Poster</string>
+    <string name="settings_slide_edit_btn">Edit</string>
+    <string name="settings_slide_save_changes">Save Changes</string>
     <string name="settings_text_slide_title_label">Title</string>
     <string name="settings_text_slide_title_placeholder">e.g., Friday Khutbah &amp; Community Dinner</string>
     <string name="settings_text_slide_body_label">Message (up to %1$d rows)</string>

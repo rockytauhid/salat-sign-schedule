@@ -274,6 +274,7 @@ private fun SalatSignMainContent(
                 onSetScheduleDuration = { settingsViewModel.setScheduleDuration(it) },
                 onAddTextSlide = { title, body, dur, enabled -> settingsViewModel.addTextSlide(title, body, dur, enabled) },
                 onAddImageSlide = { title, imgFile, dur -> settingsViewModel.addImageSlide(title, imgFile, dur) },
+                onUpdateSlide = { settingsViewModel.updateSlide(it) },
                 onToggleSlideEnabled = { settingsViewModel.toggleSlideEnabled(it) },
                 onDeleteSlide = { settingsViewModel.deleteSlide(it) },
                 onClearSlides = { settingsViewModel.clearSlides() },
