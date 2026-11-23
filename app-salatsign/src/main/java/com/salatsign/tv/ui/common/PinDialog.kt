@@ -222,12 +222,42 @@ fun PinDialog(
         }
     }
 
+    // Guard against stray KeyUp / repeat KeyDown from the OK hold that opened the dialog
+    var pressedConfirmKeys by remember { mutableStateOf(emptySet<Key>()) }
+
     // Modal background & Key Event Interceptor for Remote NumPad
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.85f))
             .onPreviewKeyEvent { event ->
+                val isConfirmKey = event.key == Key.Enter ||
+                    event.key == Key.NumPadEnter ||
+                    event.key == Key.DirectionCenter
+
+                if (isConfirmKey) {
+                    return@onPreviewKeyEvent when (event.type) {
+                        KeyEventType.KeyDown -> {
+                            if (event.nativeKeyEvent.repeatCount > 0 && event.key !in pressedConfirmKeys) {
+                                true
+                            } else {
+                                pressedConfirmKeys = pressedConfirmKeys + event.key
+                                false
+                            }
+                        }
+                        KeyEventType.KeyUp -> {
+                            if (event.key !in pressedConfirmKeys) {
+                                // Swallow release of a confirm key that was already held before dialog opened
+                                true
+                            } else {
+                                pressedConfirmKeys = pressedConfirmKeys - event.key
+                                false
+                            }
+                        }
+                        else -> false
+                    }
+                }
+
                 if (event.type == KeyEventType.KeyDown) {
                     when (event.key) {
                         Key.Zero, Key.NumPad0 -> { handleDigitInput('0'); true }
@@ -241,10 +271,6 @@ fun PinDialog(
                         Key.Eight, Key.NumPad8 -> { handleDigitInput('8'); true }
                         Key.Nine, Key.NumPad9 -> { handleDigitInput('9'); true }
                         Key.Backspace, Key.Delete -> { handleDelete(); true }
-                        Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
-                            // Only trigger submit if not focused on another interactive button
-                            false
-                        }
                         Key.Back -> {
                             onDismiss()
                             true

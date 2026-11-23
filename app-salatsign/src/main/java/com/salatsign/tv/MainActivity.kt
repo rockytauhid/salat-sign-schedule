@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: MosqueSettingsViewModel by viewModels()
 
     private var dpadCenterHoldJob: Job? = null
+    private var ignoreNextConfirmKeyUp = false
     private val isSettingsOpen = mutableStateOf(false)
     private val isPinDialogOpen = mutableStateOf(false)
     private val adminHintTrigger = mutableLongStateOf(0L)
@@ -136,6 +137,21 @@ class MainActivity : ComponentActivity() {
 
     @android.annotation.SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (ignoreNextConfirmKeyUp &&
+            (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                event.keyCode == KeyEvent.KEYCODE_ENTER ||
+                event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER)
+        ) {
+            if (event.action == KeyEvent.ACTION_UP) {
+                ignoreNextConfirmKeyUp = false
+                return true
+            }
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount > 0) {
+                return true
+            }
+            ignoreNextConfirmKeyUp = false
+        }
+
         val settings = settingsViewModel.settings.value
 
         // When signage screen is live (not in wizard, settings, or PIN dialog)
@@ -151,6 +167,7 @@ class MainActivity : ComponentActivity() {
                     dpadCenterHoldJob = lifecycleScope.launch {
                         delay(3000)
                         dpadCenterHoldJob = null
+                        ignoreNextConfirmKeyUp = true
                         requestOpenSettings()
                     }
                     return true

@@ -91,7 +91,6 @@ private fun SunriseCard(
         modifier = modifier
             .clip(shape)
             .background(colorScheme.surface.copy(alpha = 0.82f), shape)
-            .border(width = 1.dp, color = accentSecondary.copy(alpha = 0.40f), shape = shape)
     ) {
         Column(
             modifier = Modifier
@@ -106,7 +105,7 @@ private fun SunriseCard(
                     maxLines = 1,
                     style = TvTypography.ArabicTitle.copy(
                         fontSize = 17.sp,
-                        color = accentSecondary
+                        color = colorScheme.onSurface.copy(alpha = 0.72f)
                     )
                 )
             } else {
@@ -119,7 +118,7 @@ private fun SunriseCard(
                 style = TvTypography.CardTitle.copy(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = colorScheme.onSurface.copy(alpha = 0.85f)
+                    color = colorScheme.onSurface
                 )
             )
 
@@ -129,7 +128,7 @@ private fun SunriseCard(
                 softWrap = false,
                 style = TvTypography.InactivePrayerTime.copy(
                     fontSize = if (is24HourFormat) 26.sp else 21.sp,
-                    color = accentSecondary
+                    color = colorScheme.onSurface
                 )
             )
 
@@ -163,10 +162,10 @@ fun PrayerCard(
 
     val shape = RoundedCornerShape(16.dp)
     val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
-    val borderModifier = when {
-        item.isActive -> Modifier.pulsingGlow(shape = shape, glowColor = accentPrimary)
-        item.isNext -> Modifier.border(width = 2.dp, color = accentSecondary.copy(alpha = 0.9f), shape = shape)
-        else -> Modifier
+    val borderModifier = if (item.isActive) {
+        Modifier.pulsingGlow(shape = shape, glowColor = accentPrimary)
+    } else {
+        Modifier
     }
 
     // Non-focusable display panel: prayer cards are informational only
@@ -190,7 +189,7 @@ fun PrayerCard(
                     maxLines = 1,
                     style = TvTypography.ArabicTitle.copy(
                         fontSize = if (isCompactSixColumn) 17.sp else 18.sp,
-                        color = if (item.isNext) accentSecondary else colorScheme.onSurface.copy(alpha = 0.65f)
+                        color = colorScheme.onSurface.copy(alpha = if (item.isNext) 0.85f else 0.65f)
                     )
                 )
             } else {
@@ -222,7 +221,7 @@ fun PrayerCard(
                             else -> 26.sp
                         },
                         fontWeight = FontWeight.Bold,
-                        color = accentPrimary
+                        color = colorScheme.onSurface
                     )
                 } else {
                     TvTypography.InactivePrayerTime.copy(
@@ -245,7 +244,7 @@ fun PrayerCard(
                         text = note,
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
-                            color = accentSecondary
+                            color = colorScheme.onSurface.copy(alpha = 0.78f)
                         )
                     )
                 }
@@ -269,7 +268,7 @@ fun PrayerCard(
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = accentSecondary
+                        color = colorScheme.onSurface.copy(alpha = 0.8f)
                     )
                 )
             }
