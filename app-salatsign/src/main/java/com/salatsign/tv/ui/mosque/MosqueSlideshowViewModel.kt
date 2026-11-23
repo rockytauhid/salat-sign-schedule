@@ -16,6 +16,7 @@ import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig
 import com.salatsign.tv.data.model.PrayerTimesDay
+import com.salatsign.tv.data.model.QuranVerseItem
 import com.salatsign.tv.data.model.SilentScreenConfig
 import com.salatsign.tv.data.model.SilentWindow
 import com.salatsign.tv.data.model.SilentWindowKind
@@ -24,6 +25,8 @@ import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.IslamicCalendarSlideRows
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
+import com.salatsign.tv.engine.QuranDurationCalculator
+import com.salatsign.tv.engine.QuranShuffleBag
 import com.salatsign.tv.engine.RotationSlideItem
 import com.salatsign.tv.engine.SilentScreenCalculator
 import com.salatsign.tv.engine.SlideshowRotationBuilder
@@ -54,6 +57,11 @@ sealed interface SlideState {
         val rows: List<ClassifiedIslamicEvent>,
         val durationSeconds: Int
     ) : SlideState
+    data class QuranVerse(
+        val verse: QuranVerseItem,
+        val showTranslation: Boolean,
+        val durationSeconds: Int
+    ) : SlideState
     data class SilentScreen(
         val kind: SilentWindowKind
     ) : SlideState
@@ -81,6 +89,14 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val app = application as SalatSignApp
     private val settingsRepository = app.settingsRepository
     private val contentRepository = app.contentRepository
+    private val quranRepository = app.quranVerseRepository
+
+    @Volatile
+    private var skipCurrentQuranRequested: Boolean = false
+
+    fun skipCurrentQuranVerse() {
+        skipCurrentQuranRequested = true
+    }
 
     private val settingsState = settingsRepository.appSettingsFlow.stateIn(
         scope = viewModelScope,
@@ -249,7 +265,8 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 }
                 val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(
                     settings = currentSettings,
-                    islamicCalendarHasContent = calendarSlideRows.isNotEmpty()
+                    islamicCalendarHasContent = calendarSlideRows.isNotEmpty(),
+                    quranVerseHasContent = quranRepository.allReferences().isNotEmpty()
                 )
                 val rotationPlan = SlideshowRotationBuilder.build(activeSlides, builtInRegistrations)
 
@@ -306,17 +323,39 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                                         dur
                                     }
                                     BuiltInSlideId.QURAN_VERSE -> {
-                                        // Wired in QV-3 (Offline Quran Verse Slide)
-                                        continue
+                                        val refs = quranRepository.allReferences()
+                                        if (refs.isEmpty()) continue
+                                        val bag = QuranShuffleBag.deserialize(slideSettings.quranShuffleBagState, refs)
+                                        val draw = bag.next(refs) ?: continue
+                                        val (chosenRef, nextBag) = draw
+                                        settingsRepository.setQuranShuffleBagState(nextBag.serialize())
+                                        val verse = quranRepository.getVerse(chosenRef, slideSettings.appLanguage) ?: continue
+                                        val dur = QuranDurationCalculator.resolveDurationSeconds(
+                                            configuredDurationSeconds = slideSettings.quranVerseDurationSeconds,
+                                            arabicText = verse.arabicText,
+                                            translationText = verse.translationText,
+                                            showTranslation = slideSettings.quranShowTranslation
+                                        )
+                                        skipCurrentQuranRequested = false
+                                        _slideState.value = SlideState.QuranVerse(
+                                            verse = verse,
+                                            showTranslation = slideSettings.quranShowTranslation,
+                                            durationSeconds = dur
+                                        )
+                                        dur
                                     }
                                 }
                             }
                         }
 
-                        // Wait for slideDuration with silent-screen and exact-strike interruption check
+                        // Wait for slideDuration with silent-screen, overflow-skip, and exact-strike interruption check
                         var interrupted = false
                         for (sec in 0 until slideDuration) {
                             delay(1000)
+                            if (skipCurrentQuranRequested && _slideState.value is SlideState.QuranVerse) {
+                                skipCurrentQuranRequested = false
+                                break
+                            }
                             val tickSettings = settingsState.value
                             val tickZone = runCatching { ZoneId.of(tickSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                             val tickNowZoned = ZonedDateTime.now(tickZone)

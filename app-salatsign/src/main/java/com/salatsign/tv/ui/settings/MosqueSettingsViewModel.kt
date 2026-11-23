@@ -16,10 +16,12 @@ import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
+import com.salatsign.tv.data.model.QuranVerseItem
 import com.salatsign.tv.data.model.SlideContainer
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
+import com.salatsign.tv.engine.QuranShuffleBag
 import com.salatsign.tv.engine.SilentScreenCalculator
 import com.salatsign.tv.engine.SlideBudget
 import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
@@ -39,6 +41,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     private val app = application as SalatSignApp
     private val repository = app.settingsRepository
     private val contentRepository = app.contentRepository
+    private val quranRepository = app.quranVerseRepository
 
     val settings: StateFlow<AppSettings> = repository.appSettingsFlow.stateIn(
         scope = viewModelScope,
@@ -321,6 +324,43 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         val current = settings.value.enabledIslamicEventIds
         val updated = if (eventId in current) current - eventId else current + eventId
         viewModelScope.launch { repository.setEnabledIslamicEventIds(updated) }
+    }
+
+    fun setQuranVerseEnabled(enabled: Boolean): Boolean {
+        if (enabled && !settings.value.quranVerseEnabled) {
+            if (!SlideBudget.canEnableBuiltIn(
+                    enabledAnnouncements = currentEnabledAnnouncementCount(),
+                    enabledBuiltIns = currentEnabledBuiltInCount()
+                )
+            ) {
+                _slideLimitError.value = true
+                return false
+            }
+        }
+        _slideLimitError.value = false
+        viewModelScope.launch { repository.setQuranVerseEnabled(enabled) }
+        return true
+    }
+
+    fun setQuranShowTranslation(show: Boolean) {
+        viewModelScope.launch { repository.setQuranShowTranslation(show) }
+    }
+
+    fun setQuranVerseDurationSeconds(seconds: Int) {
+        viewModelScope.launch { repository.setQuranVerseDurationSeconds(seconds) }
+    }
+
+    fun getAllQuranVerses(): List<QuranVerseItem> {
+        val lang = settings.value.appLanguage
+        return quranRepository.allReferences().mapNotNull { ref -> quranRepository.getVerse(ref, lang) }
+    }
+
+    fun drawPreviewQuranVerse(): QuranVerseItem? {
+        val refs = quranRepository.allReferences()
+        if (refs.isEmpty()) return null
+        val bag = QuranShuffleBag.deserialize(settings.value.quranShuffleBagState, refs)
+        val (ref, _) = bag.next(refs) ?: return null
+        return quranRepository.getVerse(ref, settings.value.appLanguage)
     }
 
     fun completeSetup() {

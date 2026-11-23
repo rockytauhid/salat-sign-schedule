@@ -50,6 +50,19 @@ Details on audio provenance, file checksums, and license status are maintained i
 
 ---
 
+## 3b. Quran Text, Translations & Font Assets (`:app-salatsign` only)
+
+All 63 verses are extracted verbatim by `tools/build_quran_data.py` with SHA-256 source checksums tracked in `tools/sources/CHECKSUMS.txt` and verbatim upstream notices preserved in `app-salatsign/src/main/assets/quran/ATTRIBUTION.md`.
+
+| Asset / Resource | Source | License | License Compatibility | Attribution / Notes |
+|------------------|--------|---------|-----------------------|---------------------|
+| `assets/quran/verses_ar.json` & `surahs.json` | [Tanzil Project](http://tanzil.net) (Uthmani v1.1) | Creative Commons Attribution 3.0 (CC-BY 3.0, verbatim only) | Compatible with GPL-3.0 (unmodified asset) | Credit: "Quran text: Tanzil.net" (`http://tanzil.net`). Verbatim copying only; no edits permitted. |
+| `assets/quran/translations_en.json` | Saheeh International via [Tanzil.net](http://tanzil.net) (`en.sahih`) | Creative Commons Attribution 3.0 (CC-BY 3.0, verbatim only) | Compatible with GPL-3.0 (unmodified asset) | Credit: "English translation: Saheeh International, via Tanzil.net". |
+| `assets/quran/translations_id.json` | Indonesian Ministry of Religious Affairs via [Tanzil.net](http://tanzil.net) (`id.indonesian`) | Owner-confirmed permission with credit | Bundled with required attribution | Credit: "Indonesian translation: Kementerian Agama Republik Indonesia". |
+| `res/font/amiri_quran.ttf` | Amiri Quran (Alif Type / Google Fonts) | SIL Open Font License 1.1 (`tools/sources/AMIRI_QURAN_OFL.txt`) | Compatible with GPL-3.0 | Full Uthmani Quranic diacritic and annotation mark rendering offline on API 26+. |
+
+---
+
 ## 4. License Compatibility Analysis (GPL-3.0-or-later)
 
 - **Apache License 2.0:** Compatible with GNU GPL version 3.0 according to the Free Software Foundation (FSF). Software licensed under Apache-2.0 can be combined with GPLv3 code, provided the resulting work as a whole is distributed under the terms of GPLv3.

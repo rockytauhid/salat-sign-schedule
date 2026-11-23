@@ -228,3 +228,18 @@ This document tracks test cases that require real Android TV hardware or emulato
 3. Close Settings -> **Verify:** After the Prayer Schedule and any enabled announcement slides, the read-only Islamic Calendar slide appears with at most 6 rows, clear TODAY/NEXT/PAST marks, readable from the back of the hall (`C4`), and no truncated event names.
 4. Disable all 16 Islamic events -> **Verify:** Slide is skipped cleanly at runtime (no blank slide) while still occupying 1 slot until the slide toggle itself is disabled.
 5. Add/enable announcements until reaching 6 total slots -> **Verify:** Trying to add/enable a 7th slot shows the refusal message, while saving as **Disabled** is still allowed up to 30 stored announcements.
+
+---
+
+## MT-6.3: Offline Quran Verse Slide & Fit Verification (Human Tasks Q2, Q3)
+
+**Objective:** Verify that SalatSign (`com.salatsign.tv`) renders the 63 verbatim Tanzil Uthmani verses offline using the bundled Amiri Quran font with clean diacritics, zero truncation/ellipsis, shuffle-bag persistence across restarts, and required About credits.
+
+### Test Procedure
+1. Disconnect the TV from Wi-Fi / Ethernet to confirm 100% offline operation.
+2. Open Admin Settings -> **Quran Verse Slide**:
+   - Enable **Show Quran Verse Slide in Rotation** -> **Verify:** Rotation counter increments by 1 slot (`Quran verse`).
+   - Click **Check verse fit** -> **Verify:** Reports whether all 63 verses fit cleanly at minimum 40 sp Arabic / 24 sp translation on the Sony TV (`Q3`).
+   - Click **Preview a verse now** -> **Verify:** Plain, undecorated layout, crisp Uthmani Arabic diacritics (superscript alef, stop marks) in Amiri Quran font, readable translation, and `"Surah <Name> <S>:<A>"` reference (`Q2`, `Q3`).
+3. Scroll to **About & Credits** -> **Verify:** Credits `Tanzil.net (http://tanzil.net)`, `Saheeh International, via Tanzil.net`, and `Kementerian Agama Republik Indonesia`.
+4. Return to live signage -> **Verify:** Rotation shows Prayer Schedule → Enabled Announcements → Islamic Calendar (if enabled) → Quran Verse (1 verse per cycle) → Prayer Schedule, with Silent Screen taking priority whenever active.

@@ -94,6 +94,7 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
+import com.salatsign.tv.data.model.QuranVerseItem
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
@@ -177,6 +178,11 @@ fun MosqueSettingsScreen(
     onSetIslamicCalendarSlideEnabled: (Boolean) -> Unit = {},
     onSetIslamicCalendarSlideDurationSeconds: (Int) -> Unit = {},
     onToggleIslamicEvent: (String) -> Unit = {},
+    allQuranVerses: List<QuranVerseItem> = emptyList(),
+    onSetQuranVerseEnabled: (Boolean) -> Unit = {},
+    onSetQuranShowTranslation: (Boolean) -> Unit = {},
+    onSetQuranVerseDurationSeconds: (Int) -> Unit = {},
+    onRequestPreviewQuranVerse: () -> QuranVerseItem? = { null },
     onRestartSetupWizard: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -1838,6 +1844,16 @@ fun MosqueSettingsScreen(
                     onToggleEvent = onToggleIslamicEvent
                 )
 
+                // 7c2. Offline Quran Verse Slide (Built-in Slide, 1 slot of 6)
+                QuranVerseSettingsSection(
+                    settings = settings,
+                    allVerses = allQuranVerses,
+                    onSetQuranVerseEnabled = onSetQuranVerseEnabled,
+                    onSetQuranShowTranslation = onSetQuranShowTranslation,
+                    onSetQuranVerseDurationSeconds = onSetQuranVerseDurationSeconds,
+                    onRequestPreviewVerse = onRequestPreviewQuranVerse
+                )
+
                 // 7d. Silent Screen ("Jumu'ah / Prayer in progress")
                 SilentScreenSettingsSection(
                     settings = settings,
@@ -2052,6 +2068,19 @@ fun MosqueSettingsScreen(
                     Text(
                         text = stringResource(R.string.settings_about_libraries),
                         style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.65f))
+                    )
+
+                    Text(
+                        text = stringResource(AppR.string.about_quran_tanzil),
+                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+                    )
+                    Text(
+                        text = stringResource(AppR.string.about_quran_en),
+                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+                    )
+                    Text(
+                        text = stringResource(AppR.string.about_quran_id),
+                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
                     )
                 }
             }

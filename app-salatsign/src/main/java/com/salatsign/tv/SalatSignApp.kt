@@ -9,6 +9,8 @@ import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.migration.LegacySlideMigration
 import com.salatsign.tv.data.repository.ContentRepository
 import com.salatsign.tv.data.repository.SettingsRepository
+import com.salatsign.tv.engine.QuranVerseRepository
+import com.salatsign.tv.quran.AssetQuranVerseRepository
 import com.salatsign.tv.remote.LocalNetworkUtils
 import com.salatsign.tv.remote.SalatSignLocalServer
 import com.salatsign.tv.remote.SalatSignNsdHelper
@@ -33,6 +35,9 @@ class SalatSignApp : Application() {
     lateinit var contentRepository: ContentRepository
         private set
 
+    lateinit var quranVerseRepository: QuranVerseRepository
+        private set
+
     lateinit var localServer: SalatSignLocalServer
         private set
 
@@ -45,6 +50,7 @@ class SalatSignApp : Application() {
         super.onCreate()
         settingsRepository = SettingsRepository(this)
         contentRepository = ContentRepository(this)
+        quranVerseRepository = AssetQuranVerseRepository(this)
 
         val slideImagesDir = File(filesDir, "content/images")
         val logoImagesDir = File(filesDir, "content/logo")

@@ -283,6 +283,11 @@ private fun SalatSignMainContent(
                 onSetIslamicCalendarSlideEnabled = { settingsViewModel.setIslamicCalendarSlideEnabled(it) },
                 onSetIslamicCalendarSlideDurationSeconds = { settingsViewModel.setIslamicCalendarSlideDurationSeconds(it) },
                 onToggleIslamicEvent = { settingsViewModel.toggleIslamicEvent(it) },
+                allQuranVerses = remember(settings.appLanguage) { settingsViewModel.getAllQuranVerses() },
+                onSetQuranVerseEnabled = { settingsViewModel.setQuranVerseEnabled(it) },
+                onSetQuranShowTranslation = { settingsViewModel.setQuranShowTranslation(it) },
+                onSetQuranVerseDurationSeconds = { settingsViewModel.setQuranVerseDurationSeconds(it) },
+                onRequestPreviewQuranVerse = { settingsViewModel.drawPreviewQuranVerse() },
                 isPhoneControllerRunning = isPhoneControllerRunning,
                 phoneControllerUrl = phoneControllerUrl,
                 onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },
@@ -297,6 +302,7 @@ private fun SalatSignMainContent(
             MosqueSignageScreen(
                 uiState = mosqueUiState,
                 adminHintTrigger = adminHintTrigger,
+                onSkipOverflowQuranVerse = { mosqueViewModel.skipCurrentQuranVerse() },
                 onOpenSettings = onRequestOpenSettings
             )
         }

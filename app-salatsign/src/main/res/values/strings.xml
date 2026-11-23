@@ -50,4 +50,22 @@
     <string name="settings_slides_breakdown_none">No slides enabled (schedule only)</string>
     <string name="settings_slides_builtin_islamic_calendar">Islamic calendar</string>
     <string name="settings_slides_builtin_quran_verse">Quran verse</string>
+
+    <!-- Offline Quran Verse Slide (SalatSign only) -->
+    <string name="quran_surah_reference">Surah %1$s %2$s</string>
+    <string name="settings_section_quran_slide">Quran Verse Slide</string>
+    <string name="settings_quran_enable_title">Show Quran Verse Slide in Rotation</string>
+    <string name="settings_quran_enable_desc">Displays one verse per cycle from 63 curated offline verses (uses 1 of 6 slots).</string>
+    <string name="settings_quran_show_translation_title">Show Translation</string>
+    <string name="settings_quran_show_translation_desc">Show translation below the Arabic verse (disable for Arabic only).</string>
+    <string name="settings_quran_duration_label">Slide duration</string>
+    <string name="settings_quran_duration_auto">Auto</string>
+    <string name="settings_quran_preview_btn">Preview a verse now</string>
+    <string name="settings_quran_fit_check_btn">Check verse fit</string>
+    <string name="settings_quran_fit_check_title">Quran Verse Fit Check</string>
+    <string name="settings_quran_fit_all_ok">All %1$d verses fit cleanly on one screen at minimum 40sp Arabic / 24sp translation sizes.</string>
+    <string name="settings_quran_fit_overflow">%1$d verse(s) exceed one screen at minimum sizes (will be skipped safely at runtime): %2$s</string>
+    <string name="about_quran_tanzil">Quran text: Tanzil.net (http://tanzil.net)</string>
+    <string name="about_quran_en">English translation: Saheeh International, via Tanzil.net</string>
+    <string name="about_quran_id">Indonesian translation: Kementerian Agama Republik Indonesia</string>
 </resources>

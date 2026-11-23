@@ -15,7 +15,6 @@ object BuiltInSlideRegistry {
     fun registrationsFor(
         settings: AppSettings,
         islamicCalendarHasContent: Boolean = true,
-        quranVerseEnabled: Boolean = false,
         quranVerseHasContent: Boolean = true
     ): List<BuiltInSlideRegistration> = listOf(
         BuiltInSlideRegistration(
@@ -26,7 +25,7 @@ object BuiltInSlideRegistry {
         ),
         BuiltInSlideRegistration(
             id = BuiltInSlideId.QURAN_VERSE,
-            enabled = quranVerseEnabled,
+            enabled = settings.quranVerseEnabled,
             hasContent = quranVerseHasContent,
             displayName = "Quran Verse"
         )

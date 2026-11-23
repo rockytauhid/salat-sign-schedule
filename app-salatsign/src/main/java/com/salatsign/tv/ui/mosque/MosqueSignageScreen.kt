@@ -82,6 +82,7 @@ import com.salatsign.tv.ui.theme.TvTypography
 fun MosqueSignageScreen(
     uiState: MosqueSignageUiState,
     adminHintTrigger: Long = 0L,
+    onSkipOverflowQuranVerse: () -> Unit = {},
     onOpenSettings: () -> Unit
 ) {
     val screenFocusRequester = remember { FocusRequester() }
@@ -137,6 +138,13 @@ fun MosqueSignageScreen(
                     IslamicCalendarSlide(
                         rows = slideState.rows,
                         uiState = uiState
+                    )
+                }
+                is SlideState.QuranVerse -> {
+                    QuranVerseSlide(
+                        verse = slideState.verse,
+                        showTranslation = slideState.showTranslation,
+                        onOverflowSkip = onSkipOverflowQuranVerse
                     )
                 }
                 is SlideState.SilentScreen -> {
