@@ -333,4 +333,18 @@
     <string name="islamic_event_white_days">White Days (Ayyam al-Bid)</string>
     <string name="islamic_event_first_ten_dhulhijjah">First ten days of Dhu al-Hijjah</string>
     <string name="islamic_event_tashreeq">Days of Tashreeq</string>
+
+    <!-- Settings Hub Categories -->
+    <string name="settings_hub_cat_display">Display &amp; Language</string>
+    <string name="settings_hub_cat_location">Location &amp; Method</string>
+    <string name="settings_hub_cat_prayer_times">Prayer Times &amp; Hijri</string>
+    <string name="settings_hub_cat_prayer_jumuah">Prayer, Iqamah &amp; Jumu\'ah</string>
+    <string name="settings_hub_cat_branding">Mosque Branding</string>
+    <string name="settings_hub_cat_slideshow">Slideshow &amp; Slides</string>
+    <string name="settings_hub_cat_silent">Silent Screen</string>
+    <string name="settings_hub_cat_adhan">Reminders &amp; Adhan</string>
+    <string name="settings_hub_cat_calendar">Islamic Calendar</string>
+    <string name="settings_hub_cat_remote_security">Remote, PIN &amp; About</string>
+    <string name="settings_hub_cat_about">Setup &amp; About</string>
+    <string name="settings_hijri_calendar_note">Calculated using the Umm al-Qura calendar; adjust offset (-2 to +2) to match local moon sighting.</string>
 </resources>

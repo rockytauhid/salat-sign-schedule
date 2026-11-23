@@ -64,10 +64,10 @@
             android:name=".service.PrayerAlarmReceiver"
             android:exported="false" />
 
-        <!-- Boot & Time-Change Receiver for Alarm Recovery -->
+        <!-- Boot & Time-Change Receiver for Alarm Recovery (system broadcasts only) -->
         <receiver
             android:name=".service.BootAndTimeReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />

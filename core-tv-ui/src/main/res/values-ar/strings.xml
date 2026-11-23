@@ -332,4 +332,18 @@
     <string name="islamic_event_white_days">الأيام البيض</string>
     <string name="islamic_event_first_ten_dhulhijjah">العشر الأوائل من ذي الحجة</string>
     <string name="islamic_event_tashreeq">أيام التشريق</string>
+
+    <!-- Settings Hub Categories -->
+    <string name="settings_hub_cat_display">العرض واللغة</string>
+    <string name="settings_hub_cat_location">الموقع وطريقة الحساب</string>
+    <string name="settings_hub_cat_prayer_times">أوقات الصلاة والهجري</string>
+    <string name="settings_hub_cat_prayer_jumuah">الصلاة والإقامة والجمعة</string>
+    <string name="settings_hub_cat_branding">هوية المسجد</string>
+    <string name="settings_hub_cat_slideshow">العروض والشرائح</string>
+    <string name="settings_hub_cat_silent">شاشة الصمت</string>
+    <string name="settings_hub_cat_adhan">التنبيهات والأذان</string>
+    <string name="settings_hub_cat_calendar">التقويم الهجري</string>
+    <string name="settings_hub_cat_remote_security">التحكم والرمز وحول التطبيق</string>
+    <string name="settings_hub_cat_about">الإعداد وحول التطبيق</string>
+    <string name="settings_hijri_calendar_note">يُحسب وفق تقويم أم القرى؛ عدّل الفرق (-2 إلى +2) لمطابقة الرؤية المحلية.</string>
 </resources>

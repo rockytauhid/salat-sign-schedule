@@ -333,4 +333,18 @@
     <string name="islamic_event_white_days">Ayyamul Bidh</string>
     <string name="islamic_event_first_ten_dhulhijjah">Sepuluh hari pertama Dzulhijjah</string>
     <string name="islamic_event_tashreeq">Hari Tasyrik</string>
+
+    <!-- Settings Hub Categories -->
+    <string name="settings_hub_cat_display">Tampilan &amp; Bahasa</string>
+    <string name="settings_hub_cat_location">Lokasi &amp; Metode</string>
+    <string name="settings_hub_cat_prayer_times">Jadwal &amp; Hijriyah</string>
+    <string name="settings_hub_cat_prayer_jumuah">Jadwal, Iqamah &amp; Jumat</string>
+    <string name="settings_hub_cat_branding">Identitas Masjid</string>
+    <string name="settings_hub_cat_slideshow">Slideshow &amp; Slide</string>
+    <string name="settings_hub_cat_silent">Layar Hening</string>
+    <string name="settings_hub_cat_adhan">Pengingat &amp; Adzan</string>
+    <string name="settings_hub_cat_calendar">Kalender Islam</string>
+    <string name="settings_hub_cat_remote_security">Remote, PIN &amp; Tentang</string>
+    <string name="settings_hub_cat_about">Pengaturan &amp; Tentang</string>
+    <string name="settings_hijri_calendar_note">Dihitung dengan kalender Umm al-Qura; sesuaikan koreksi (-2 hingga +2) agar sesuai rukyat setempat.</string>
 </resources>

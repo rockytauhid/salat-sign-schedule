@@ -148,9 +148,12 @@ object PinHasher {
             return PinVerifyResult.InvalidFormat(PinErrorCode.INVALID_FORMAT)
         }
 
-        // 4. Match against effective PIN
+        // 4. Match against effective PIN (constant-time for both default and custom PINs)
         val matches = if (!hasCustomPin) {
-            enteredPin == DEFAULT_PIN
+            MessageDigest.isEqual(
+                enteredPin.toByteArray(Charsets.UTF_8),
+                DEFAULT_PIN.toByteArray(Charsets.UTF_8)
+            )
         } else {
             val salt = hexToBytes(saltHex)
             val expectedHash = hexToBytes(hashHex)

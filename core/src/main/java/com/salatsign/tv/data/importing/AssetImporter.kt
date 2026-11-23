@@ -102,7 +102,7 @@ class AndroidAudioValidator : AudioValidator {
     override fun validateAudio(file: File): Result<Unit> {
         if (file.length() > MAX_SIZE_BYTES) {
             return Result.failure(
-                IllegalArgumentException("Ukuran file audio melebihi batas 10MB (${file.length() / (1024 * 1024)}MB)")
+                IllegalArgumentException("Audio file exceeds the 10 MB limit (${file.length() / (1024 * 1024)} MB)")
             )
         }
 
@@ -113,21 +113,21 @@ class AndroidAudioValidator : AudioValidator {
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
 
             if (mimeType != null && !mimeType.startsWith("audio/")) {
-                return Result.failure(IllegalArgumentException("Format file bukan audio yang didukung ($mimeType)"))
+                return Result.failure(IllegalArgumentException("Unsupported audio format ($mimeType)"))
             }
             if (durationMs > MAX_DURATION_MS) {
                 return Result.failure(
-                    IllegalArgumentException("Durasi audio melebihi 10 menit (${durationMs / 1000} detik)")
+                    IllegalArgumentException("Audio duration exceeds 10 minutes (${durationMs / 1000}s)")
                 )
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            // If MediaMetadataRetriever fails or is unmocked in JVM test, accept recognized audio extensions
+            // Fallback for unmocked JVM unit test environment
             val validExts = setOf("mp3", "wav", "m4a", "ogg", "aac", "flac")
             if (file.extension.lowercase() in validExts) {
                 Result.success(Unit)
             } else {
-                Result.failure(IllegalArgumentException("Format file audio tidak dikenali: ${file.extension}", e))
+                Result.failure(IllegalArgumentException("Unrecognized audio file format: ${file.extension}", e))
             }
         } finally {
             try { retriever.release() } catch (_: Exception) {}
@@ -140,6 +140,11 @@ class AssetImporter(
     private val downscaler: ImageDownscaler = AndroidImageDownscaler(),
     private val audioValidator: AudioValidator = AndroidAudioValidator()
 ) {
+    companion object {
+        private val ALLOWED_IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
+        private val ALLOWED_AUDIO_EXTENSIONS = setOf("mp3", "wav", "m4a", "ogg", "aac", "flac")
+    }
+
     constructor(context: Context) : this(context.filesDir)
 
     val contentDir = File(baseDir, "content")
@@ -166,8 +171,15 @@ class AssetImporter(
     }
 
     fun deleteImportedFile(kind: ImportKind, fileName: String): Boolean {
-        val target = File(getDirectoryFor(kind), fileName)
-        return if (target.exists()) target.delete() else false
+        if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\') || fileName.contains("..")) {
+            return false
+        }
+        val dir = getDirectoryFor(kind)
+        val target = File(dir, fileName)
+        val canonicalDir = runCatching { dir.canonicalPath }.getOrNull() ?: return false
+        val canonicalTarget = runCatching { target.canonicalPath }.getOrNull() ?: return false
+        if (!canonicalTarget.startsWith(canonicalDir + File.separator)) return false
+        return if (target.exists() && target.isFile) target.delete() else false
     }
 
     fun importSlideImage(source: File): ImportResult {
@@ -222,10 +234,11 @@ class AssetImporter(
         maxHeight: Int
     ): ImportResult {
         if (bytes.isEmpty()) {
-            return ImportResult(success = false, errorMessage = "File gambar kosong (0 byte)")
+            return ImportResult(success = false, errorMessage = "Image file is empty (0 bytes)")
         }
 
-        val ext = originalName.substringAfterLast('.', "jpg").lowercase()
+        val rawExt = originalName.substringAfterLast('.', "").lowercase()
+        val ext = if (rawExt in ALLOWED_IMAGE_EXTENSIONS) rawExt else "jpg"
         val targetFileName = "${kind.name.lowercase()}_${UUID.randomUUID()}.$ext"
         val targetFile = File(getDirectoryFor(kind), targetFileName)
 
@@ -238,23 +251,24 @@ class AssetImporter(
             )
         } catch (e: Exception) {
             targetFile.delete()
-            ImportResult(success = false, errorMessage = "Gagal memproses gambar: ${e.message}")
+            ImportResult(success = false, errorMessage = "Failed to process image: ${e.message}")
         }
     }
 
     private fun importAudio(bytes: ByteArray, originalName: String): ImportResult {
         if (bytes.isEmpty()) {
-            return ImportResult(success = false, errorMessage = "File audio kosong (0 byte)")
+            return ImportResult(success = false, errorMessage = "Audio file is empty (0 bytes)")
         }
 
         if (bytes.size > AndroidAudioValidator.MAX_SIZE_BYTES) {
             return ImportResult(
                 success = false,
-                errorMessage = "Ukuran file audio melebihi batas 10MB (${bytes.size / (1024 * 1024)}MB)"
+                errorMessage = "Audio file exceeds the 10 MB limit (${bytes.size / (1024 * 1024)} MB)"
             )
         }
 
-        val ext = originalName.substringAfterLast('.', "mp3").lowercase()
+        val rawExt = originalName.substringAfterLast('.', "").lowercase()
+        val ext = if (rawExt in ALLOWED_AUDIO_EXTENSIONS) rawExt else "mp3"
         val targetFileName = "adhan_${UUID.randomUUID()}.$ext"
         val targetFile = File(audioDir, targetFileName)
 
@@ -265,7 +279,7 @@ class AssetImporter(
                 targetFile.delete()
                 ImportResult(
                     success = false,
-                    errorMessage = validationResult.exceptionOrNull()?.message ?: "Validasi audio gagal"
+                    errorMessage = validationResult.exceptionOrNull()?.message ?: "Audio validation failed"
                 )
             } else {
                 ImportResult(
@@ -276,7 +290,7 @@ class AssetImporter(
             }
         } catch (e: Exception) {
             targetFile.delete()
-            ImportResult(success = false, errorMessage = "Gagal menyimpan audio: ${e.message}")
+            ImportResult(success = false, errorMessage = "Failed to save audio: ${e.message}")
         }
     }
 }

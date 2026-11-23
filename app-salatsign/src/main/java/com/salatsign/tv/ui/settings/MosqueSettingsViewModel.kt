@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 /**
  * Strictly silent Mosque Mode Settings ViewModel for SalatSign.
@@ -181,7 +182,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
             val slide = AnnouncementSlide(
-                id = "slide_${System.currentTimeMillis()}",
+                id = "slide_${UUID.randomUUID()}",
                 type = SlideType.TEXT,
                 title = title,
                 body = body,
@@ -209,7 +210,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
             val slide = AnnouncementSlide(
-                id = "slide_${System.currentTimeMillis()}",
+                id = "slide_${UUID.randomUUID()}",
                 type = SlideType.IMAGE,
                 title = title,
                 imageFile = imageFile,

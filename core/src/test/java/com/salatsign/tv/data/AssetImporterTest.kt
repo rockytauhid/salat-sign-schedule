@@ -142,4 +142,16 @@ class AssetImporterTest {
         assertEquals(1, filesAfterDelete.size)
         assertEquals(res2.relativeFileName, filesAfterDelete.first().name)
     }
+
+    @Test
+    fun pathTraversalAndDisallowedExtensions_areSanitized() {
+        val outside = File(baseDir, "outside.txt").apply { writeText("keep me") }
+        assertFalse(importer.deleteImportedFile(ImportKind.SLIDE_IMAGE, "../../outside.txt"))
+        assertTrue(outside.exists())
+
+        val weirdExt = importer.importSlideImage("hello".byteInputStream(), "poster.jpg/../../evil")
+        assertTrue(weirdExt.success)
+        assertTrue(weirdExt.relativeFileName!!.endsWith(".jpg"))
+        assertFalse(weirdExt.relativeFileName!!.contains(".."))
+    }
 }

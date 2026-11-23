@@ -95,12 +95,17 @@ class AdhanPreviewPlayer(private val context: Context) {
             var sourceLoaded = false
             if (option.type == AdhanAudioType.CUSTOM_FILE && !option.customUri.isNullOrBlank()) {
                 try {
-                    val localAudio = File(File(context.filesDir, "content/audio"), option.customUri!!)
-                    if (localAudio.exists() && localAudio.canRead()) {
+                    val customUri = option.customUri!!
+                    val audioDir = File(context.filesDir, "content/audio")
+                    val isSimpleFileName = !customUri.contains('/') && !customUri.contains('\\') && !customUri.contains("..")
+                    val localAudio = if (isSimpleFileName) File(audioDir, customUri) else null
+                    val isInsideAudioDir = localAudio != null &&
+                        localAudio.canonicalPath.startsWith(audioDir.canonicalPath + File.separator)
+                    if (localAudio != null && isInsideAudioDir && localAudio.exists() && localAudio.canRead()) {
                         player.setDataSource(localAudio.absolutePath)
                         sourceLoaded = true
-                    } else {
-                        player.setDataSource(context.applicationContext, Uri.parse(option.customUri))
+                    } else if (customUri.startsWith("content://")) {
+                        player.setDataSource(context.applicationContext, Uri.parse(customUri))
                         sourceLoaded = true
                     }
                 } catch (e: Exception) {

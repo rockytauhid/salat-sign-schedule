@@ -19,10 +19,20 @@ class BootAndTimeReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "BootAndTimeReceiver"
+        private val ALLOWED_ACTIONS = setOf(
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_MY_PACKAGE_REPLACED
+        )
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
+        if (action !in ALLOWED_ACTIONS) {
+            Log.w(TAG, "Ignoring unexpected broadcast action=$action")
+            return
+        }
         Log.d(TAG, "onReceive action=$action - recalculating and rescheduling prayer alarms")
 
         val repository = SettingsRepository(context)

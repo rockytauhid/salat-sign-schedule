@@ -192,11 +192,15 @@ class AdhanPlaybackService : Service() {
             var customLoaded = false
             if (type == AdhanAudioType.CUSTOM_FILE && !customUriStr.isNullOrBlank()) {
                 try {
-                    val localAudio = File(File(filesDir, "content/audio"), customUriStr)
-                    if (localAudio.exists() && localAudio.canRead()) {
+                    val audioDir = File(filesDir, "content/audio")
+                    val isSimpleFileName = !customUriStr.contains('/') && !customUriStr.contains('\\') && !customUriStr.contains("..")
+                    val localAudio = if (isSimpleFileName) File(audioDir, customUriStr) else null
+                    val isInsideAudioDir = localAudio != null &&
+                        localAudio.canonicalPath.startsWith(audioDir.canonicalPath + File.separator)
+                    if (localAudio != null && isInsideAudioDir && localAudio.exists() && localAudio.canRead()) {
                         player.setDataSource(localAudio.absolutePath)
                         customLoaded = true
-                    } else {
+                    } else if (customUriStr.startsWith("content://")) {
                         player.setDataSource(applicationContext, Uri.parse(customUriStr))
                         customLoaded = true
                     }

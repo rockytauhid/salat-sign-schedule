@@ -41,22 +41,30 @@ object SimpleJson {
         else -> "\"${escape(value.toString())}\""
     }
 
+    const val MAX_DEPTH = 32
+
     fun parseObject(json: String): Map<String, Any?> {
-        val parser = Parser(json)
-        val result = parser.parseValue()
+        val parser = Parser(json, MAX_DEPTH)
+        val result = parser.parseValue(depth = 0)
         @Suppress("UNCHECKED_CAST")
         return result as? Map<String, Any?> ?: emptyMap()
     }
 
-    private class Parser(private val src: String) {
+    private class Parser(
+        private val src: String,
+        private val maxDepth: Int
+    ) {
         private var pos = 0
 
-        fun parseValue(): Any? {
+        fun parseValue(depth: Int): Any? {
+            if (depth > maxDepth) {
+                throw IllegalArgumentException("JSON nesting depth exceeds limit ($maxDepth)")
+            }
             skipWs()
             if (pos >= src.length) return null
             return when (src[pos]) {
-                '{' -> parseObj()
-                '[' -> parseArr()
+                '{' -> parseObj(depth + 1)
+                '[' -> parseArr(depth + 1)
                 '"' -> parseStr()
                 't' -> { pos += 4; true }
                 'f' -> { pos += 5; false }
@@ -65,7 +73,10 @@ object SimpleJson {
             }
         }
 
-        private fun parseObj(): Map<String, Any?> {
+        private fun parseObj(depth: Int): Map<String, Any?> {
+            if (depth > maxDepth) {
+                throw IllegalArgumentException("JSON nesting depth exceeds limit ($maxDepth)")
+            }
             val map = LinkedHashMap<String, Any?>()
             pos++ // '{'
             skipWs()
@@ -79,7 +90,7 @@ object SimpleJson {
                 val key = parseStr()
                 skipWs()
                 if (pos < src.length && src[pos] == ':') pos++
-                val value = parseValue()
+                val value = parseValue(depth)
                 map[key] = value
                 skipWs()
                 if (pos < src.length && src[pos] == ',') {
@@ -94,7 +105,10 @@ object SimpleJson {
             return map
         }
 
-        private fun parseArr(): List<Any?> {
+        private fun parseArr(depth: Int): List<Any?> {
+            if (depth > maxDepth) {
+                throw IllegalArgumentException("JSON nesting depth exceeds limit ($maxDepth)")
+            }
             val list = mutableListOf<Any?>()
             pos++ // '['
             skipWs()
@@ -103,7 +117,7 @@ object SimpleJson {
                 return list
             }
             while (pos < src.length) {
-                list.add(parseValue())
+                list.add(parseValue(depth))
                 skipWs()
                 if (pos < src.length && src[pos] == ',') {
                     pos++

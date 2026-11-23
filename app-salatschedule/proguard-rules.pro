@@ -16,7 +16,7 @@
 -keep class androidx.datastore.preferences.** { *; }
 
 # Keep Coil 3 Image Loading & Image Decoders
--keep class io.coilkt.coil3.** { *; }
+-keep class coil3.** { *; }
 
 # Keep WorkManager Workers
 -keep class * extends androidx.work.Worker {

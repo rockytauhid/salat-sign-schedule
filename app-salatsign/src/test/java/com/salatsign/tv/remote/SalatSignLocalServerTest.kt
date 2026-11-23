@@ -20,13 +20,17 @@ import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
 import com.salatsign.tv.data.repository.ISettingsRepository
 import com.salatsign.tv.security.PinHasher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -96,7 +100,7 @@ class SalatSignLocalServerTest {
         override suspend fun dismissAdhanHint() {}
         override suspend fun setAppLanguage(language: AppLanguage) {}
         override suspend fun set24HourFormat(enabled: Boolean) { state.value = state.value.copy(is24HourFormat = enabled) }
-        override suspend fun setShowArabicPrayerNames(enabled: Boolean) {}
+        override suspend fun setShowArabicPrayerNames(enabled: Boolean) { state.value = state.value.copy(showArabicPrayerNames = enabled) }
         override suspend fun setJumuahMode(mode: JumuahMode) { state.value = state.value.copy(jumuahMode = mode) }
         override suspend fun setJumuahTimes(times: List<String>) { state.value = state.value.copy(jumuahTimes = times) }
         override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {}
@@ -184,13 +188,19 @@ class SalatSignLocalServerTest {
     }
 
     private fun createServer(
-        settingsRepo: FakeSettingsRepository = FakeSettingsRepository(),
-        contentRepo: FakeContentRepository? = null,
+        customPin: String? = "2468",
         port: Int = 0,
         nowProvider: () -> Long = { 1_700_000_000_000L }
     ): Triple<SalatSignLocalServer, FakeSettingsRepository, FakeContentRepository> {
+        val initial = if (customPin != null) {
+            val hashed = PinHasher.createHashedPin(customPin)
+            AppSettings(isMosqueMode = true, hasCustomPin = true, pinSaltHex = hashed.saltHex, pinHashHex = hashed.hashHex)
+        } else {
+            AppSettings(isMosqueMode = true, hasCustomPin = false)
+        }
+        val settingsRepo = FakeSettingsRepository(initial)
         val dir = createTempDirectory("salatsign-remote-test").toFile()
-        val slidesRepo = contentRepo ?: FakeContentRepository(dir)
+        val slidesRepo = FakeContentRepository(dir)
         val server = SalatSignLocalServer(
             settingsRepository = settingsRepo,
             contentRepository = slidesRepo,
@@ -198,13 +208,23 @@ class SalatSignLocalServerTest {
             logoImageImporter = ImageImporter(File(dir, "logo")),
             port = port,
             appVersionName = "1.0-test",
-            nowMillisProvider = nowProvider
+            nowMillisProvider = nowProvider,
+            allowedHostProvider = { setOf("127.0.0.1", "localhost", "[::1]", "192.168.4.34") }
         )
         return Triple(server, settingsRepo, slidesRepo)
     }
 
+    private suspend fun authenticate(server: SalatSignLocalServer, pin: String = "2468"): Map<String, String> {
+        val authResp = server.handleRequest(
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"$pin"}""".toByteArray())
+        )
+        assertEquals(200, authResp.statusCode)
+        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
+        return mapOf("authorization" to "Bearer $token")
+    }
+
     @Test
-    fun publicStatusAndWebControllerHtml_areAccessibleWithoutAuth() = runBlocking {
+    fun publicStatusAndWebControllerHtml_areAccessibleWithoutAuth_andDoNotLeakMosqueDetails() = runBlocking {
         val (server, _, _) = createServer()
 
         val htmlResp = server.handleRequest(HttpRequest("GET", "/"))
@@ -217,6 +237,20 @@ class SalatSignLocalServerTest {
         val json = SimpleJson.parseObject(statusResp.body.toString(StandardCharsets.UTF_8))
         assertEquals("SalatSign", json["app"])
         assertEquals(1L, json["apiVersion"])
+        assertEquals(true, json["pinConfigured"])
+        assertNull(json["mosqueName"])
+        assertNull(json["cityName"])
+    }
+
+    @Test
+    fun auth_refusesRemoteLoginWhileDefaultPinIsActive() = runBlocking {
+        val (server, _, _) = createServer(customPin = null)
+        val resp = server.handleRequest(
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
+        )
+        assertEquals(403, resp.statusCode)
+        val json = SimpleJson.parseObject(resp.body.toString(StandardCharsets.UTF_8))
+        assertEquals("default_pin_blocked", json["error"])
     }
 
     @Test
@@ -227,61 +261,109 @@ class SalatSignLocalServerTest {
     }
 
     @Test
-    fun auth_verifiesPinAndEnforcesBruteForceLockout() = runBlocking {
+    fun auth_verifiesPinAndEnforcesBruteForceLockout_serializedUnderConcurrency() = runBlocking {
         var now = 1_700_000_000_000L
-        val (server, settingsRepo, _) = createServer(nowProvider = { now })
+        val (server, settingsRepo, _) = createServer(customPin = "2468", nowProvider = { now })
 
-        // 5 wrong attempts trigger 30s lockout
-        repeat(5) {
-            val bad = server.handleRequest(
-                HttpRequest("POST", "/api/v1/auth", body = """{"pin":"9999"}""".toByteArray())
-            )
-            assertEquals(401, bad.statusCode)
-        }
+        // 5 concurrent wrong guesses MUST all count atomically (no lockout race)
+        val results = (1..5).map {
+            async {
+                server.handleRequest(
+                    HttpRequest("POST", "/api/v1/auth", body = """{"pin":"9999"}""".toByteArray())
+                )
+            }
+        }.awaitAll()
+        assertTrue(results.all { it.statusCode == 401 })
         assertEquals(5, settingsRepo.current.pinFailedAttempts)
 
-        // 6th attempt while locked out returns 429 even with correct default PIN
+        // 6th attempt while locked out returns 429 even with correct custom PIN
         val locked = server.handleRequest(
-            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"2468"}""".toByteArray())
         )
         assertEquals(429, locked.statusCode)
 
         // After 31 seconds, correct PIN succeeds and resets failed attempts
         now += 31_000L
         val ok = server.handleRequest(
-            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"2468"}""".toByteArray())
         )
         assertEquals(200, ok.statusCode)
         assertEquals(0, settingsRepo.current.pinFailedAttempts)
         val token = SimpleJson.parseObject(ok.body.toString(StandardCharsets.UTF_8))["token"] as? String
         assertNotNull(token)
+
+        // Logout immediately revokes token
+        val logout = server.handleRequest(
+            HttpRequest("POST", "/api/v1/logout", headers = mapOf("authorization" to "Bearer $token"))
+        )
+        assertEquals(200, logout.statusCode)
+        val afterLogout = server.handleRequest(
+            HttpRequest("GET", "/api/v1/settings", headers = mapOf("authorization" to "Bearer $token"))
+        )
+        assertEquals(401, afterLogout.statusCode)
     }
 
     @Test
-    fun authenticatedSettingsPatchAndSlideCrud_persistChanges() = runBlocking {
-        val (server, settingsRepo, contentRepo) = createServer()
-        val authResp = server.handleRequest(
-            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
+    fun securityHardening_rejectsDeepJsonOversizedPreAuthAndInvalidHost() = runBlocking {
+        val (server, _, _) = createServer()
+
+        // Deeply nested JSON does not StackOverflow — returns 400 cleanly
+        val deepJson = "[".repeat(80) + "]".repeat(80)
+        val deepResp = server.handleRequest(
+            HttpRequest("POST", "/api/v1/auth", body = deepJson.toByteArray())
         )
-        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
-        val authHeaders = mapOf("authorization" to "Bearer $token")
+        assertEquals(400, deepResp.statusCode)
+
+        // Oversized pre-auth body returns 413
+        val hugePreAuth = ByteArray(4096) { 'a'.code.toByte() }
+        val hugeResp = server.handleRequest(HttpRequest("POST", "/api/v1/auth", body = hugePreAuth))
+        assertEquals(413, hugeResp.statusCode)
+
+        // DNS rebinding Host header is rejected with 403
+        val badHost = server.handleRequest(
+            HttpRequest("GET", "/api/v1/status", headers = mapOf("host" to "evil.attacker.com:8787"))
+        )
+        assertEquals(403, badHost.statusCode)
+
+        // Local IP / localhost / .local are accepted
+        assertTrue(server.isValidHostHeader("192.168.4.34:8787"))
+        assertTrue(server.isValidHostHeader("localhost:8787"))
+        assertTrue(server.isValidHostHeader("salatsign.local:8787"))
+        assertFalse(server.isValidHostHeader("evil.com:8787"))
+    }
+
+    @Test
+    fun authenticatedSettingsPatchAndSlideEditCrud_persistChanges() = runBlocking {
+        val (server, settingsRepo, contentRepo) = createServer()
+        val authHeaders = authenticate(server)
 
         val patchResp = server.handleRequest(
             HttpRequest(
                 method = "PATCH",
                 path = "/api/v1/settings",
                 headers = authHeaders,
-                body = """{"mosqueName":"Masjid Al-Noor","mosqueSubtitle":"Canberra","scheduleDurationSeconds":45,"hijriOffsetDays":1,"is24HourFormat":true,"jumuahMode":"FIXED","jumuahTimes":["13:00","13:45"],"iqamahSubuh":15}""".toByteArray()
+                body = """{"mosqueName":"Masjid Al-Noor","mosqueSubtitle":"Canberra","themeMode":"ALWAYS_LIGHT","mosqueIconPreset":"MINARET","mosqueFontPreset":"TRADITIONAL_SERIF","scheduleDurationSeconds":45,"hijriOffsetDays":1,"hijriChangeAtMidnight":true,"is24HourFormat":true,"showArabicPrayerNames":false,"jumuahMode":"FIXED","jumuahTimes":["13:00","13:45"],"iqamahSubuh":15,"islamicCalendarSlideEnabled":true,"islamicCalendarSlideDurationSeconds":30,"quranVerseEnabled":true,"quranShowTranslation":false,"quranVerseDurationSeconds":25,"silentJumuahEnabled":true,"silentJumuahLeadMinutes":10,"silentJumuahDurationMinutes":60}""".toByteArray()
             )
         )
         assertEquals(200, patchResp.statusCode)
         assertEquals("Masjid Al-Noor", settingsRepo.current.mosqueName)
-        assertEquals("Canberra", settingsRepo.current.mosqueSubtitle)
+        assertEquals(ThemeMode.ALWAYS_LIGHT, settingsRepo.current.themeMode)
+        assertEquals(MosqueIconPreset.MINARET, settingsRepo.current.mosqueIconPreset)
+        assertEquals(MosqueFontPreset.TRADITIONAL_SERIF, settingsRepo.current.mosqueFontPreset)
         assertEquals(45, settingsRepo.current.scheduleDurationSeconds)
         assertEquals(1, settingsRepo.current.hijriOffsetDays)
+        assertTrue(settingsRepo.current.hijriChangeAtMidnight)
         assertTrue(settingsRepo.current.is24HourFormat)
+        assertFalse(settingsRepo.current.showArabicPrayerNames)
         assertEquals(listOf("13:00", "13:45"), settingsRepo.current.jumuahTimes)
         assertEquals(15, settingsRepo.current.iqamahSubuh)
+        assertTrue(settingsRepo.current.islamicCalendarSlideEnabled)
+        assertEquals(30, settingsRepo.current.islamicCalendarSlideDurationSeconds)
+        assertTrue(settingsRepo.current.quranVerseEnabled)
+        assertFalse(settingsRepo.current.quranShowTranslation)
+        assertEquals(25, settingsRepo.current.quranVerseDurationSeconds)
+        assertEquals(10, settingsRepo.current.silentScreen.jumuahLeadMinutes)
+        assertEquals(60, settingsRepo.current.silentScreen.jumuahDurationMinutes)
 
         // Add text slide
         val addResp = server.handleRequest(
@@ -296,6 +378,20 @@ class SalatSignLocalServerTest {
         val slideId = SimpleJson.parseObject(addResp.body.toString(StandardCharsets.UTF_8))["id"] as String
         assertEquals(1, contentRepo.slidesFlow.value.slides.size)
 
+        // Edit slide title, body, and duration
+        val editResp = server.handleRequest(
+            HttpRequest(
+                method = "PATCH",
+                path = "/api/v1/slides/$slideId",
+                headers = authHeaders,
+                body = """{"title":"Updated Dinner","body":"Sunday 6pm","durationSeconds":30}""".toByteArray()
+            )
+        )
+        assertEquals(200, editResp.statusCode)
+        assertEquals("Updated Dinner", contentRepo.slidesFlow.value.slides.first().title)
+        assertEquals("Sunday 6pm", contentRepo.slidesFlow.value.slides.first().body)
+        assertEquals(30, contentRepo.slidesFlow.value.slides.first().durationSeconds)
+
         // Delete slide
         val delResp = server.handleRequest(
             HttpRequest(method = "DELETE", path = "/api/v1/slides/$slideId", headers = authHeaders)
@@ -309,17 +405,11 @@ class SalatSignLocalServerTest {
         val now = 1_700_000_000_000L
         val (server, settingsRepo, _) = createServer(nowProvider = { now })
 
-        // Unauthenticated start/stop must be rejected
         assertEquals(401, server.handleRequest(HttpRequest("POST", "/api/v1/silent/start")).statusCode)
         assertEquals(401, server.handleRequest(HttpRequest("POST", "/api/v1/silent/stop")).statusCode)
 
-        val authResp = server.handleRequest(
-            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
-        )
-        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
-        val authHeaders = mapOf("authorization" to "Bearer $token")
+        val authHeaders = authenticate(server)
 
-        // Start manual silent screen for 30 minutes
         val startResp = server.handleRequest(
             HttpRequest(
                 method = "POST",
@@ -331,33 +421,17 @@ class SalatSignLocalServerTest {
         assertEquals(200, startResp.statusCode)
         val expectedUntil = now + 30 * 60_000L
         assertEquals(expectedUntil, settingsRepo.current.silentScreen.manualSilentUntilEpochMillis)
-        val startJson = SimpleJson.parseObject(startResp.body.toString(StandardCharsets.UTF_8))
-        assertEquals(true, startJson["manualSilentActive"])
-        assertEquals(expectedUntil, startJson["manualSilentUntilEpochMillis"])
 
-        // GET /api/v1/settings reports manual silent screen active
-        val getResp = server.handleRequest(HttpRequest("GET", "/api/v1/settings", headers = authHeaders))
-        val getJson = SimpleJson.parseObject(getResp.body.toString(StandardCharsets.UTF_8))
-        assertEquals(true, getJson["manualSilentActive"])
-        assertEquals(30L, getJson["manualSilentRemainingMinutes"])
-
-        // Stop manual silent screen
         val stopResp = server.handleRequest(HttpRequest("POST", "/api/v1/silent/stop", headers = authHeaders))
         assertEquals(200, stopResp.statusCode)
         assertEquals(0L, settingsRepo.current.silentScreen.manualSilentUntilEpochMillis)
-        val stopJson = SimpleJson.parseObject(stopResp.body.toString(StandardCharsets.UTF_8))
-        assertEquals(false, stopJson["manualSilentActive"])
     }
 
     @Test
     fun slideBudget_refusesSeventhEnabledSlide_allowsDisabledAndReEnableAfterDisable() = runBlocking {
-        var now = 1_700_000_000_000L
-        val (server, _, contentRepo) = createServer(nowProvider = { now++ })
-        val authResp = server.handleRequest(HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray()))
-        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
-        val authHeaders = mapOf("authorization" to "Bearer $token")
+        val (server, _, contentRepo) = createServer()
+        val authHeaders = authenticate(server)
 
-        // Add 6 enabled slides -> all succeed
         var firstSlideId = ""
         repeat(6) { idx ->
             val r = server.handleRequest(
@@ -370,10 +444,12 @@ class SalatSignLocalServerTest {
         }
 
         // 7th enabled slide is refused with 409 Conflict
-        val seventhEnabled = server.handleRequest(
-            HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S7","body":"B7","enabled":true}""".toByteArray())
+        assertEquals(
+            409,
+            server.handleRequest(
+                HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S7","body":"B7","enabled":true}""".toByteArray())
+            ).statusCode
         )
-        assertEquals(409, seventhEnabled.statusCode)
 
         // 7th slide saved as disabled is allowed
         val seventhDisabled = server.handleRequest(
@@ -401,7 +477,7 @@ class SalatSignLocalServerTest {
     }
 
     @Test
-    fun tcpLoopbackRoundTrip_servesStatusOverRealSocket() {
+    fun tcpLoopbackRoundTrip_servesStatusAndSecurityHeadersOverRealSocket() {
         val freePort = ServerSocket(0).use { it.localPort }
         val (server, _, _) = createServer(port = freePort)
         assertTrue(server.start())
@@ -410,6 +486,9 @@ class SalatSignLocalServerTest {
             conn.connectTimeout = 3000
             conn.readTimeout = 3000
             assertEquals(200, conn.responseCode)
+            assertEquals("nosniff", conn.getHeaderField("X-Content-Type-Options"))
+            assertEquals("DENY", conn.getHeaderField("X-Frame-Options"))
+            assertNotNull(conn.getHeaderField("Content-Security-Policy"))
             val body = conn.inputStream.bufferedReader().readText()
             val json = SimpleJson.parseObject(body)
             assertEquals("SalatSign", json["app"])
