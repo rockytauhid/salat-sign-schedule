@@ -131,6 +131,18 @@ class SalatSignLocalServerTest {
         override suspend fun setIslamicCalendarSlideDurationSeconds(seconds: Int) {
             state.value = state.value.copy(islamicCalendarSlideDurationSeconds = seconds)
         }
+        override suspend fun setQuranVerseEnabled(enabled: Boolean) {
+            state.value = state.value.copy(quranVerseEnabled = enabled)
+        }
+        override suspend fun setQuranShowTranslation(show: Boolean) {
+            state.value = state.value.copy(quranShowTranslation = show)
+        }
+        override suspend fun setQuranVerseDurationSeconds(seconds: Int) {
+            state.value = state.value.copy(quranVerseDurationSeconds = seconds)
+        }
+        override suspend fun setQuranShuffleBagState(serializedState: String) {
+            state.value = state.value.copy(quranShuffleBagState = serializedState)
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {

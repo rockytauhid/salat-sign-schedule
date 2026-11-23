@@ -263,7 +263,12 @@ data class AppSettings(
     val enabledIslamicEventIds: Set<String> = IslamicEventDefinitions.defaultEnabledIds,
     val showNextEventOnHome: Boolean = true,
     val islamicCalendarSlideEnabled: Boolean = false,
-    val islamicCalendarSlideDurationSeconds: Int = IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS
+    val islamicCalendarSlideDurationSeconds: Int = IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS,
+    // Offline Quran Verse Slide (SalatSign Mosque Mode only)
+    val quranVerseEnabled: Boolean = false,
+    val quranShowTranslation: Boolean = true,
+    val quranVerseDurationSeconds: Int = QuranSlideDefaults.DURATION_AUTO,
+    val quranShuffleBagState: String = ""
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

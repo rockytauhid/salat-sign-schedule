@@ -84,4 +84,9 @@ interface ISettingsRepository {
     suspend fun setShowNextEventOnHome(show: Boolean)
     suspend fun setIslamicCalendarSlideEnabled(enabled: Boolean)
     suspend fun setIslamicCalendarSlideDurationSeconds(seconds: Int)
+    // Offline Quran Verse Slide settings (Mosque / SalatSign)
+    suspend fun setQuranVerseEnabled(enabled: Boolean)
+    suspend fun setQuranShowTranslation(show: Boolean)
+    suspend fun setQuranVerseDurationSeconds(seconds: Int)
+    suspend fun setQuranShuffleBagState(serializedState: String)
 }

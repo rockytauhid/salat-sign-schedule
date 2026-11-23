@@ -27,6 +27,7 @@ import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
+import com.salatsign.tv.data.model.QuranSlideDefaults
 import com.salatsign.tv.data.model.SilentAnchor
 import com.salatsign.tv.data.model.SilentScreenConfig
 import com.salatsign.tv.data.model.ThemeMode
@@ -124,6 +125,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val SHOW_NEXT_EVENT_ON_HOME = booleanPreferencesKey("show_next_event_on_home")
         val ISLAMIC_CALENDAR_SLIDE_ENABLED = booleanPreferencesKey("islamic_calendar_slide_enabled")
         val ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS = intPreferencesKey("islamic_calendar_slide_duration_seconds")
+
+        // Offline Quran Verse Slide keys (SalatSign Mosque Mode only)
+        val QURAN_VERSE_ENABLED = booleanPreferencesKey("quran_verse_enabled")
+        val QURAN_SHOW_TRANSLATION = booleanPreferencesKey("quran_show_translation")
+        val QURAN_VERSE_DURATION_SECONDS = intPreferencesKey("quran_verse_duration_seconds")
+        val QURAN_SHUFFLE_BAG_STATE = stringPreferencesKey("quran_shuffle_bag_state")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -255,6 +262,19 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 ?: IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS)
                 .coerceIn(IslamicEventDefinitions.MIN_SLIDE_DURATION_SECONDS, IslamicEventDefinitions.MAX_SLIDE_DURATION_SECONDS)
 
+            val quranVerseEnabled = preferences[PreferencesKeys.QURAN_VERSE_ENABLED] ?: false
+            val quranShowTranslation = preferences[PreferencesKeys.QURAN_SHOW_TRANSLATION] ?: true
+            val rawQuranDuration = preferences[PreferencesKeys.QURAN_VERSE_DURATION_SECONDS] ?: QuranSlideDefaults.DURATION_AUTO
+            val quranVerseDurationSeconds = if (rawQuranDuration == QuranSlideDefaults.DURATION_AUTO) {
+                QuranSlideDefaults.DURATION_AUTO
+            } else {
+                rawQuranDuration.coerceIn(
+                    QuranSlideDefaults.MIN_FIXED_DURATION_SECONDS,
+                    QuranSlideDefaults.MAX_FIXED_DURATION_SECONDS
+                )
+            }
+            val quranShuffleBagState = preferences[PreferencesKeys.QURAN_SHUFFLE_BAG_STATE] ?: ""
+
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
@@ -312,7 +332,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 enabledIslamicEventIds = enabledIslamicEventIds,
                 showNextEventOnHome = showNextEventOnHome,
                 islamicCalendarSlideEnabled = islamicCalendarSlideEnabled,
-                islamicCalendarSlideDurationSeconds = islamicCalendarSlideDurationSeconds
+                islamicCalendarSlideDurationSeconds = islamicCalendarSlideDurationSeconds,
+                quranVerseEnabled = quranVerseEnabled,
+                quranShowTranslation = quranShowTranslation,
+                quranVerseDurationSeconds = quranVerseDurationSeconds,
+                quranShuffleBagState = quranShuffleBagState
             )
         }
 
@@ -734,6 +758,38 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         )
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS] = clamped
+        }
+    }
+
+    override suspend fun setQuranVerseEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.QURAN_VERSE_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setQuranShowTranslation(show: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.QURAN_SHOW_TRANSLATION] = show
+        }
+    }
+
+    override suspend fun setQuranVerseDurationSeconds(seconds: Int) {
+        val normalized = if (seconds == QuranSlideDefaults.DURATION_AUTO) {
+            QuranSlideDefaults.DURATION_AUTO
+        } else {
+            seconds.coerceIn(
+                QuranSlideDefaults.MIN_FIXED_DURATION_SECONDS,
+                QuranSlideDefaults.MAX_FIXED_DURATION_SECONDS
+            )
+        }
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.QURAN_VERSE_DURATION_SECONDS] = normalized
+        }
+    }
+
+    override suspend fun setQuranShuffleBagState(serializedState: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.QURAN_SHUFFLE_BAG_STATE] = serializedState
         }
     }
 }
