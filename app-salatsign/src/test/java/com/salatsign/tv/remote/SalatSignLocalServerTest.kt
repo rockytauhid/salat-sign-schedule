@@ -119,6 +119,18 @@ class SalatSignLocalServerTest {
         override suspend fun setManualSilentUntil(epochMillis: Long) {
             state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(manualSilentUntilEpochMillis = epochMillis))
         }
+        override suspend fun setEnabledIslamicEventIds(ids: Set<String>) {
+            state.value = state.value.copy(enabledIslamicEventIds = ids)
+        }
+        override suspend fun setShowNextEventOnHome(show: Boolean) {
+            state.value = state.value.copy(showNextEventOnHome = show)
+        }
+        override suspend fun setIslamicCalendarSlideEnabled(enabled: Boolean) {
+            state.value = state.value.copy(islamicCalendarSlideEnabled = enabled)
+        }
+        override suspend fun setIslamicCalendarSlideDurationSeconds(seconds: Int) {
+            state.value = state.value.copy(islamicCalendarSlideDurationSeconds = seconds)
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {

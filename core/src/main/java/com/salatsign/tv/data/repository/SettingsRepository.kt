@@ -21,6 +21,7 @@ import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.FridayAdhanTiming
+import com.salatsign.tv.data.model.IslamicEventDefinitions
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
@@ -117,6 +118,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         fun silentPrayerAnchorKey(prayer: Prayer) = stringPreferencesKey("silent_anchor_${prayer.id}")
         fun silentPrayerLeadKey(prayer: Prayer) = intPreferencesKey("silent_lead_${prayer.id}")
         fun silentPrayerDurationKey(prayer: Prayer) = intPreferencesKey("silent_duration_${prayer.id}")
+
+        // Islamic Calendar Events keys
+        val ENABLED_ISLAMIC_EVENT_IDS = stringPreferencesKey("enabled_islamic_event_ids")
+        val SHOW_NEXT_EVENT_ON_HOME = booleanPreferencesKey("show_next_event_on_home")
+        val ISLAMIC_CALENDAR_SLIDE_ENABLED = booleanPreferencesKey("islamic_calendar_slide_enabled")
+        val ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS = intPreferencesKey("islamic_calendar_slide_duration_seconds")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -234,6 +241,20 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 manualSilentUntilEpochMillis = manualSilentUntil
             )
 
+            val enabledEventsRaw = preferences[PreferencesKeys.ENABLED_ISLAMIC_EVENT_IDS]
+            val enabledIslamicEventIds = if (enabledEventsRaw == null) {
+                IslamicEventDefinitions.defaultEnabledIds
+            } else if (enabledEventsRaw.isBlank()) {
+                emptySet()
+            } else {
+                enabledEventsRaw.split(",").map { it.trim() }.filter { it in IslamicEventDefinitions.byId }.toSet()
+            }
+            val showNextEventOnHome = preferences[PreferencesKeys.SHOW_NEXT_EVENT_ON_HOME] ?: true
+            val islamicCalendarSlideEnabled = preferences[PreferencesKeys.ISLAMIC_CALENDAR_SLIDE_ENABLED] ?: false
+            val islamicCalendarSlideDurationSeconds = (preferences[PreferencesKeys.ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS]
+                ?: IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS)
+                .coerceIn(IslamicEventDefinitions.MIN_SLIDE_DURATION_SECONDS, IslamicEventDefinitions.MAX_SLIDE_DURATION_SECONDS)
+
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
                 isMosqueMode = isMosqueMode,
@@ -287,7 +308,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 pinLockedUntilEpochMillis = pinLockedUntil,
                 defaultPinPromptDismissed = defaultPinPromptDismissed,
                 adhanHintDismissed = adhanHintDismissed,
-                silentScreen = silentScreenConfig
+                silentScreen = silentScreenConfig,
+                enabledIslamicEventIds = enabledIslamicEventIds,
+                showNextEventOnHome = showNextEventOnHome,
+                islamicCalendarSlideEnabled = islamicCalendarSlideEnabled,
+                islamicCalendarSlideDurationSeconds = islamicCalendarSlideDurationSeconds
             )
         }
 
@@ -680,6 +705,35 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setManualSilentUntil(epochMillis: Long) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.MANUAL_SILENT_UNTIL_EPOCH_MILLIS] = epochMillis.coerceAtLeast(0L)
+        }
+    }
+
+    override suspend fun setEnabledIslamicEventIds(ids: Set<String>) {
+        val valid = ids.filter { it in IslamicEventDefinitions.byId }
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ENABLED_ISLAMIC_EVENT_IDS] = valid.joinToString(",")
+        }
+    }
+
+    override suspend fun setShowNextEventOnHome(show: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SHOW_NEXT_EVENT_ON_HOME] = show
+        }
+    }
+
+    override suspend fun setIslamicCalendarSlideEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ISLAMIC_CALENDAR_SLIDE_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setIslamicCalendarSlideDurationSeconds(seconds: Int) {
+        val clamped = seconds.coerceIn(
+            IslamicEventDefinitions.MIN_SLIDE_DURATION_SECONDS,
+            IslamicEventDefinitions.MAX_SLIDE_DURATION_SECONDS
+        )
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS] = clamped
         }
     }
 }

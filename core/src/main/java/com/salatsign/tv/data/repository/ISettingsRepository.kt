@@ -79,4 +79,9 @@ interface ISettingsRepository {
     suspend fun setSilentDailyPrayerConfig(prayer: Prayer, config: PrayerSilentConfig)
     suspend fun setSilentDailyPrayerConfigs(configs: Map<Prayer, PrayerSilentConfig>)
     suspend fun setManualSilentUntil(epochMillis: Long)
+    // Islamic Calendar Events settings
+    suspend fun setEnabledIslamicEventIds(ids: Set<String>)
+    suspend fun setShowNextEventOnHome(show: Boolean)
+    suspend fun setIslamicCalendarSlideEnabled(enabled: Boolean)
+    suspend fun setIslamicCalendarSlideDurationSeconds(seconds: Int)
 }

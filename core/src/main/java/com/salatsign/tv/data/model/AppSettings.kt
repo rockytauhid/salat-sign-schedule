@@ -258,7 +258,12 @@ data class AppSettings(
     val pinLockedUntilEpochMillis: Long = 0L,
     val defaultPinPromptDismissed: Boolean = false,
     // Silent Screen ("Jumu'ah / Prayer in progress") - SalatSign Mosque Mode only
-    val silentScreen: SilentScreenConfig = SilentScreenConfig()
+    val silentScreen: SilentScreenConfig = SilentScreenConfig(),
+    // Islamic Calendar Events (shared event toggles; Home next-event line; Mosque calendar slide)
+    val enabledIslamicEventIds: Set<String> = IslamicEventDefinitions.defaultEnabledIds,
+    val showNextEventOnHome: Boolean = true,
+    val islamicCalendarSlideEnabled: Boolean = false,
+    val islamicCalendarSlideDurationSeconds: Int = IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {
