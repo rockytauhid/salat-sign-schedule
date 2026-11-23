@@ -14,6 +14,7 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.SilentAnchor
+import com.salatsign.tv.data.model.SlideTextAlign
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
@@ -628,6 +629,7 @@ class SalatSignLocalServer(
                 "imageFile" to slide.imageFile,
                 "durationSeconds" to slide.durationSeconds,
                 "enabled" to slide.enabled,
+                "textAlign" to slide.textAlign.name,
                 "sortOrder" to slide.sortOrder
             )
         }
@@ -663,6 +665,9 @@ class SalatSignLocalServer(
             )
         }
         val duration = ((body["durationSeconds"] as? Number)?.toInt() ?: 15).coerceIn(3, 120)
+        val textAlign = (body["textAlign"] as? String)?.let { raw ->
+            runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
+        } ?: SlideTextAlign.CENTER
         val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
             id = "slide_${UUID.randomUUID()}",
@@ -671,6 +676,7 @@ class SalatSignLocalServer(
             body = text,
             durationSeconds = duration,
             enabled = enabled,
+            textAlign = textAlign,
             sortOrder = nextOrder
         )
         val result = contentRepository.addSlide(slide)
@@ -744,11 +750,15 @@ class SalatSignLocalServer(
         val targetTitle = (patch["title"] as? String)?.trim() ?: current.title
         val targetBody = (patch["body"] as? String)?.trim() ?: current.body
         val targetDuration = ((patch["durationSeconds"] as? Number)?.toInt() ?: current.durationSeconds).coerceIn(3, 120)
+        val targetAlign = (patch["textAlign"] as? String)?.let { raw ->
+            runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
+        } ?: current.textAlign
         val updated = current.copy(
             title = targetTitle,
             body = if (current.type == SlideType.TEXT) targetBody else current.body,
             durationSeconds = targetDuration,
-            enabled = targetEnabled
+            enabled = targetEnabled,
+            textAlign = targetAlign
         )
         val res = contentRepository.updateSlide(updated)
         return if (res.isSuccess) {

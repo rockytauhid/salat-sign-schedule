@@ -82,8 +82,14 @@
     <string name="settings_text_slide_title_placeholder">e.g., Friday Khutbah &amp; Community Dinner</string>
     <string name="settings_text_slide_body_label">Message (up to %1$d rows)</string>
     <string name="settings_text_slide_body_placeholder">Type your announcement message here…</string>
-    <string name="settings_text_slide_body_hint">Press OK to type • Use Enter or + New Line for the next row • Press Back when done typing</string>
+    <string name="settings_text_slide_body_hint">Press OK to type • Use Enter, + New Line, • Bullet, or 1. Number for list rows • Press Back when done</string>
     <string name="settings_text_slide_new_line">+ New Line</string>
+    <string name="settings_text_slide_bullet">• Bullet</string>
+    <string name="settings_text_slide_numbered">1. Number</string>
+    <string name="settings_text_slide_align_label">Text Alignment</string>
+    <string name="settings_text_slide_align_left">Left</string>
+    <string name="settings_text_slide_align_center">Center</string>
+    <string name="settings_text_slide_align_right">Right</string>
     <string name="settings_text_slide_duration_label">Display Duration</string>
     <string name="settings_text_slide_limit_note">Rotation is full (6/6) — this slide will be saved as disabled.</string>
     <string name="settings_text_slide_empty_error">Please enter a title or message before saving.</string>

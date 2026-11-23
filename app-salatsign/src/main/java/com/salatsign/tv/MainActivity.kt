@@ -12,6 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -217,6 +219,7 @@ private fun SalatSignMainContent(
     onClosePinDialog: () -> Unit
 ) {
     val settings by settingsViewModel.settings.collectAsState()
+    val isSettingsLoaded by settingsViewModel.isSettingsLoaded.collectAsState()
     val mosqueUiState by mosqueViewModel.uiState.collectAsState()
     val slideContainer by settingsViewModel.slides.collectAsState()
     val slideLimitError by settingsViewModel.slideLimitError.collectAsState()
@@ -238,6 +241,14 @@ private fun SalatSignMainContent(
     }
 
     when {
+        !isSettingsLoaded -> {
+            // Hold calm dark background briefly while DataStore loads saved setup state
+            androidx.compose.foundation.layout.Box(
+                modifier = androidx.compose.ui.Modifier
+                    .fillMaxSize()
+                    .background(com.salatsign.tv.ui.theme.DarkBackground)
+            )
+        }
         !settings.isSetupCompleted -> {
             MosqueSetupWizardScreen(
                 settings = settings,
@@ -272,7 +283,7 @@ private fun SalatSignMainContent(
                 onSetMosqueIconPreset = { settingsViewModel.setMosqueIconPreset(it) },
                 onSetMosqueFontPreset = { settingsViewModel.setMosqueFontPreset(it) },
                 onSetScheduleDuration = { settingsViewModel.setScheduleDuration(it) },
-                onAddTextSlide = { title, body, dur, enabled -> settingsViewModel.addTextSlide(title, body, dur, enabled) },
+                onAddTextSlide = { title, body, dur, enabled, align -> settingsViewModel.addTextSlide(title, body, dur, enabled, align) },
                 onAddImageSlide = { title, imgFile, dur -> settingsViewModel.addImageSlide(title, imgFile, dur) },
                 onUpdateSlide = { settingsViewModel.updateSlide(it) },
                 onToggleSlideEnabled = { settingsViewModel.toggleSlideEnabled(it) },

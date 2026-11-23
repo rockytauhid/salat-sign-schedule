@@ -12,6 +12,13 @@ enum class SlideType {
 }
 
 @Serializable
+enum class SlideTextAlign {
+    CENTER,
+    LEFT,
+    RIGHT
+}
+
+@Serializable
 data class AnnouncementSlide(
     val id: String,
     val type: SlideType = SlideType.IMAGE,
@@ -20,6 +27,7 @@ data class AnnouncementSlide(
     val imageFile: String? = null,
     val durationSeconds: Int = 10,
     val enabled: Boolean = true,
+    val textAlign: SlideTextAlign = SlideTextAlign.CENTER,
     val startDate: String? = null,
     val endDate: String? = null,
     val sortOrder: Int = 0

@@ -34,6 +34,7 @@ import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.QuranVerseItem
+import com.salatsign.tv.data.model.SlideTextAlign
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
@@ -79,7 +80,7 @@ fun MosqueSettingsScreen(
     phoneControllerUrl: String? = null,
     onTogglePhoneController: (Boolean) -> Unit = {},
     onSetScheduleDuration: (Int) -> Unit,
-    onAddTextSlide: (String, String, Int, Boolean) -> Unit,
+    onAddTextSlide: (String, String, Int, Boolean, SlideTextAlign) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
     onUpdateSlide: (AnnouncementSlide) -> Unit = {},
     onToggleSlideEnabled: (String) -> Unit = {},
@@ -376,18 +377,19 @@ fun MosqueSettingsScreen(
             AddTextSlideDialog(
                 canAddEnabledSlide = addSlideCanEnable,
                 existingSlide = targetEditSlide,
-                onSave = { title, body, durationSeconds, enabled ->
+                onSave = { title, body, durationSeconds, enabled, textAlign ->
                     recordInteraction()
                     if (targetEditSlide != null) {
                         onUpdateSlide(
                             targetEditSlide.copy(
                                 title = title,
                                 body = body,
-                                durationSeconds = durationSeconds
+                                durationSeconds = durationSeconds,
+                                textAlign = textAlign
                             )
                         )
                     } else {
-                        onAddTextSlide(title, body, durationSeconds, enabled)
+                        onAddTextSlide(title, body, durationSeconds, enabled, textAlign)
                     }
                     showAddTextSlideDialog = false
                     editingTextSlide = null

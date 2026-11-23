@@ -263,7 +263,7 @@ class AssetImporter(
         if (bytes.size > AndroidAudioValidator.MAX_SIZE_BYTES) {
             return ImportResult(
                 success = false,
-                errorMessage = "Audio file exceeds the 10 MB limit (${bytes.size / (1024 * 1024)} MB)"
+                errorMessage = "Audio file exceeds the 10MB limit (${bytes.size / (1024 * 1024)}MB)"
             )
         }
 

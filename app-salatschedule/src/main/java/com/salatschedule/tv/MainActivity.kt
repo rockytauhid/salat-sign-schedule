@@ -213,6 +213,7 @@ private fun SalatScheduleMainContent(
     onStopAdhan: () -> Unit
 ) {
     val settings by settingsViewModel.settings.collectAsState()
+    val isSettingsLoaded by settingsViewModel.isSettingsLoaded.collectAsState()
     val homeUiState by homeViewModel.uiState.collectAsState()
     val isAdhanPlaying by AdhanPlaybackService.isPlaying.collectAsState()
 
@@ -224,6 +225,10 @@ private fun SalatScheduleMainContent(
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
+            !isSettingsLoaded -> {
+                // Hold calm dark background briefly while DataStore loads saved setup state
+                Box(modifier = Modifier.fillMaxSize().background(com.salatsign.tv.ui.theme.DarkBackground))
+            }
             !settings.isSetupCompleted -> {
                 HomeSetupWizardScreen(
                     settings = settings,

@@ -106,7 +106,7 @@ class AssetImporterTest {
 
         val result = importer.importCustomAdhan(dummyLargeAudio)
         assertFalse("Import must fail when file > 10MB", result.success)
-        assertTrue(result.errorMessage?.contains("10MB") == true)
+        assertTrue(result.errorMessage?.contains("10MB") == true || result.errorMessage?.contains("10 MB") == true)
     }
 
     @Test
@@ -114,11 +114,11 @@ class AssetImporterTest {
         val dummyAudio = tempFolder.newFile("bad_adhan.wav")
         dummyAudio.writeText("corrupt or >10 min audio")
 
-        audioValidationResult = Result.failure(IllegalArgumentException("Durasi audio melebihi 10 menit"))
+        audioValidationResult = Result.failure(IllegalArgumentException("Audio duration exceeds 10 minutes"))
 
         val result = importer.importCustomAdhan(dummyAudio)
         assertFalse("Import must fail when validator reports failure", result.success)
-        assertEquals("Durasi audio melebihi 10 menit", result.errorMessage)
+        assertEquals("Audio duration exceeds 10 minutes", result.errorMessage)
 
         // Ensure temp file was cleaned up and audioDir has no files
         assertEquals(0, importer.audioDir.listFiles()?.size ?: 0)

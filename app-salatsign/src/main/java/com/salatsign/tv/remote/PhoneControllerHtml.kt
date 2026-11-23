@@ -121,18 +121,36 @@ object PhoneControllerHtml {
         <input id="editingSlideId" type="hidden" value="" />
         <label>Title</label>
         <input id="slideTitle" type="text" maxlength="80" placeholder="e.g. Friday Khutbah &amp; Community Dinner" />
-        <label>Message (up to 6 rows)</label>
+        <div class="flex-between" style="margin-top:10px">
+          <label style="margin:0">Message (up to 6 rows)</label>
+          <div class="flex-gap">
+            <button type="button" class="sm secondary" onclick="insertBullet()">• Bullet</button>
+            <button type="button" class="sm secondary" onclick="insertNumbered()">1. Number</button>
+          </div>
+        </div>
         <textarea id="slideBody" maxlength="400" placeholder="Type announcement message..." oninput="enforceBodyLines()"></textarea>
         <div class="meta" id="bodyCounter">1/6 rows • 0/400 chars</div>
-        <label>Display Duration (seconds)</label>
-        <select id="slideDuration">
-          <option value="10">10s</option>
-          <option value="15" selected>15s</option>
-          <option value="20">20s</option>
-          <option value="30">30s</option>
-          <option value="45">45s</option>
-          <option value="60">60s</option>
-        </select>
+        <div class="row">
+          <div>
+            <label>Text Alignment</label>
+            <select id="slideAlign">
+              <option value="CENTER" selected>Center</option>
+              <option value="LEFT">Left</option>
+              <option value="RIGHT">Right</option>
+            </select>
+          </div>
+          <div>
+            <label>Display Duration</label>
+            <select id="slideDuration">
+              <option value="10">10s</option>
+              <option value="15" selected>15s</option>
+              <option value="20">20s</option>
+              <option value="30">30s</option>
+              <option value="45">45s</option>
+              <option value="60">60s</option>
+            </select>
+          </div>
+        </div>
         <div class="row">
           <button id="saveTextSlideBtn" onclick="saveTextSlide()">Add Text Slide</button>
           <button id="cancelEditBtn" class="secondary hidden" onclick="cancelEditSlide()">Cancel Edit</button>
@@ -520,6 +538,22 @@ async function setSchedDur(sec) {
   showMsg(res.ok ? 'Schedule duration set to ' + sec + 's.' : (res.data.message || 'Save failed.'), res.ok);
 }
 
+function insertBullet() {
+  const ta = document.getElementById('slideBody');
+  const prefix = (!ta.value || ta.value.endsWith('\n')) ? '• ' : '\n• ';
+  ta.value += prefix;
+  enforceBodyLines();
+  ta.focus();
+}
+function insertNumbered() {
+  const ta = document.getElementById('slideBody');
+  const nums = ta.value.split('\n').map(l => { const m = l.match(/^\s*(\d+)\./); return m ? parseInt(m[1], 10) : 0; });
+  const nextNum = Math.max(0, ...nums) + 1;
+  const prefix = (!ta.value || ta.value.endsWith('\n')) ? (nextNum + '. ') : ('\n' + nextNum + '. ');
+  ta.value += prefix;
+  enforceBodyLines();
+  ta.focus();
+}
 function enforceBodyLines() {
   const ta = document.getElementById('slideBody');
   const lines = ta.value.replace(/\r\n/g, '\n').split('\n');
@@ -589,6 +623,7 @@ function startEditSlide(s) {
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   document.getElementById('slideTitle').value = s.title || '';
   document.getElementById('slideBody').value = s.body || '';
+  document.getElementById('slideAlign').value = s.textAlign || 'CENTER';
   document.getElementById('slideDuration').value = String([10,15,20,30,45,60].includes(s.durationSeconds) ? s.durationSeconds : 15);
   enforceBodyLines();
   document.getElementById('slideTitle').scrollIntoView({ behavior: 'smooth' });
@@ -601,6 +636,7 @@ function cancelEditSlide() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
   document.getElementById('slideTitle').value = '';
   document.getElementById('slideBody').value = '';
+  document.getElementById('slideAlign').value = 'CENTER';
   document.getElementById('slideDuration').value = '15';
   enforceBodyLines();
 }
@@ -609,17 +645,18 @@ async function saveTextSlide() {
   const editId = document.getElementById('editingSlideId').value;
   const title = document.getElementById('slideTitle').value.trim();
   const body = document.getElementById('slideBody').value.trim();
+  const textAlign = document.getElementById('slideAlign').value || 'CENTER';
   const durationSeconds = parseInt(document.getElementById('slideDuration').value, 10) || 15;
   if (!title && !body) { showMsg('Enter a title or message first.', false); return; }
   if (editId) {
-    await patchSlide(editId, { title, body, durationSeconds });
+    await patchSlide(editId, { title, body, textAlign, durationSeconds });
     cancelEditSlide();
     return;
   }
   const res = await api('/api/v1/slides/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, body, durationSeconds })
+    body: JSON.stringify({ title, body, textAlign, durationSeconds })
   });
   showMsg(res.ok ? 'Text slide added.' : (res.data.message || 'Failed to add slide.'), res.ok);
   if (res.ok) { cancelEditSlide(); await loadAll(); }

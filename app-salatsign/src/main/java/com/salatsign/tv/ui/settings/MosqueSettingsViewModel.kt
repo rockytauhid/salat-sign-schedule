@@ -18,6 +18,7 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.QuranVerseItem
 import com.salatsign.tv.data.model.SlideContainer
+import com.salatsign.tv.data.model.SlideTextAlign
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.engine.CopyPrayerSilentResult
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -49,6 +51,14 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AppSettings(isMosqueMode = true)
     )
+
+    val isSettingsLoaded: StateFlow<Boolean> = repository.appSettingsFlow
+        .map { true }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = false
+        )
 
     val slides: StateFlow<SlideContainer> = contentRepository.slidesFlow
 
@@ -169,7 +179,13 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         return true
     }
 
-    fun addTextSlide(title: String, body: String, durationSeconds: Int, enabled: Boolean = true): Boolean {
+    fun addTextSlide(
+        title: String,
+        body: String,
+        durationSeconds: Int,
+        enabled: Boolean = true,
+        textAlign: SlideTextAlign = SlideTextAlign.CENTER
+    ): Boolean {
         if (enabled && !SlideBudget.canEnableOrAddAnnouncement(
                 enabledAnnouncements = currentEnabledAnnouncementCount(),
                 enabledBuiltIns = currentEnabledBuiltInCount()
@@ -188,6 +204,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
                 body = body,
                 durationSeconds = durationSeconds.coerceIn(3, 120),
                 enabled = enabled,
+                textAlign = textAlign,
                 sortOrder = nextOrder
             )
             contentRepository.addSlide(slide)

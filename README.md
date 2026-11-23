@@ -36,7 +36,7 @@ This multi-module monorepo builds two dedicated, offline-first Android TV applic
 - **Cross-App Adhan Audio:** Exact prayer times trigger `AdhanPlaybackService` (`ForegroundService`) using `AudioAttributes.USAGE_ALARM` with `CONTENT_TYPE_SONIFICATION`, ensuring the Adhan is clearly heard even while streaming video or using other TV apps.
 - **Per-Prayer Audio Selector:** Ships silent by default (bundled audio pending licensed recordings); configure per prayer or import custom local audio files (.mp3, .ogg) from USB or TV storage.
 - **15-Minute Pre-Prayer Heads-Up:** Optional system notification 15 minutes before prayer.
-- **Interactive D-Pad Date Traversal:** Browse past and future prayer schedules with Left/Right remote buttons, plus a dedicated "Hari Ini" (Today) shortcut.
+- **Interactive D-Pad Date Traversal:** Browse past and future prayer schedules with Left/Right remote buttons, plus a dedicated "Today" shortcut.
 
 ### 4. Mosque Mode Signage & Kiosk Highlights
 - **Complete White-Labeling:** Strips all SalatSign logos and titles, displaying only your custom **Mosque Name**, **Mosque Logo** (loaded via Coil), and **Tagline/Address**.

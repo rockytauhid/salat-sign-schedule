@@ -628,7 +628,13 @@ fun MosqueTextSlideContent(
         val hasTitle = slide.title.isNotBlank()
         val hasBody = slide.body.isNotBlank()
 
-        val chosenStep = remember(slide.title, slide.body, availableWidthPx, availableHeightPx) {
+        val bodyTextAlign = when (slide.textAlign) {
+            com.salatsign.tv.data.model.SlideTextAlign.LEFT -> TextAlign.Left
+            com.salatsign.tv.data.model.SlideTextAlign.CENTER -> TextAlign.Center
+            com.salatsign.tv.data.model.SlideTextAlign.RIGHT -> TextAlign.Right
+        }
+
+        val chosenStep = remember(slide.title, slide.body, slide.textAlign, availableWidthPx, availableHeightPx) {
             val widthConstraint = Constraints(maxWidth = availableWidthPx)
             TEXT_SLIDE_STEPS.firstOrNull { step ->
                 val titleHeight = if (hasTitle) {
@@ -652,7 +658,7 @@ fun MosqueTextSlideContent(
                             fontSize = step.bodySp.sp,
                             lineHeight = step.bodyLineHeightSp.sp,
                             fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center,
+                            textAlign = bodyTextAlign,
                             textDirection = TextDirection.ContentOrLtr
                         ),
                         constraints = widthConstraint
@@ -672,6 +678,7 @@ fun MosqueTextSlideContent(
             if (hasTitle) {
                 Text(
                     text = slide.title,
+                    modifier = Modifier.fillMaxWidth(),
                     style = TvTypography.HeaderTitle.copy(
                         fontSize = chosenStep.titleSp.sp,
                         lineHeight = chosenStep.titleLineHeightSp.sp,
@@ -689,12 +696,13 @@ fun MosqueTextSlideContent(
             if (hasBody) {
                 Text(
                     text = slide.body,
+                    modifier = Modifier.fillMaxWidth(),
                     style = TvTypography.BodyLabel.copy(
                         fontSize = chosenStep.bodySp.sp,
                         lineHeight = chosenStep.bodyLineHeightSp.sp,
                         fontWeight = FontWeight.Normal,
                         color = colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
+                        textAlign = bodyTextAlign,
                         textDirection = TextDirection.ContentOrLtr
                     )
                 )

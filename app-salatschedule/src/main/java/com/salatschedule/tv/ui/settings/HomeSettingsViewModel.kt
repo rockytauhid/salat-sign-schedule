@@ -16,6 +16,7 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -34,6 +35,14 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = AppSettings(isMosqueMode = false)
     )
+
+    val isSettingsLoaded: StateFlow<Boolean> = repository.appSettingsFlow
+        .map { true }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = false
+        )
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { repository.setThemeMode(mode) }

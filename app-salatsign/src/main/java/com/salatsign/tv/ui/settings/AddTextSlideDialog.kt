@@ -21,8 +21,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
+import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FormatAlignCenter
+import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.SubdirectoryArrowLeft
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +56,7 @@ import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
 import com.salatsign.tv.R as AppR
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.SlideTextAlign
 import com.salatsign.tv.data.repository.ContentRepository
 import com.salatsign.tv.ui.common.TvEditableTextField
 import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
@@ -64,7 +70,7 @@ const val MAX_TEXT_SLIDE_LINES = 6
 fun AddTextSlideDialog(
     canAddEnabledSlide: Boolean,
     existingSlide: AnnouncementSlide? = null,
-    onSave: (title: String, body: String, durationSeconds: Int, enabled: Boolean) -> Unit,
+    onSave: (title: String, body: String, durationSeconds: Int, enabled: Boolean, textAlign: SlideTextAlign) -> Unit,
     onDismiss: () -> Unit,
     onUserInteraction: () -> Unit = {}
 ) {
@@ -74,6 +80,9 @@ fun AddTextSlideDialog(
     var body by remember(existingSlide?.id) { mutableStateOf(existingSlide?.body ?: "") }
     var durationSeconds by remember(existingSlide?.id) {
         mutableIntStateOf(existingSlide?.durationSeconds ?: 15)
+    }
+    var textAlign by remember(existingSlide?.id) {
+        mutableStateOf(existingSlide?.textAlign ?: SlideTextAlign.CENTER)
     }
     var validationError by remember { mutableStateOf(false) }
 
@@ -189,39 +198,110 @@ fun AddTextSlideDialog(
                             style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.secondary)
                         )
 
-                        val newLineBtnShape = RoundedCornerShape(8.dp)
-                        Surface(
-                            onClick = {
-                                onUserInteraction()
-                                if (canAddNewLine) {
-                                    body = "$body\n"
-                                    if (validationError) validationError = false
-                                }
-                            },
-                            shape = ClickableSurfaceDefaults.shape(newLineBtnShape),
-                            scale = tvSurfaceScale(1.03f),
-                            colors = tvSelectableSurfaceColors(selected = false),
-                            border = tvSelectableSurfaceBorder(selected = false, shape = newLineBtnShape)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        val toolBtnShape = RoundedCornerShape(8.dp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Surface(
+                                onClick = {
+                                    onUserInteraction()
+                                    val prefix = if (body.isEmpty() || body.endsWith("\n")) "• " else "\n• "
+                                    val projectedLines = (body + prefix).count { it == '\n' } + 1
+                                    if (projectedLines <= MAX_TEXT_SLIDE_LINES && (body.length + prefix.length) <= ContentRepository.MAX_BODY_LENGTH) {
+                                        body += prefix
+                                        if (validationError) validationError = false
+                                    }
+                                },
+                                shape = ClickableSurfaceDefaults.shape(toolBtnShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = false),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = toolBtnShape)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.SubdirectoryArrowLeft,
-                                    contentDescription = null,
-                                    tint = if (canAddNewLine) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = stringResource(AppR.string.settings_text_slide_new_line),
-                                    style = TvTypography.BodyLabel.copy(
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (canAddNewLine) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.4f)
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
+                                        contentDescription = null,
+                                        tint = if (canAddNewLine || body.isEmpty()) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(15.dp)
                                     )
-                                )
+                                    Text(
+                                        text = stringResource(AppR.string.settings_text_slide_bullet),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                onClick = {
+                                    onUserInteraction()
+                                    val nextNum = Regex("""^\s*(\d+)\.""").let { rx ->
+                                        body.split("\n").mapNotNull { rx.find(it)?.groupValues?.get(1)?.toIntOrNull() }.maxOrNull()?.plus(1) ?: 1
+                                    }
+                                    val prefix = if (body.isEmpty() || body.endsWith("\n")) "$nextNum. " else "\n$nextNum. "
+                                    val projectedLines = (body + prefix).count { it == '\n' } + 1
+                                    if (projectedLines <= MAX_TEXT_SLIDE_LINES && (body.length + prefix.length) <= ContentRepository.MAX_BODY_LENGTH) {
+                                        body += prefix
+                                        if (validationError) validationError = false
+                                    }
+                                },
+                                shape = ClickableSurfaceDefaults.shape(toolBtnShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = false),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = toolBtnShape)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FormatListNumbered,
+                                        contentDescription = null,
+                                        tint = if (canAddNewLine || body.isEmpty()) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(AppR.string.settings_text_slide_numbered),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                onClick = {
+                                    onUserInteraction()
+                                    if (canAddNewLine) {
+                                        body = "$body\n"
+                                        if (validationError) validationError = false
+                                    }
+                                },
+                                shape = ClickableSurfaceDefaults.shape(toolBtnShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = false),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = toolBtnShape)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SubdirectoryArrowLeft,
+                                        contentDescription = null,
+                                        tint = if (canAddNewLine) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(AppR.string.settings_text_slide_new_line),
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (canAddNewLine) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.4f)
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
@@ -250,35 +330,89 @@ fun AddTextSlideDialog(
                     )
                 }
 
-                // Duration presets
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(AppR.string.settings_text_slide_duration_label),
-                        style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.secondary)
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        val durations = listOf(10, 15, 20, 30, 45, 60)
-                        val durShape = RoundedCornerShape(8.dp)
-                        for (dur in durations) {
-                            val isSelected = durationSeconds == dur
-                            Surface(
-                                onClick = {
-                                    onUserInteraction()
-                                    durationSeconds = dur
-                                },
-                                shape = ClickableSurfaceDefaults.shape(durShape),
-                                scale = tvSurfaceScale(1.03f),
-                                colors = tvSelectableSurfaceColors(selected = isSelected),
-                                border = tvSelectableSurfaceBorder(selected = isSelected, shape = durShape)
-                            ) {
-                                Text(
-                                    text = "${dur}s",
-                                    style = TvTypography.ButtonText.copy(
-                                        fontSize = 14.sp,
-                                        color = if (isSelected) colorScheme.primary else colorScheme.onSurface
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                                )
+                // Text alignment + Duration row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(AppR.string.settings_text_slide_align_label),
+                            style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.secondary)
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val alignShape = RoundedCornerShape(8.dp)
+                            val alignOptions = listOf(
+                                Triple(SlideTextAlign.LEFT, AppR.string.settings_text_slide_align_left, Icons.AutoMirrored.Filled.FormatAlignLeft),
+                                Triple(SlideTextAlign.CENTER, AppR.string.settings_text_slide_align_center, Icons.Default.FormatAlignCenter),
+                                Triple(SlideTextAlign.RIGHT, AppR.string.settings_text_slide_align_right, Icons.AutoMirrored.Filled.FormatAlignRight)
+                            )
+                            for ((opt, labelId, iconVec) in alignOptions) {
+                                val isSel = textAlign == opt
+                                Surface(
+                                    onClick = {
+                                        onUserInteraction()
+                                        textAlign = opt
+                                    },
+                                    shape = ClickableSurfaceDefaults.shape(alignShape),
+                                    scale = tvSurfaceScale(1.03f),
+                                    colors = tvSelectableSurfaceColors(selected = isSel),
+                                    border = tvSelectableSurfaceBorder(selected = isSel, shape = alignShape)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = iconVec,
+                                            contentDescription = null,
+                                            tint = if (isSel) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = stringResource(labelId),
+                                            style = TvTypography.ButtonText.copy(
+                                                fontSize = 13.sp,
+                                                color = if (isSel) colorScheme.primary else colorScheme.onSurface
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(AppR.string.settings_text_slide_duration_label),
+                            style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.secondary)
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val durations = listOf(10, 15, 20, 30, 45, 60)
+                            val durShape = RoundedCornerShape(8.dp)
+                            for (dur in durations) {
+                                val isSelected = durationSeconds == dur
+                                Surface(
+                                    onClick = {
+                                        onUserInteraction()
+                                        durationSeconds = dur
+                                    },
+                                    shape = ClickableSurfaceDefaults.shape(durShape),
+                                    scale = tvSurfaceScale(1.03f),
+                                    colors = tvSelectableSurfaceColors(selected = isSelected),
+                                    border = tvSelectableSurfaceBorder(selected = isSelected, shape = durShape)
+                                ) {
+                                    Text(
+                                        text = "${dur}s",
+                                        style = TvTypography.ButtonText.copy(
+                                            fontSize = 13.sp,
+                                            color = if (isSelected) colorScheme.primary else colorScheme.onSurface
+                                        ),
+                                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -331,7 +465,8 @@ fun AddTextSlideDialog(
                                     cleanTitle,
                                     cleanBody,
                                     durationSeconds,
-                                    existingSlide?.enabled ?: canAddEnabledSlide
+                                    existingSlide?.enabled ?: canAddEnabledSlide,
+                                    textAlign
                                 )
                             }
                         },
