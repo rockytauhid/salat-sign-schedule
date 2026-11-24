@@ -124,15 +124,15 @@ fun SettingsDisplayAndLanguagePane(
         }
     }
 
-    // Time & Display Preferences
+    // Time & Display Preferences (each option on its own full-width row)
     Text(
         text = stringResource(R.string.settings_section_time_display),
         style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
     )
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         val prefShape = RoundedCornerShape(10.dp)
         Card(
@@ -144,7 +144,7 @@ fun SettingsDisplayAndLanguagePane(
             shape = CardDefaults.shape(prefShape),
             scale = tvCardScale(1.01f),
             border = tvSelectableCardBorder(selected = false, shape = prefShape),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier.padding(14.dp),
@@ -179,7 +179,7 @@ fun SettingsDisplayAndLanguagePane(
             shape = CardDefaults.shape(prefShape),
             scale = tvCardScale(1.01f),
             border = tvSelectableCardBorder(selected = settings.showArabicPrayerNames, shape = prefShape),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier.padding(14.dp),
@@ -206,6 +206,10 @@ fun SettingsDisplayAndLanguagePane(
                     )
                 }
             }
+        }
+
+        if (extraContent != null) {
+            extraContent()
         }
     }
 
@@ -257,14 +261,6 @@ fun SettingsDisplayAndLanguagePane(
                 }
             }
         }
-    }
-
-    if (extraContent != null) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = extraContent
-        )
     }
 }
 

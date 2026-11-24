@@ -640,7 +640,7 @@ class SalatSignLocalServer(
                 "title" to slide.title,
                 "body" to slide.body,
                 "lines" to slide.effectiveLines().map { line ->
-                    mapOf("text" to line.text, "align" to line.align.name)
+                    mapOf("text" to line.text, "align" to line.align.name, "fontSize" to line.fontSize.name)
                 },
                 "imageFile" to slide.imageFile,
                 "durationSeconds" to slide.durationSeconds,
@@ -669,7 +669,10 @@ class SalatSignLocalServer(
             val align = (map["align"] as? String)?.let {
                 runCatching { SlideTextAlign.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
             } ?: SlideTextAlign.CENTER
-            com.salatsign.tv.data.model.SlideTextLine(text = text, align = align)
+            val fontSize = (map["fontSize"] as? String)?.let {
+                runCatching { com.salatsign.tv.data.model.SlideFontSize.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
+            } ?: com.salatsign.tv.data.model.SlideFontSize.MEDIUM
+            com.salatsign.tv.data.model.SlideTextLine(text = text, align = align, fontSize = fontSize)
         }
     }
 

@@ -219,37 +219,54 @@ fun MosqueIqamahAndJumuahPane(
                 ) {
                     Text(
                         text = stringResource(prayer.labelRes()),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
                         style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (currentIqamah == 0) stringResource(R.string.settings_iqamah_disabled) else stringResource(R.string.settings_iqamah_minutes, currentIqamah),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth(),
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (currentIqamah > 0) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     val iqShape = RoundedCornerShape(6.dp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        for (step in listOf(0, 5, 10, 15)) {
-                            val isStepSelected = (currentIqamah == step)
-                            Surface(
-                                onClick = { onSetIqamahOffset(prayer, step) },
-                                shape = ClickableSurfaceDefaults.shape(iqShape),
-                                scale = tvSurfaceScale(1.04f),
-                                colors = tvSelectableSurfaceColors(selected = isStepSelected, containerColor = colorScheme.surfaceVariant),
-                                border = tvSelectableSurfaceBorder(selected = isStepSelected, shape = iqShape)
-                            ) {
-                                Text(
-                                    text = "$step",
-                                    style = TvTypography.ButtonText.copy(
-                                        fontSize = 11.sp,
-                                        color = if (isStepSelected) colorScheme.primary else colorScheme.onSurface
-                                    ),
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp)
-                                )
-                            }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Surface(
+                            onClick = { onSetIqamahOffset(prayer, (currentIqamah - 5).coerceAtLeast(0)) },
+                            shape = ClickableSurfaceDefaults.shape(iqShape),
+                            scale = tvSurfaceScale(1.04f),
+                            colors = tvSelectableSurfaceColors(selected = false, containerColor = colorScheme.surfaceVariant),
+                            border = tvSelectableSurfaceBorder(selected = false, shape = iqShape)
+                        ) {
+                            Text(
+                                text = "-5",
+                                style = TvTypography.ButtonText.copy(fontSize = 12.sp, color = colorScheme.onSurface),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+
+                        Surface(
+                            onClick = { onSetIqamahOffset(prayer, (currentIqamah + 5).coerceAtMost(30)) },
+                            shape = ClickableSurfaceDefaults.shape(iqShape),
+                            scale = tvSurfaceScale(1.04f),
+                            colors = tvSelectableSurfaceColors(selected = false, containerColor = colorScheme.surfaceVariant),
+                            border = tvSelectableSurfaceBorder(selected = false, shape = iqShape)
+                        ) {
+                            Text(
+                                text = "+5",
+                                style = TvTypography.ButtonText.copy(fontSize = 12.sp, color = colorScheme.onSurface),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
                         }
                     }
                 }

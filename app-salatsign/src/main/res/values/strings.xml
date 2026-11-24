@@ -91,6 +91,9 @@
     <string name="settings_text_slide_align_left">Left</string>
     <string name="settings_text_slide_align_center">Center</string>
     <string name="settings_text_slide_align_right">Right</string>
+    <string name="settings_text_slide_size_small">Small</string>
+    <string name="settings_text_slide_size_medium">Medium</string>
+    <string name="settings_text_slide_size_large">Large</string>
     <string name="settings_text_slide_duration_label">Display Duration</string>
     <string name="settings_text_slide_limit_note">Rotation is full (6/6) — this slide will be saved as disabled.</string>
     <string name="settings_text_slide_empty_error">Please enter a title or message before saving.</string>

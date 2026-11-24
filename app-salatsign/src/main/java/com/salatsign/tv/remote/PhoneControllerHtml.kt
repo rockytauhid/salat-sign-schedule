@@ -601,7 +601,7 @@ function renderSlides(slides) {
   });
 }
 
-let textRows = [{ text: '', align: 'CENTER' }];
+let textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
 
 function renderTextRows() {
   const c = document.getElementById('textRowsContainer');
@@ -610,7 +610,7 @@ function renderTextRows() {
   textRows.forEach((row, idx) => {
     const wrap = document.createElement('div');
     wrap.style.display = 'grid';
-    wrap.style.gridTemplateColumns = '1fr 96px auto';
+    wrap.style.gridTemplateColumns = '1fr 84px 84px auto';
     wrap.style.gap = '6px';
     wrap.style.marginBottom = '6px';
     wrap.style.alignItems = 'center';
@@ -633,6 +633,16 @@ function renderTextRows() {
     });
     sel.onchange = (e) => { textRows[idx].align = e.target.value; };
 
+    const sz = document.createElement('select');
+    sz.style.marginTop = '0';
+    [['SMALL', 'Small'], ['MEDIUM', 'Medium'], ['LARGE', 'Large']].forEach(([v, l]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = l;
+      if ((row.fontSize || 'MEDIUM') === v) o.selected = true;
+      sz.appendChild(o);
+    });
+    sz.onchange = (e) => { textRows[idx].fontSize = e.target.value; };
+
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'sm danger';
@@ -645,6 +655,7 @@ function renderTextRows() {
 
     wrap.appendChild(inp);
     wrap.appendChild(sel);
+    wrap.appendChild(sz);
     wrap.appendChild(del);
     c.appendChild(wrap);
   });
@@ -653,12 +664,12 @@ function renderTextRows() {
 function addTextRow(prefix, align) {
   const targetAlign = align || (textRows.length ? textRows[textRows.length - 1].align : 'CENTER');
   if (prefix && textRows.length && !textRows[textRows.length - 1].text.trim()) {
-    textRows[textRows.length - 1] = { text: prefix, align: targetAlign };
+    textRows[textRows.length - 1] = { text: prefix, align: targetAlign, fontSize: textRows[textRows.length - 1].fontSize || 'MEDIUM' };
     renderTextRows();
     return;
   }
   if (textRows.length >= 10) return;
-  textRows.push({ text: prefix || '', align: targetAlign });
+  textRows.push({ text: prefix || '', align: targetAlign, fontSize: 'MEDIUM' });
   renderTextRows();
 }
 
@@ -687,11 +698,11 @@ function startEditSlide(s) {
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   document.getElementById('slideTitle').value = s.title || '';
   if (Array.isArray(s.lines) && s.lines.length) {
-    textRows = s.lines.slice(0, 10).map(l => ({ text: l.text || '', align: l.align || 'CENTER' }));
+    textRows = s.lines.slice(0, 10).map(l => ({ text: l.text || '', align: l.align || 'CENTER', fontSize: l.fontSize || 'MEDIUM' }));
   } else if (s.body) {
-    textRows = s.body.split('\n').slice(0, 10).map(t => ({ text: t, align: s.textAlign || 'CENTER' }));
+    textRows = s.body.split('\n').slice(0, 10).map(t => ({ text: t, align: s.textAlign || 'CENTER', fontSize: 'MEDIUM' }));
   } else {
-    textRows = [{ text: '', align: 'CENTER' }];
+    textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
   }
   renderTextRows();
   document.getElementById('slideDuration').value = String([10,15,20,30,45,60].includes(s.durationSeconds) ? s.durationSeconds : 15);
@@ -704,7 +715,7 @@ function cancelEditSlide() {
   document.getElementById('saveTextSlideBtn').textContent = 'Add Text Slide';
   document.getElementById('cancelEditBtn').classList.add('hidden');
   document.getElementById('slideTitle').value = '';
-  textRows = [{ text: '', align: 'CENTER' }];
+  textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
   renderTextRows();
   document.getElementById('slideDuration').value = '15';
 }
@@ -713,7 +724,7 @@ async function saveTextSlide() {
   const editId = document.getElementById('editingSlideId').value;
   const title = document.getElementById('slideTitle').value.trim();
   const cleanLines = textRows
-    .map(r => ({ text: (r.text || '').replace(/\n/g, ' ').trimEnd(), align: r.align || 'CENTER' }))
+    .map(r => ({ text: (r.text || '').replace(/\n/g, ' ').trimEnd(), align: r.align || 'CENTER', fontSize: r.fontSize || 'MEDIUM' }))
     .filter(r => r.text.trim().length > 0);
   const body = cleanLines.map(r => r.text).join('\n');
   const textAlign = cleanLines.length ? cleanLines[0].align : 'CENTER';
@@ -851,37 +862,39 @@ function addSitting() {
   renderSittings();
 }
 
-// --- INTUITIVE IQAMAH DELAYS ---
+// --- INTUITIVE IQAMAH DELAYS (-5 / +5, 0..30m) ---
 function renderIqamah() {
   const container = document.getElementById('iqamahContainer');
   container.innerHTML = '';
   PRAYERS.forEach(p => {
-    const val = iqamahValues[p.key] || 0;
+    const val = Math.max(0, Math.min(30, iqamahValues[p.key] || 0));
     const row = document.createElement('div');
     row.className = 'iq-row';
     const left = document.createElement('div');
-    left.innerHTML = '<strong>' + p.label + '</strong><div class="meta">' + (val === 0 ? 'Off' : '+' + val + ' min') + '</div>';
-    const chips = document.createElement('div');
-    chips.className = 'iq-chips';
-    [0, 5, 10, 15, 20].forEach(m => {
-      const b = document.createElement('button');
-      b.className = 'chip' + (val === m ? ' sel' : '');
-      b.textContent = m === 0 ? 'Off' : m + 'm';
-      b.onclick = () => { iqamahValues[p.key] = m; renderIqamah(); };
-      chips.appendChild(b);
-    });
+    left.innerHTML = '<strong>' + p.label + '</strong>';
+    const controls = document.createElement('div');
+    controls.className = 'iq-chips';
+    controls.style.alignItems = 'center';
     const minus = document.createElement('button');
     minus.className = 'chip';
-    minus.textContent = '-1';
-    minus.onclick = () => { iqamahValues[p.key] = Math.max(0, (iqamahValues[p.key] || 0) - 1); renderIqamah(); };
+    minus.textContent = '-5';
+    minus.onclick = () => { iqamahValues[p.key] = Math.max(0, (iqamahValues[p.key] || 0) - 5); renderIqamah(); };
+    const valLabel = document.createElement('span');
+    valLabel.style.minWidth = '96px';
+    valLabel.style.textAlign = 'center';
+    valLabel.style.fontSize = '13px';
+    valLabel.style.fontWeight = '700';
+    valLabel.style.color = val > 0 ? '#10b981' : '#9ca3af';
+    valLabel.textContent = val === 0 ? 'Disabled (0m)' : '+' + val + ' min';
     const plus = document.createElement('button');
     plus.className = 'chip';
-    plus.textContent = '+1';
-    plus.onclick = () => { iqamahValues[p.key] = Math.min(60, (iqamahValues[p.key] || 0) + 1); renderIqamah(); };
-    chips.appendChild(minus);
-    chips.appendChild(plus);
+    plus.textContent = '+5';
+    plus.onclick = () => { iqamahValues[p.key] = Math.min(30, (iqamahValues[p.key] || 0) + 5); renderIqamah(); };
+    controls.appendChild(minus);
+    controls.appendChild(valLabel);
+    controls.appendChild(plus);
     row.appendChild(left);
-    row.appendChild(chips);
+    row.appendChild(controls);
     container.appendChild(row);
   });
 }

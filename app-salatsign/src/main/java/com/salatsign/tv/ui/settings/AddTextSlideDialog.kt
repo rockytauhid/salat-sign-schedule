@@ -58,6 +58,7 @@ import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
 import com.salatsign.tv.R as AppR
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.SlideFontSize
 import com.salatsign.tv.data.model.SlideTextAlign
 import com.salatsign.tv.data.model.SlideTextLine
 import com.salatsign.tv.data.repository.ContentRepository
@@ -74,6 +75,12 @@ private fun nextAlignment(current: SlideTextAlign): SlideTextAlign = when (curre
     SlideTextAlign.CENTER -> SlideTextAlign.LEFT
     SlideTextAlign.LEFT -> SlideTextAlign.RIGHT
     SlideTextAlign.RIGHT -> SlideTextAlign.CENTER
+}
+
+private fun nextFontSize(current: SlideFontSize): SlideFontSize = when (current) {
+    SlideFontSize.MEDIUM -> SlideFontSize.LARGE
+    SlideFontSize.LARGE -> SlideFontSize.SMALL
+    SlideFontSize.SMALL -> SlideFontSize.MEDIUM
 }
 
 @Composable
@@ -404,6 +411,44 @@ fun AddTextSlideDialog(
                                         maxLines = 1,
                                         softWrap = false,
                                         style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface)
+                                    )
+                                }
+                            }
+
+                            // Per-row font size toggle button (Medium -> Large -> Small)
+                            val sizeLabelRes = when (line.fontSize) {
+                                SlideFontSize.SMALL -> AppR.string.settings_text_slide_size_small
+                                SlideFontSize.MEDIUM -> AppR.string.settings_text_slide_size_medium
+                                SlideFontSize.LARGE -> AppR.string.settings_text_slide_size_large
+                            }
+                            Surface(
+                                onClick = {
+                                    onUserInteraction()
+                                    lines = lines.mapIndexed { i, item ->
+                                        if (i == idx) item.copy(fontSize = nextFontSize(item.fontSize)) else item
+                                    }
+                                },
+                                shape = ClickableSurfaceDefaults.shape(rowBtnShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = line.fontSize != SlideFontSize.MEDIUM),
+                                border = tvSelectableSurfaceBorder(selected = line.fontSize != SlideFontSize.MEDIUM, shape = rowBtnShape),
+                                modifier = Modifier.width(76.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 6.dp, vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(sizeLabelRes),
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = if (line.fontSize == SlideFontSize.LARGE) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (line.fontSize != SlideFontSize.MEDIUM) colorScheme.primary else colorScheme.onSurface
+                                        )
                                     )
                                 }
                             }

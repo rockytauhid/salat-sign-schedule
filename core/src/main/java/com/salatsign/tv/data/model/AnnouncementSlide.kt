@@ -19,9 +19,17 @@ enum class SlideTextAlign {
 }
 
 @Serializable
+enum class SlideFontSize {
+    SMALL,
+    MEDIUM,
+    LARGE
+}
+
+@Serializable
 data class SlideTextLine(
     val text: String = "",
-    val align: SlideTextAlign = SlideTextAlign.CENTER
+    val align: SlideTextAlign = SlideTextAlign.CENTER,
+    val fontSize: SlideFontSize = SlideFontSize.MEDIUM
 )
 
 @Serializable

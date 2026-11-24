@@ -89,6 +89,9 @@
     <string name="settings_text_slide_align_left">Kiri</string>
     <string name="settings_text_slide_align_center">Tengah</string>
     <string name="settings_text_slide_align_right">Kanan</string>
+    <string name="settings_text_slide_size_small">Kecil</string>
+    <string name="settings_text_slide_size_medium">Sedang</string>
+    <string name="settings_text_slide_size_large">Besar</string>
     <string name="settings_text_slide_duration_label">Durasi Tampilan</string>
     <string name="settings_text_slide_limit_note">Rotasi penuh (6/6) — slide ini akan disimpan sebagai nonaktif.</string>
     <string name="settings_text_slide_empty_error">Harap masukkan judul atau pesan sebelum menyimpan.</string>

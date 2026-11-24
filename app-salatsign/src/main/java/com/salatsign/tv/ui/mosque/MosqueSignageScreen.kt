@@ -650,6 +650,12 @@ fun MosqueTextSlideContent(
             com.salatsign.tv.data.model.SlideTextAlign.RIGHT -> TextAlign.Right
         }
 
+        fun sizeScale(size: com.salatsign.tv.data.model.SlideFontSize): Float = when (size) {
+            com.salatsign.tv.data.model.SlideFontSize.SMALL -> 0.80f
+            com.salatsign.tv.data.model.SlideFontSize.MEDIUM -> 1.00f
+            com.salatsign.tv.data.model.SlideFontSize.LARGE -> 1.28f
+        }
+
         val chosenStep = remember(slide.title, effectiveLines, availableWidthPx, availableHeightPx) {
             val widthConstraint = Constraints(maxWidth = availableWidthPx)
             TEXT_SLIDE_STEPS.firstOrNull { step ->
@@ -670,12 +676,13 @@ fun MosqueTextSlideContent(
                 val bodyHeight = if (hasBody) {
                     val rowGapPx = with(density) { (step.gapDp / 3).coerceAtLeast(2).dp.roundToPx() }
                     effectiveLines.sumOf { line ->
+                        val mult = sizeScale(line.fontSize)
                         textMeasurer.measure(
                             text = line.text.ifEmpty { " " },
                             style = TvTypography.BodyLabel.copy(
-                                fontSize = step.bodySp.sp,
-                                lineHeight = step.bodyLineHeightSp.sp,
-                                fontWeight = FontWeight.Normal,
+                                fontSize = (step.bodySp * mult).sp,
+                                lineHeight = (step.bodyLineHeightSp * mult).sp,
+                                fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
                                 textAlign = toComposeAlign(line.align),
                                 textDirection = TextDirection.ContentOrLtr
                             ),
@@ -718,13 +725,14 @@ fun MosqueTextSlideContent(
                     verticalArrangement = Arrangement.spacedBy((chosenStep.gapDp / 3).coerceAtLeast(2).dp)
                 ) {
                     for (line in effectiveLines) {
+                        val mult = sizeScale(line.fontSize)
                         Text(
                             text = line.text,
                             modifier = Modifier.fillMaxWidth(),
                             style = TvTypography.BodyLabel.copy(
-                                fontSize = chosenStep.bodySp.sp,
-                                lineHeight = chosenStep.bodyLineHeightSp.sp,
-                                fontWeight = FontWeight.Normal,
+                                fontSize = (chosenStep.bodySp * mult).sp,
+                                lineHeight = (chosenStep.bodyLineHeightSp * mult).sp,
+                                fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
                                 color = colorScheme.onSurface,
                                 textAlign = toComposeAlign(line.align),
                                 textDirection = TextDirection.ContentOrLtr
