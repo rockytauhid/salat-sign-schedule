@@ -69,7 +69,9 @@ class PinHasherTest {
         assertFalse(hashed.saltHex.isBlank())
         assertFalse(hashed.hashHex.isBlank())
         assertEquals(32, hashed.saltHex.length) // 16 bytes = 32 hex chars
-        assertEquals(64, hashed.hashHex.length) // 32 bytes (256 bits) = 64 hex chars
+        assertTrue(hashed.hashHex.startsWith("v2:${PinHasher.CURRENT_ITERATIONS}:"))
+        val digestHex = hashed.hashHex.substringAfterLast(':')
+        assertEquals(64, digestHex.length) // 32 bytes (256 bits) = 64 hex chars
 
         // Correct PIN
         val successResult = PinHasher.verifyPin(
@@ -235,5 +237,54 @@ class PinHasherTest {
         )
         assertTrue(result is PinVerifyResult.InvalidFormat)
         assertEquals(PinErrorCode.INVALID_FORMAT, (result as PinVerifyResult.InvalidFormat).errorCode)
+    }
+
+    @Test
+    fun legacyPinHash_10kIterations_stillVerifiesCleanly() {
+        val pin = "5522"
+        val salt = PinHasher.generateSalt()
+        val legacyHashHex = PinHasher.bytesToHex(PinHasher.hashPin(pin, salt, PinHasher.LEGACY_ITERATIONS))
+        val saltHex = PinHasher.bytesToHex(salt)
+
+        assertFalse(legacyHashHex.startsWith("v2:"))
+        assertFalse(PinHasher.isStoredPinCorrupted(true, saltHex, legacyHashHex))
+
+        val ok = PinHasher.verifyPin(
+            enteredPin = pin,
+            hasCustomPin = true,
+            saltHex = saltHex,
+            hashHex = legacyHashHex,
+            nowEpochMillis = 1_000_000L,
+            currentFailedAttempts = 0,
+            lockedUntilEpochMillis = 0L
+        )
+        assertTrue("Legacy 10k-iteration PIN hash must still verify", ok is PinVerifyResult.Success)
+
+        val wrong = PinHasher.verifyPin(
+            enteredPin = "5523",
+            hasCustomPin = true,
+            saltHex = saltHex,
+            hashHex = legacyHashHex,
+            nowEpochMillis = 1_000_000L,
+            currentFailedAttempts = 0,
+            lockedUntilEpochMillis = 0L
+        )
+        assertTrue(wrong is PinVerifyResult.Incorrect)
+    }
+
+    @Test
+    fun malformedV2Hash_returnsResetRequired() {
+        val saltHex = "00112233445566778899aabbccddeeff"
+        val badHashes = listOf(
+            "v2:100:" + "a".repeat(64),        // below minimum iterations
+            "v2:notanint:" + "a".repeat(64),   // non-numeric iterations
+            "v2:120000:abcd",                  // wrong digest length
+            "v2:120000"                        // missing digest
+        )
+        for (bad in badHashes) {
+            assertTrue("Expected corrupted for $bad", PinHasher.isStoredPinCorrupted(true, saltHex, bad))
+            val res = PinHasher.verifyPin("1234", true, saltHex, bad, 1_000_000L, 0, 0L)
+            assertTrue("Expected ResetRequired for $bad", res is PinVerifyResult.ResetRequired)
+        }
     }
 }

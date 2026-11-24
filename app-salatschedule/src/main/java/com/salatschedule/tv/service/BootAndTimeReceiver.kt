@@ -19,7 +19,7 @@ class BootAndTimeReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "BootAndTimeReceiver"
-        private val ALLOWED_ACTIONS = setOf(
+        internal val ALLOWED_ACTIONS = setOf(
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,

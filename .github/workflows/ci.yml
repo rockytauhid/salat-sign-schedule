@@ -36,6 +36,9 @@ jobs:
       - name: Assemble Debug APKs (SalatSign & SalatSchedule)
         run: ./gradlew :app-salatsign:assembleDebug :app-salatschedule:assembleDebug
 
+      - name: Assemble Release APKs (R8 Shrinking Verification)
+        run: ./gradlew :app-salatsign:assembleRelease :app-salatschedule:assembleRelease
+
       - name: Upload Lint Reports on Failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -42,11 +42,35 @@ object PinHasher {
     const val BASE_LOCKOUT_SECONDS = 30
     const val MAX_LOCKOUT_SECONDS = 15 * 60 // 15 minutes
 
-    private const val ITERATIONS = 10_000
+    const val LEGACY_ITERATIONS = 10_000
+    const val CURRENT_ITERATIONS = 120_000
+    private const val HASH_V2_PREFIX = "v2:"
+    private const val MIN_ALLOWED_ITERATIONS = 10_000
+    private const val MAX_ALLOWED_ITERATIONS = 1_000_000
     private const val KEY_LENGTH_BITS = 256
     private const val SALT_LENGTH_BYTES = 16
 
     private val secureRandom = SecureRandom()
+
+    private data class ParsedStoredHash(
+        val iterations: Int,
+        val hashBytes: ByteArray
+    )
+
+    private fun parseStoredHash(storedHash: String): ParsedStoredHash? {
+        if (storedHash.startsWith(HASH_V2_PREFIX)) {
+            val parts = storedHash.split(":")
+            if (parts.size != 3) return null
+            val iterations = parts[1].toIntOrNull() ?: return null
+            if (iterations !in MIN_ALLOWED_ITERATIONS..MAX_ALLOWED_ITERATIONS) return null
+            val bytes = hexToBytes(parts[2])
+            if (bytes.size != KEY_LENGTH_BITS / 8) return null
+            return ParsedStoredHash(iterations = iterations, hashBytes = bytes)
+        }
+        val legacyBytes = hexToBytes(storedHash)
+        if (legacyBytes.isEmpty()) return null
+        return ParsedStoredHash(iterations = LEGACY_ITERATIONS, hashBytes = legacyBytes)
+    }
 
     fun validatePinFormat(pin: String): Boolean {
         return pin.length in MIN_PIN_LENGTH..MAX_PIN_LENGTH && pin.all { it.isDigit() }
@@ -58,8 +82,8 @@ object PinHasher {
         return salt
     }
 
-    fun hashPin(pin: String, salt: ByteArray): ByteArray {
-        val spec: KeySpec = PBEKeySpec(pin.toCharArray(), salt, ITERATIONS, KEY_LENGTH_BITS)
+    fun hashPin(pin: String, salt: ByteArray, iterations: Int = CURRENT_ITERATIONS): ByteArray {
+        val spec: KeySpec = PBEKeySpec(pin.toCharArray(), salt, iterations, KEY_LENGTH_BITS)
         val factory = try {
             SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         } catch (_: NoSuchAlgorithmException) {
@@ -81,22 +105,24 @@ object PinHasher {
 
     /**
      * Returns true if a custom PIN is supposedly configured, but its stored salt or hash
-     * is missing or corrupted (non-hex / empty). Such state requires an app-data reset (F12).
+     * is missing or corrupted (non-hex / empty / invalid v2 format). Such state requires
+     * an app-data reset (F12).
      */
     fun isStoredPinCorrupted(hasCustomPin: Boolean, saltHex: String, hashHex: String): Boolean {
         if (!hasCustomPin) return false
         val salt = hexToBytes(saltHex)
-        val hash = hexToBytes(hashHex)
-        return salt.isEmpty() || hash.isEmpty()
+        val parsed = parseStoredHash(hashHex)
+        return salt.isEmpty() || parsed == null
     }
 
-    fun createHashedPin(pin: String): HashedPin {
+    fun createHashedPin(pin: String, iterations: Int = CURRENT_ITERATIONS): HashedPin {
         require(validatePinFormat(pin)) { "Invalid PIN format (must be $MIN_PIN_LENGTH-$MAX_PIN_LENGTH digits)" }
+        require(iterations in MIN_ALLOWED_ITERATIONS..MAX_ALLOWED_ITERATIONS) { "Unsupported PBKDF2 iteration count: $iterations" }
         val salt = generateSalt()
-        val hash = hashPin(pin, salt)
+        val hash = hashPin(pin, salt, iterations)
         return HashedPin(
             saltHex = bytesToHex(salt),
-            hashHex = bytesToHex(hash)
+            hashHex = "$HASH_V2_PREFIX$iterations:${bytesToHex(hash)}"
         )
     }
 
@@ -156,9 +182,9 @@ object PinHasher {
             )
         } else {
             val salt = hexToBytes(saltHex)
-            val expectedHash = hexToBytes(hashHex)
-            val computedHash = hashPin(enteredPin, salt)
-            MessageDigest.isEqual(computedHash, expectedHash)
+            val parsed = parseStoredHash(hashHex) ?: return PinVerifyResult.ResetRequired
+            val computedHash = hashPin(enteredPin, salt, parsed.iterations)
+            MessageDigest.isEqual(computedHash, parsed.hashBytes)
         }
 
         return if (matches) {

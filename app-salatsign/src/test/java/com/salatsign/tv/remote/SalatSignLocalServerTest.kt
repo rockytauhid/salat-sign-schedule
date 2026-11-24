@@ -36,6 +36,7 @@ import org.junit.Test
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.ServerSocket
+import java.net.Socket
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
@@ -205,7 +206,9 @@ class SalatSignLocalServerTest {
     private fun createServer(
         customPin: String? = "2468",
         port: Int = 0,
-        nowProvider: () -> Long = { 1_700_000_000_000L }
+        nowProvider: () -> Long = { 1_700_000_000_000L },
+        maxConnectionsPerIp: Int = 4,
+        headerDeadlineMillis: Long = 10_000L
     ): Triple<SalatSignLocalServer, FakeSettingsRepository, FakeContentRepository> {
         val initial = if (customPin != null) {
             val hashed = PinHasher.createHashedPin(customPin)
@@ -224,7 +227,9 @@ class SalatSignLocalServerTest {
             port = port,
             appVersionName = "1.0-test",
             nowMillisProvider = nowProvider,
-            allowedHostProvider = { setOf("127.0.0.1", "localhost", "[::1]", "192.168.4.34") }
+            allowedHostProvider = { setOf("127.0.0.1", "localhost", "[::1]", "192.168.4.34") },
+            maxConnectionsPerIp = maxConnectionsPerIp,
+            headerDeadlineMillis = headerDeadlineMillis
         )
         return Triple(server, settingsRepo, slidesRepo)
     }
@@ -289,7 +294,10 @@ class SalatSignLocalServerTest {
             }
         }.awaitAll()
         assertTrue(results.all { it.statusCode == 401 })
-        assertEquals(5, settingsRepo.current.pinFailedAttempts)
+        assertEquals(5, server.currentRemoteFailedAttempts)
+        // Review 3.1: Remote brute-force guesses must NEVER lock out the TV's own Settings PIN dialog
+        assertEquals(0, settingsRepo.current.pinFailedAttempts)
+        assertEquals(0L, settingsRepo.current.pinLockedUntilEpochMillis)
 
         // 6th attempt while locked out returns 429 even with correct custom PIN
         val locked = server.handleRequest(
@@ -297,13 +305,13 @@ class SalatSignLocalServerTest {
         )
         assertEquals(429, locked.statusCode)
 
-        // After 31 seconds, correct PIN succeeds and resets failed attempts
+        // After 31 seconds, correct PIN succeeds and resets remote failed attempts
         now += 31_000L
         val ok = server.handleRequest(
             HttpRequest("POST", "/api/v1/auth", body = """{"pin":"2468"}""".toByteArray())
         )
         assertEquals(200, ok.statusCode)
-        assertEquals(0, settingsRepo.current.pinFailedAttempts)
+        assertEquals(0, server.currentRemoteFailedAttempts)
         val token = SimpleJson.parseObject(ok.body.toString(StandardCharsets.UTF_8))["token"] as? String
         assertNotNull(token)
 
@@ -508,6 +516,74 @@ class SalatSignLocalServerTest {
             val json = SimpleJson.parseObject(body)
             assertEquals("SalatSign", json["app"])
             assertEquals(freePort.toLong(), json["port"])
+        } finally {
+            server.stop()
+        }
+    }
+
+    private fun sendRawHttp(port: Int, rawRequest: String, shutdownOutput: Boolean = false): String {
+        Socket("127.0.0.1", port).use { sock ->
+            sock.soTimeout = 3000
+            val out = sock.getOutputStream()
+            out.write(rawRequest.toByteArray(StandardCharsets.US_ASCII))
+            out.flush()
+            if (shutdownOutput) {
+                sock.shutdownOutput()
+            }
+            return sock.getInputStream().bufferedReader(StandardCharsets.UTF_8).readText()
+        }
+    }
+
+    @Test
+    fun requestReaderLimits_enforce414_431_truncated400_timeout408_andPerIpCap503() {
+        val freePort = ServerSocket(0).use { it.localPort }
+        val (server, _, _) = createServer(
+            port = freePort,
+            maxConnectionsPerIp = 2,
+            headerDeadlineMillis = 600L
+        )
+        assertTrue(server.start())
+        try {
+            // 1. 414 URI Too Long (request line > 4096 bytes)
+            val longUri = "GET /" + "a".repeat(4200) + " HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+            val resp414 = sendRawHttp(freePort, longUri)
+            assertTrue("Expected 414, got: $resp414", resp414.startsWith("HTTP/1.1 414"))
+
+            // 2. 431 Request Header Fields Too Large (> 64 headers)
+            val manyHeaders = buildString {
+                append("GET /api/v1/status HTTP/1.1\r\nHost: 127.0.0.1\r\n")
+                repeat(70) { idx -> append("X-Test-$idx: val\r\n") }
+                append("\r\n")
+            }
+            val resp431 = sendRawHttp(freePort, manyHeaders)
+            assertTrue("Expected 431, got: $resp431", resp431.startsWith("HTTP/1.1 431"))
+
+            // 3. 400 Bad Request on truncated body (EOF before Content-Length bytes)
+            val truncated = "POST /api/v1/auth HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 50\r\n\r\n{\"pin\":\"2468\"}"
+            val resp400 = sendRawHttp(freePort, truncated, shutdownOutput = true)
+            assertTrue("Expected 400 truncated_body, got: $resp400", resp400.startsWith("HTTP/1.1 400") && resp400.contains("truncated_body"))
+
+            // 4. 408 Request Timeout when client trickles headers past deadline
+            Socket("127.0.0.1", freePort).use { slow ->
+                slow.soTimeout = 3000
+                slow.getOutputStream().write("GET /api/v1/status HTTP/1.1\r\n".toByteArray(StandardCharsets.US_ASCII))
+                slow.getOutputStream().flush()
+                val resp408 = slow.getInputStream().bufferedReader(StandardCharsets.UTF_8).readText()
+                assertTrue("Expected 408 timeout, got: $resp408", resp408.startsWith("HTTP/1.1 408"))
+            }
+
+            // 5. 503 Service Unavailable when per-IP connection cap (2) is exceeded
+            val held1 = Socket("127.0.0.1", freePort)
+            val held2 = Socket("127.0.0.1", freePort)
+            try {
+                // Give the accept loop a moment to register the 2 held sockets
+                Thread.sleep(100)
+                val resp503 = sendRawHttp(freePort, "GET /api/v1/status HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+                assertTrue("Expected 503 per-IP cap, got: $resp503", resp503.startsWith("HTTP/1.1 503"))
+            } finally {
+                runCatching { held1.close() }
+                runCatching { held2.close() }
+            }
         } finally {
             server.stop()
         }

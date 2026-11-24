@@ -42,12 +42,14 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketTimeoutException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 data class HttpRequest(
     val method: String,
@@ -95,9 +97,14 @@ class SalatSignLocalServer(
             add("127.0.0.1")
             add("localhost")
             add("[::1]")
-            LocalNetworkUtils.getLocalIpv4Address()?.let { add(it) }
+            addAll(LocalNetworkUtils.getAllLocalIpv4Addresses())
         }
-    }
+    },
+    private val maxConcurrentConnections: Int = MAX_CONCURRENT_CONNECTIONS,
+    private val maxConnectionsPerIp: Int = MAX_CONNECTIONS_PER_IP,
+    private val headerDeadlineMillis: Long = HEADER_DEADLINE_MILLIS,
+    private val jsonBodyDeadlineMillis: Long = JSON_BODY_DEADLINE_MILLIS,
+    private val uploadBodyDeadlineMillis: Long = UPLOAD_BODY_DEADLINE_MILLIS
 ) {
     companion object {
         private const val TAG = "SalatSignLocalServer"
@@ -108,6 +115,10 @@ class SalatSignLocalServer(
         private const val MAX_HEADER_LINE_BYTES = 8192
         private const val MAX_HEADERS = 64
         private const val MAX_CONCURRENT_CONNECTIONS = 16
+        private const val MAX_CONNECTIONS_PER_IP = 4
+        private const val HEADER_DEADLINE_MILLIS = 10_000L             // 10s overall deadline for headers
+        private const val JSON_BODY_DEADLINE_MILLIS = 30_000L          // 30s overall deadline for JSON bodies
+        private const val UPLOAD_BODY_DEADLINE_MILLIS = 120_000L       // 120s overall deadline for image/logo uploads
         private const val SESSION_TTL_MILLIS = 30 * 60 * 1000L         // 30 minutes
         private const val RATE_LIMIT_WINDOW_MILLIS = 60_000L           // 1 minute
         private const val RATE_LIMIT_MAX_AUTH_PER_IP = 15
@@ -116,9 +127,16 @@ class SalatSignLocalServer(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val secureRandom = SecureRandom()
     private val authMutex = Mutex()
-    private val connectionSemaphore = Semaphore(MAX_CONCURRENT_CONNECTIONS)
+    private val connectionSemaphore = Semaphore(maxConcurrentConnections)
+    private val activeConnectionsByIp = ConcurrentHashMap<String, AtomicInteger>()
     private val sessions = ConcurrentHashMap<String, Long>()
     private val authAttemptsByIp = ConcurrentHashMap<String, MutableList<Long>>()
+
+    // Isolated remote lockout state so a LAN client guessing PINs can never lock out the TV's own Settings PIN dialog.
+    private var remoteFailedAttempts: Int = 0
+    private var remoteLockedUntilEpochMillis: Long = 0L
+
+    internal val currentRemoteFailedAttempts: Int get() = remoteFailedAttempts
 
     private var serverSocket: ServerSocket? = null
     private var acceptJob: Job? = null
@@ -138,20 +156,21 @@ class SalatSignLocalServer(
                 while (isActive && !socket.isClosed) {
                     try {
                         val client = socket.accept()
+                        val remoteIp = client.inetAddress?.hostAddress ?: "unknown"
                         if (!connectionSemaphore.tryAcquire()) {
-                            runCatching {
-                                writeHttpResponse(
-                                    client.getOutputStream(),
-                                    jsonResponse(503, "Service Unavailable", mapOf("error" to "too_many_connections", "message" to "Server busy"))
-                                )
-                            }
-                            runCatching { client.close() }
+                            rejectBusyOffAcceptLoop(client, "too_many_connections", "Server busy")
+                            continue
+                        }
+                        if (!tryAcquireIpSlot(remoteIp)) {
+                            connectionSemaphore.release()
+                            rejectBusyOffAcceptLoop(client, "too_many_connections_per_ip", "Too many concurrent connections from this device")
                             continue
                         }
                         launch {
                             try {
-                                handleClient(client)
+                                handleClient(client, remoteIp)
                             } finally {
+                                releaseIpSlot(remoteIp)
                                 connectionSemaphore.release()
                             }
                         }
@@ -170,6 +189,36 @@ class SalatSignLocalServer(
         }
     }
 
+    private fun tryAcquireIpSlot(ip: String): Boolean {
+        val counter = activeConnectionsByIp.computeIfAbsent(ip) { AtomicInteger(0) }
+        while (true) {
+            val current = counter.get()
+            if (current >= maxConnectionsPerIp) return false
+            if (counter.compareAndSet(current, current + 1)) return true
+        }
+    }
+
+    private fun releaseIpSlot(ip: String) {
+        val counter = activeConnectionsByIp[ip] ?: return
+        if (counter.decrementAndGet() <= 0) {
+            activeConnectionsByIp.remove(ip, counter)
+        }
+    }
+
+    private fun rejectBusyOffAcceptLoop(client: Socket, errorCode: String, message: String) {
+        scope.launch {
+            runCatching {
+                client.use { s ->
+                    s.soTimeout = 2_000
+                    writeHttpResponse(
+                        s.getOutputStream(),
+                        jsonResponse(503, "Service Unavailable", mapOf("error" to errorCode, "message" to message))
+                    )
+                }
+            }
+        }
+    }
+
     @Synchronized
     fun stop() {
         _isRunning.value = false
@@ -179,14 +228,14 @@ class SalatSignLocalServer(
         serverSocket = null
         sessions.clear()
         authAttemptsByIp.clear()
+        activeConnectionsByIp.clear()
         Log.d(TAG, "SalatSign Local Phone Controller stopped")
     }
 
-    private suspend fun handleClient(client: Socket) {
+    private suspend fun handleClient(client: Socket, remoteIp: String) {
         client.use { socket ->
-            socket.soTimeout = 15_000
-            val remoteIp = socket.inetAddress?.hostAddress ?: "unknown"
-            val response = when (val outcome = readHttpRequest(socket.getInputStream(), remoteIp)) {
+            socket.soTimeout = headerDeadlineMillis.coerceIn(500L, 15_000L).toInt()
+            val response = when (val outcome = readHttpRequest(socket, socket.getInputStream(), remoteIp)) {
                 is ReadRequestOutcome.Closed -> return
                 is ReadRequestOutcome.Error -> outcome.response
                 is ReadRequestOutcome.Success -> {
@@ -331,7 +380,7 @@ class SalatSignLocalServer(
                 403, "Forbidden",
                 mapOf(
                     "error" to "default_pin_blocked",
-                    "message" to "Remote login is disabled while using the default PIN. Set a custom Admin PIN on the TV first (Settings → Remote, PIN & About)."
+                    "message" to "Remote login is disabled while using the default PIN. Set a custom Admin PIN on the TV first (Settings → PIN & Remote)."
                 )
             )
         }
@@ -339,19 +388,21 @@ class SalatSignLocalServer(
         val bodyMap = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
         val pin = bodyMap["pin"]?.toString() ?: ""
 
+        // Review 3.1: Use isolated remote lockout counters so LAN guesses never lock out the TV admin dialog.
         val result = PinHasher.verifyPin(
             enteredPin = pin,
             hasCustomPin = settings.hasCustomPin,
             saltHex = settings.pinSaltHex,
             hashHex = settings.pinHashHex,
             nowEpochMillis = now,
-            currentFailedAttempts = settings.pinFailedAttempts,
-            lockedUntilEpochMillis = settings.pinLockedUntilEpochMillis
+            currentFailedAttempts = remoteFailedAttempts,
+            lockedUntilEpochMillis = remoteLockedUntilEpochMillis
         )
 
         return when (result) {
             is PinVerifyResult.Success -> {
-                settingsRepository.recordPinSuccess()
+                remoteFailedAttempts = 0
+                remoteLockedUntilEpochMillis = 0L
                 val tokenBytes = ByteArray(24)
                 secureRandom.nextBytes(tokenBytes)
                 val token = PinHasher.bytesToHex(tokenBytes)
@@ -359,8 +410,9 @@ class SalatSignLocalServer(
                 jsonResponse(200, "OK", mapOf("token" to token, "expiresInSeconds" to (SESSION_TTL_MILLIS / 1000L)))
             }
             is PinVerifyResult.Incorrect -> {
-                val lockout = PinHasher.calculateLockout(settings.pinFailedAttempts, now)
-                settingsRepository.recordPinFailure(lockout.newFailedAttempts, lockout.lockedUntilEpochMillis)
+                val lockout = PinHasher.calculateLockout(remoteFailedAttempts, now)
+                remoteFailedAttempts = lockout.newFailedAttempts
+                remoteLockedUntilEpochMillis = lockout.lockedUntilEpochMillis
                 jsonResponse(
                     401, "Unauthorized",
                     mapOf(
@@ -376,7 +428,7 @@ class SalatSignLocalServer(
                     mapOf(
                         "error" to "locked_out",
                         "remainingSeconds" to result.remainingSeconds,
-                        "message" to "PIN locked. Try again in ${result.remainingSeconds} seconds."
+                        "message" to "Remote login locked. Try again in ${result.remainingSeconds} seconds."
                     )
                 )
             }
@@ -394,6 +446,14 @@ class SalatSignLocalServer(
         while (iterator.hasNext()) {
             if (now > iterator.next().value) {
                 iterator.remove()
+            }
+        }
+        val ipIterator = authAttemptsByIp.entries.iterator()
+        while (ipIterator.hasNext()) {
+            val entry = ipIterator.next()
+            entry.value.removeAll { now - it > RATE_LIMIT_WINDOW_MILLIS }
+            if (entry.value.isEmpty()) {
+                ipIterator.remove()
             }
         }
     }
@@ -853,121 +913,175 @@ class SalatSignLocalServer(
         )
     }
 
-    private fun readHttpRequest(input: InputStream, remoteIp: String): ReadRequestOutcome {
+    private fun readHttpRequest(socket: Socket, input: InputStream, remoteIp: String): ReadRequestOutcome {
+        val headerDeadline = System.currentTimeMillis() + headerDeadlineMillis
         val buffered = BufferedInputStream(input)
-        val requestLine = readBoundedLine(buffered, MAX_REQUEST_LINE_BYTES)
-            ?: return ReadRequestOutcome.Closed
-        if (requestLine == LINE_TOO_LONG) {
-            return ReadRequestOutcome.Error(
-                jsonResponse(414, "URI Too Long", mapOf("error" to "uri_too_long", "message" to "Request line too long"))
-            )
+
+        fun applyRemainingTimeout(deadlineMillis: Long): Boolean {
+            val remaining = deadlineMillis - System.currentTimeMillis()
+            if (remaining <= 0L) return false
+            socket.soTimeout = remaining.coerceIn(1L, 15_000L).toInt()
+            return true
         }
 
-        val parts = requestLine.trim().split(" ")
-        if (parts.size < 2) {
-            return ReadRequestOutcome.Error(
-                jsonResponse(400, "Bad Request", mapOf("error" to "bad_request", "message" to "Invalid HTTP request line"))
-            )
-        }
+        return try {
+            if (!applyRemainingTimeout(headerDeadline)) {
+                return ReadRequestOutcome.Error(
+                    jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
+                )
+            }
+            val requestLine = readBoundedLine(buffered, MAX_REQUEST_LINE_BYTES, headerDeadline) {
+                applyRemainingTimeout(headerDeadline)
+            } ?: return ReadRequestOutcome.Closed
+            if (requestLine == LINE_TIMED_OUT) {
+                return ReadRequestOutcome.Error(
+                    jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
+                )
+            }
+            if (requestLine == LINE_TOO_LONG) {
+                return ReadRequestOutcome.Error(
+                    jsonResponse(414, "URI Too Long", mapOf("error" to "uri_too_long", "message" to "Request line too long"))
+                )
+            }
 
-        val method = parts[0]
-        val rawTarget = parts[1]
-        val qIdx = rawTarget.indexOf('?')
-        val path = if (qIdx >= 0) rawTarget.substring(0, qIdx) else rawTarget
-        val queryParams = mutableMapOf<String, String>()
-        if (qIdx >= 0 && qIdx + 1 < rawTarget.length) {
-            rawTarget.substring(qIdx + 1).split("&").forEach { pair ->
-                val eq = pair.indexOf('=')
-                if (eq > 0) {
-                    runCatching {
-                        val k = URLDecoder.decode(pair.substring(0, eq), "UTF-8")
-                        val v = URLDecoder.decode(pair.substring(eq + 1), "UTF-8")
-                        queryParams[k] = v
+            val parts = requestLine.trim().split(" ")
+            if (parts.size < 2) {
+                return ReadRequestOutcome.Error(
+                    jsonResponse(400, "Bad Request", mapOf("error" to "bad_request", "message" to "Invalid HTTP request line"))
+                )
+            }
+
+            val method = parts[0]
+            val rawTarget = parts[1]
+            val qIdx = rawTarget.indexOf('?')
+            val path = if (qIdx >= 0) rawTarget.substring(0, qIdx) else rawTarget
+            val queryParams = mutableMapOf<String, String>()
+            if (qIdx >= 0 && qIdx + 1 < rawTarget.length) {
+                rawTarget.substring(qIdx + 1).split("&").forEach { pair ->
+                    val eq = pair.indexOf('=')
+                    if (eq > 0) {
+                        runCatching {
+                            val k = URLDecoder.decode(pair.substring(0, eq), "UTF-8")
+                            val v = URLDecoder.decode(pair.substring(eq + 1), "UTF-8")
+                            queryParams[k] = v
+                        }
                     }
                 }
             }
-        }
 
-        val headers = mutableMapOf<String, String>()
-        var headerCount = 0
-        while (true) {
-            val line = readBoundedLine(buffered, MAX_HEADER_LINE_BYTES) ?: break
-            if (line == LINE_TOO_LONG) {
+            val headers = mutableMapOf<String, String>()
+            var headerCount = 0
+            while (true) {
+                val line = readBoundedLine(buffered, MAX_HEADER_LINE_BYTES, headerDeadline) {
+                    applyRemainingTimeout(headerDeadline)
+                } ?: break
+                if (line == LINE_TIMED_OUT) {
+                    return ReadRequestOutcome.Error(
+                        jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
+                    )
+                }
+                if (line == LINE_TOO_LONG) {
+                    return ReadRequestOutcome.Error(
+                        jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "header_too_large", "message" to "Header line too large"))
+                    )
+                }
+                if (line.isEmpty()) break
+                headerCount++
+                if (headerCount > MAX_HEADERS) {
+                    return ReadRequestOutcome.Error(
+                        jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "too_many_headers", "message" to "Too many headers"))
+                    )
+                }
+                val colon = line.indexOf(':')
+                if (colon > 0) {
+                    headers[line.substring(0, colon).trim().lowercase(Locale.ROOT)] =
+                        line.substring(colon + 1).trim()
+                }
+            }
+
+            val contentLengthRaw = headers["content-length"]
+            val contentLength = if (contentLengthRaw != null) {
+                contentLengthRaw.toIntOrNull() ?: return ReadRequestOutcome.Error(
+                    jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Invalid Content-Length"))
+                )
+            } else 0
+
+            if (contentLength < 0) {
                 return ReadRequestOutcome.Error(
-                    jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "header_too_large", "message" to "Header line too large"))
+                    jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Negative Content-Length"))
                 )
             }
-            if (line.isEmpty()) break
-            headerCount++
-            if (headerCount > MAX_HEADERS) {
+
+            val isAuthed = extractValidBearerToken(headers) != null
+            val isUploadRoute = path == "/api/v1/logo" || path == "/api/v1/slides/image"
+            val maxAllowedBytes = when {
+                !isAuthed -> MAX_PRE_AUTH_BODY_BYTES
+                isUploadRoute -> MAX_UPLOAD_BODY_BYTES
+                else -> MAX_JSON_BODY_BYTES
+            }
+            if (contentLength > maxAllowedBytes) {
                 return ReadRequestOutcome.Error(
-                    jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "too_many_headers", "message" to "Too many headers"))
+                    jsonResponse(413, "Payload Too Large", mapOf("error" to "payload_too_large", "message" to "Request body exceeds limit"))
                 )
             }
-            val colon = line.indexOf(':')
-            if (colon > 0) {
-                headers[line.substring(0, colon).trim().lowercase(Locale.ROOT)] =
-                    line.substring(colon + 1).trim()
+
+            val body = if (contentLength > 0) {
+                val bodyDeadline = System.currentTimeMillis() +
+                    if (isUploadRoute) uploadBodyDeadlineMillis else jsonBodyDeadlineMillis
+                val buf = ByteArray(contentLength)
+                var offset = 0
+                while (offset < contentLength) {
+                    if (!applyRemainingTimeout(bodyDeadline)) {
+                        return ReadRequestOutcome.Error(
+                            jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request body timed out"))
+                        )
+                    }
+                    val read = buffered.read(buf, offset, contentLength - offset)
+                    if (read <= 0) break
+                    offset += read
+                }
+                if (offset < contentLength) {
+                    return ReadRequestOutcome.Error(
+                        jsonResponse(400, "Bad Request", mapOf("error" to "truncated_body", "message" to "Request body shorter than Content-Length"))
+                    )
+                }
+                buf
+            } else {
+                ByteArray(0)
             }
-        }
 
-        val contentLengthRaw = headers["content-length"]
-        val contentLength = if (contentLengthRaw != null) {
-            contentLengthRaw.toIntOrNull() ?: return ReadRequestOutcome.Error(
-                jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Invalid Content-Length"))
+            ReadRequestOutcome.Success(
+                HttpRequest(
+                    method = method,
+                    path = path,
+                    queryParams = queryParams,
+                    headers = headers,
+                    body = body,
+                    remoteAddress = remoteIp
+                )
             )
-        } else 0
-
-        if (contentLength < 0) {
-            return ReadRequestOutcome.Error(
-                jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Negative Content-Length"))
-            )
-        }
-
-        val isAuthed = extractValidBearerToken(headers) != null
-        val isUploadRoute = path == "/api/v1/logo" || path == "/api/v1/slides/image"
-        val maxAllowedBytes = when {
-            !isAuthed -> MAX_PRE_AUTH_BODY_BYTES
-            isUploadRoute -> MAX_UPLOAD_BODY_BYTES
-            else -> MAX_JSON_BODY_BYTES
-        }
-        if (contentLength > maxAllowedBytes) {
-            return ReadRequestOutcome.Error(
-                jsonResponse(413, "Payload Too Large", mapOf("error" to "payload_too_large", "message" to "Request body exceeds limit"))
+        } catch (_: SocketTimeoutException) {
+            ReadRequestOutcome.Error(
+                jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request timed out"))
             )
         }
-
-        val body = if (contentLength > 0) {
-            val buf = ByteArray(contentLength)
-            var offset = 0
-            while (offset < contentLength) {
-                val read = buffered.read(buf, offset, contentLength - offset)
-                if (read <= 0) break
-                offset += read
-            }
-            if (offset == contentLength) buf else buf.copyOf(offset)
-        } else {
-            ByteArray(0)
-        }
-
-        return ReadRequestOutcome.Success(
-            HttpRequest(
-                method = method,
-                path = path,
-                queryParams = queryParams,
-                headers = headers,
-                body = body,
-                remoteAddress = remoteIp
-            )
-        )
     }
 
     private val LINE_TOO_LONG = "\u0000__LINE_TOO_LONG__"
+    private val LINE_TIMED_OUT = "\u0000__LINE_TIMED_OUT__"
 
-    private fun readBoundedLine(input: InputStream, maxBytes: Int): String? {
+    private fun readBoundedLine(
+        input: InputStream,
+        maxBytes: Int,
+        deadlineMillis: Long,
+        refreshTimeout: () -> Boolean
+    ): String? {
         val out = ByteArrayOutputStream()
         var prev = -1
         while (true) {
+            if (System.currentTimeMillis() >= deadlineMillis || !refreshTimeout()) {
+                return LINE_TIMED_OUT
+            }
             val b = input.read()
             if (b == -1) {
                 return if (out.size() == 0) null else out.toString(StandardCharsets.UTF_8.name())
