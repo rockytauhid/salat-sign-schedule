@@ -1,7 +1,7 @@
 [versions]
 agp = "9.5.1"
 kotlin = "2.1.0"
-serialization = "1.7.3"
+serialization = "1.13.0"
 coreKtx = "1.15.0"
 appcompat = "1.7.0"
 material = "1.12.0"
