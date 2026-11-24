@@ -496,6 +496,7 @@ fun StorageFilePickerScreen(
                 val rowShape = RoundedCornerShape(8.dp)
 
                 LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
