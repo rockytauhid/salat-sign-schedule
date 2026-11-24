@@ -42,6 +42,7 @@ import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.ClassifiedIslamicEvent
+import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.data.model.QuranVerseItem
@@ -449,41 +450,43 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                             )
                         )
                     }
-                }
 
-                // Sunrise card (subtle, matching Home screen)
-                Column(
-                    modifier = Modifier
-                        .weight(0.9f)
-                        .background(colorScheme.surface.copy(alpha = 0.40f), cardShape)
-                        .padding(vertical = 18.dp, horizontal = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.prayer_sunrise),
-                        style = TvTypography.CardTitle.copy(
-                            fontSize = 17.sp,
-                            color = colorScheme.onSurface.copy(alpha = 0.68f)
-                        )
-                    )
-                    if (slide.showArabicPrayerNames) {
-                        Text(
-                            text = "الشروق",
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = 14.sp,
-                                color = colorScheme.onSurface.copy(alpha = 0.48f)
+                    // Sunrise card placed chronologically right after Fajr (Subuh) and before Dhuhr (Zuhur)
+                    if (item.prayer == Prayer.SUBUH) {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .background(colorScheme.surface.copy(alpha = 0.40f), cardShape)
+                                .padding(vertical = 18.dp, horizontal = 10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.prayer_sunrise),
+                                style = TvTypography.CardTitle.copy(
+                                    fontSize = 17.sp,
+                                    color = colorScheme.onSurface.copy(alpha = 0.68f)
+                                )
                             )
-                        )
+                            if (slide.showArabicPrayerNames) {
+                                Text(
+                                    text = "الشروق",
+                                    style = TvTypography.BodyLabel.copy(
+                                        fontSize = 14.sp,
+                                        color = colorScheme.onSurface.copy(alpha = 0.48f)
+                                    )
+                                )
+                            }
+                            Text(
+                                text = slide.sunriseText,
+                                style = TvTypography.HeaderTitle.copy(
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorScheme.onSurface.copy(alpha = 0.72f)
+                                )
+                            )
+                        }
                     }
-                    Text(
-                        text = slide.sunriseText,
-                        style = TvTypography.HeaderTitle.copy(
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.onSurface.copy(alpha = 0.72f)
-                        )
-                    )
                 }
             }
         }
