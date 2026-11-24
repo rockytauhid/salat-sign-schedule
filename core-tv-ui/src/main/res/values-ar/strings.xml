@@ -45,6 +45,7 @@
     <string name="adhan_subuh_special">أذان الفجر (خاص)</string>
     <string name="adhan_custom_file">ملف صوتي مخصص / USB</string>
     <string name="adhan_silent">صامت / معطل</string>
+    <string name="adhan_beep_beep">صفير</string>
 
     <!-- Buttons & Actions -->
     <string name="btn_close">إغلاق</string>
@@ -248,6 +249,7 @@
     <!-- Home Adhan Hint -->
     <string name="home_adhan_silent_hint">لم يتم تثبيت ملف أذان: يمكنك استيراد الأذان من وحدة USB عبر الإعدادات.</string>
     <string name="home_adhan_silent_hint_dismiss">إغلاق</string>
+    <string name="home_adhan_silent_hint_settings">فتح الإعدادات</string>
 
     <!-- Jumu'ah (Friday) Schedule -->
     <string name="settings_section_jumuah">جدول صلاة الجمعة</string>
@@ -344,6 +346,6 @@
     <string name="settings_hub_cat_adhan">التنبيهات والأذان</string>
     <string name="settings_hub_cat_calendar">التقويم الهجري</string>
     <string name="settings_hub_cat_remote_security">التحكم والرمز وحول التطبيق</string>
-    <string name="settings_hub_cat_about">الإعداد وحول التطبيق</string>
+    <string name="settings_hub_cat_about">حول التطبيق والاعتمادات</string>
     <string name="settings_hijri_calendar_note">يُحسب وفق تقويم أم القرى؛ عدّل الفرق (-2 إلى +2) لمطابقة الرؤية المحلية.</string>
 </resources>

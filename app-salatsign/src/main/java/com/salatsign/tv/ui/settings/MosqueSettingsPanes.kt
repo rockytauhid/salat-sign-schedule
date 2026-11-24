@@ -1282,7 +1282,11 @@ fun MosqueRemoteSecurityPane(
             )
         }
     }
+}
 
+@Composable
+internal fun MosqueAboutPane() {
+    val colorScheme = MaterialTheme.colorScheme
     SettingsAboutCard(
         versionName = BuildConfig.VERSION_NAME,
         versionCode = BuildConfig.VERSION_CODE,

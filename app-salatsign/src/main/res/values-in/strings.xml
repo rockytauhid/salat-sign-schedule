@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Silent Screen ("Jumu'ah / Prayer in progress") -->
+    <string name="silent_title_jumuah">Shalat Jumat sedang berlangsung</string>
+    <string name="silent_title_prayer">Shalat sedang berlangsung</string>
+    <string name="silent_no_talking">Harap tenang dan tidak berbicara</string>
+    <string name="silent_phone">Matikan atau senyapkan ponsel Anda</string>
+    <string name="silent_icon_no_talking_desc">Tanda dilarang berbicara</string>
+    <string name="silent_icon_phone_desc">Tanda matikan atau senyapkan ponsel</string>
+
+    <!-- Silent Screen Settings (SalatSign only) -->
+    <string name="settings_section_silent_screen">Layar Senyap</string>
+    <string name="settings_silent_manual_title">Kontrol Manual</string>
+    <string name="settings_silent_manual_desc">Tampilkan \"Shalat sedang berlangsung\" segera di TV (menggantikan jadwal dan slide).</string>
+    <string name="settings_silent_manual_active">Layar senyap aktif (sisa %1$d mnt)</string>
+    <string name="settings_silent_show_now_mins">Tampilkan %1$d mnt</string>
+    <string name="settings_silent_stop_now">Hentikan Sekarang</string>
+    <string name="settings_silent_jumuah_title">Layar Senyap Shalat Jumat</string>
+    <string name="settings_silent_jumuah_desc">Menampilkan \"Shalat Jumat sedang berlangsung\" secara otomatis untuk setiap sesi Jumat yang dikonfigurasi.</string>
+    <string name="settings_silent_jumuah_unconfigured">Atur minimal satu sesi Jumat di atas untuk mengaktifkan.</string>
+    <string name="settings_silent_enabled">Aktif</string>
+    <string name="settings_silent_disabled">Nonaktif</string>
+    <string name="settings_silent_lead_label">Mulai sebelumnya (menit)</string>
+    <string name="settings_silent_duration_label">Durasi (menit)</string>
+    <string name="settings_silent_daily_title">Shalat Harian (Opsional)</string>
+    <string name="settings_silent_daily_desc">Pilih shalat untuk mengatur layar senyapnya. Zuhur hari Jumat hanya menggunakan pengaturan Jumat.</string>
+    <string name="settings_silent_anchor_label">Pemicu mulai</string>
+    <string name="settings_silent_anchor_iqamah">Iqamah</string>
+    <string name="settings_silent_anchor_adhan">Azan</string>
+    <string name="settings_silent_iqamah_required">Atur waktu iqamah terlebih dahulu</string>
+    <string name="settings_silent_summary_off">Nonaktif</string>
+    <string name="settings_silent_summary_on">%1$s • %2$d mnt</string>
+    <string name="settings_silent_copy_all">Salin pengaturan ini ke semua shalat</string>
+    <string name="settings_silent_copied_all">Pengaturan disalin ke semua 5 shalat.</string>
+    <string name="settings_silent_copied_partial">Disalin ke %1$d shalat (%2$d memerlukan waktu iqamah terlebih dahulu).</string>
+    <string name="settings_silent_done">Selesai</string>
+
+    <!-- 6-Slide Rotation Limit (SalatSign only) -->
+    <string name="settings_slides_in_rotation">Slide dalam rotasi: %1$d dari %2$d</string>
+    <string name="settings_slides_stored_library">Pengumuman tersimpan: %1$d dari %2$d</string>
+    <string name="settings_slides_limit_refused">Tayangan slide dibatasi hingga 6 slide, termasuk slide bawaan. Nonaktifkan atau hapus slide terlebih dahulu.</string>
+    <string name="settings_slides_over_limit_warning">%1$d slide tidak ditampilkan karena batas 6 slide: %2$s</string>
+    <string name="settings_slides_add_disabled">Tambah Slide Teks (Nonaktif)</string>
+    <string name="settings_slides_status_enabled">Aktif</string>
+    <string name="settings_slides_status_disabled">Nonaktif</string>
+    <string name="settings_slides_breakdown_announcements">%1$d pengumuman</string>
+    <string name="settings_slides_breakdown_announcement_one">1 pengumuman</string>
+    <string name="settings_slides_breakdown_none">Tidak ada slide aktif (hanya jadwal)</string>
+    <string name="settings_slides_builtin_islamic_calendar">Kalender Islam</string>
+    <string name="settings_slides_builtin_quran_verse">Ayat Al-Qur\'an</string>
+
+    <!-- Offline Quran Verse Slide (SalatSign only) -->
+    <string name="quran_surah_reference">Surah %1$s %2$s</string>
+    <string name="settings_section_quran_slide">Slide Ayat Al-Qur\'an</string>
+    <string name="settings_quran_enable_title">Tampilkan Slide Ayat Al-Qur\'an di Rotasi</string>
+    <string name="settings_quran_enable_desc">Menampilkan satu ayat per siklus dari 63 ayat pilihan offline (menggunakan 1 dari 6 slot).</string>
+    <string name="settings_quran_show_translation_title">Tampilkan Terjemahan</string>
+    <string name="settings_quran_show_translation_desc">Tampilkan terjemahan di bawah ayat Arab (nonaktifkan untuk Arab saja).</string>
+    <string name="settings_quran_duration_label">Durasi slide</string>
+    <string name="settings_quran_duration_auto">Otomatis</string>
+    <string name="settings_quran_preview_btn">Pratinjau ayat sekarang</string>
+    <string name="settings_quran_fit_check_btn">Periksa kesesuaian ayat</string>
+    <string name="settings_quran_fit_check_title">Pemeriksaan Kesesuaian Ayat Al-Qur\'an</string>
+    <string name="settings_quran_fit_all_ok">Semua %1$d ayat muat dengan rapi di satu layar pada ukuran minimum 40sp Arab / 24sp terjemahan.</string>
+    <string name="settings_quran_fit_overflow">%1$d ayat melebihi satu layar pada ukuran minimum (akan dilewati dengan aman): %2$s</string>
+    <string name="about_quran_tanzil">Teks Al-Qur\'an: Tanzil.net (http://tanzil.net)</string>
+    <string name="about_quran_en">Terjemahan Inggris: Saheeh International, melalui Tanzil.net</string>
+    <string name="about_quran_id">Terjemahan Indonesia: Kementerian Agama Republik Indonesia</string>
+
+    <!-- Add / Edit Announcement Slide Dialogs (SalatSign only) -->
+    <string name="settings_text_slide_dialog_title">Tambah Slide Pengumuman Teks</string>
+    <string name="settings_text_slide_edit_title">Edit Slide Pengumuman Teks</string>
+    <string name="settings_image_slide_dialog_title">Tambah Slide Gambar</string>
+    <string name="settings_image_slide_edit_title">Edit Slide Gambar</string>
+    <string name="settings_image_slide_change_file">Ganti Gambar (USB)</string>
+    <string name="settings_image_slide_title_placeholder">mis., Poster Penggalangan Dana Ramadan</string>
+    <string name="settings_image_slide_empty_title_error">Harap masukkan judul slide sebelum menyimpan.</string>
+    <string name="settings_slide_edit_btn">Edit</string>
+    <string name="settings_slide_save_changes">Simpan Perubahan</string>
+    <string name="settings_text_slide_title_label">Judul</string>
+    <string name="settings_text_slide_title_placeholder">mis., Khutbah Jumat &amp; Makan Bersama</string>
+    <string name="settings_text_slide_body_label">Pesan (maksimal %1$d baris)</string>
+    <string name="settings_text_slide_body_placeholder">Ketik pesan pengumuman Anda di sini…</string>
+    <string name="settings_text_slide_body_hint">Tekan OK untuk mengetik • Gunakan Enter, + Baris Baru, • Poin, atau 1. Nomor • Tekan Kembali jika selesai</string>
+    <string name="settings_text_slide_new_line">+ Baris Baru</string>
+    <string name="settings_text_slide_bullet">• Poin</string>
+    <string name="settings_text_slide_numbered">1. Nomor</string>
+    <string name="settings_text_slide_align_label">Perataan Teks</string>
+    <string name="settings_text_slide_align_left">Kiri</string>
+    <string name="settings_text_slide_align_center">Tengah</string>
+    <string name="settings_text_slide_align_right">Kanan</string>
+    <string name="settings_text_slide_duration_label">Durasi Tampilan</string>
+    <string name="settings_text_slide_limit_note">Rotasi penuh (6/6) — slide ini akan disimpan sebagai nonaktif.</string>
+    <string name="settings_text_slide_empty_error">Harap masukkan judul atau pesan sebelum menyimpan.</string>
+    <string name="settings_text_slide_save">Simpan Slide</string>
+</resources>

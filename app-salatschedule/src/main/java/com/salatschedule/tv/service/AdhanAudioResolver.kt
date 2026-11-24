@@ -19,8 +19,9 @@ object AdhanAudioResolver {
      */
     @RawRes
     fun resolveRawResource(type: AdhanAudioType): Int? = when (type) {
-        AdhanAudioType.DEFAULT_SUBUH -> R.raw.adhan_subuh
-        AdhanAudioType.DEFAULT_STANDARD -> R.raw.adhan_default
+        AdhanAudioType.BEEP,
+        AdhanAudioType.DEFAULT_SUBUH,
+        AdhanAudioType.DEFAULT_STANDARD -> R.raw.adhan_beep
         AdhanAudioType.CUSTOM_FILE, AdhanAudioType.SILENT -> null
     }
 }

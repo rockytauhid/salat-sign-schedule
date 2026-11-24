@@ -3,4 +3,7 @@
 <!-- Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="en-AU" />
+    <locale android:name="en" />
+    <locale android:name="in" />
+    <locale android:name="id" />
 </locale-config>

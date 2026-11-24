@@ -160,8 +160,8 @@ fun HomeScreen(
                 }
             }
 
-            // One-time Adhan Silent hint (F1)
-            if (!uiState.settings.hasConfiguredAudibleAdhan() && !uiState.settings.adhanHintDismissed) {
+            // Session-scoped Adhan Silent hint (reappears on next app launch if still all Silent)
+            if (!uiState.settings.hasConfiguredAudibleAdhan() && !uiState.adhanHintDismissedInSession) {
                 AdhanSilentHintBanner(
                     onOpenSettings = onOpenSettings,
                     onDismiss = onDismissAdhanHint,
@@ -408,51 +408,64 @@ private fun AdhanSilentHintBanner(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    Card(
-        onClick = onOpenSettings,
-        colors = CardDefaults.colors(
-            containerColor = colorScheme.surfaceVariant,
-            focusedContainerColor = colorScheme.surface
-        ),
-        shape = CardDefaults.shape(shape = RoundedCornerShape(12.dp)),
+    val bannerShape = RoundedCornerShape(12.dp)
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .tvFocusable(shape = RoundedCornerShape(12.dp))
+            .clip(bannerShape)
+            .background(colorScheme.surfaceVariant, bannerShape)
+            .border(1.dp, colorScheme.onSurface.copy(alpha = 0.14f), bannerShape)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.VolumeOff,
+                contentDescription = null,
+                tint = colorScheme.secondary,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.home_adhan_silent_hint),
+                style = TvTypography.BodyLabel.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface
+                )
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Button(
+                onClick = onOpenSettings,
+                colors = ButtonDefaults.colors(
+                    containerColor = colorScheme.primary.copy(alpha = 0.22f),
+                    focusedContainerColor = colorScheme.primary,
+                    contentColor = colorScheme.onSurface,
+                    focusedContentColor = Color.White
+                ),
+                shape = ButtonDefaults.shape(RoundedCornerShape(8.dp)),
+                modifier = Modifier.tvFocusable()
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.VolumeOff,
-                    contentDescription = null,
-                    tint = AccentGold,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = stringResource(R.string.home_adhan_silent_hint),
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White
-                    )
+                    text = stringResource(R.string.home_adhan_silent_hint_settings),
+                    style = TvTypography.ButtonText.copy(fontSize = 12.sp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.colors(
-                    containerColor = Color.White.copy(alpha = 0.15f),
-                    focusedContainerColor = AccentGold,
-                    contentColor = Color.White,
+                    containerColor = colorScheme.onSurface.copy(alpha = 0.12f),
+                    focusedContainerColor = colorScheme.secondary,
+                    contentColor = colorScheme.onSurface,
                     focusedContentColor = Color.Black
                 ),
                 shape = ButtonDefaults.shape(RoundedCornerShape(8.dp)),

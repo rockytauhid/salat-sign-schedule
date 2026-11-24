@@ -31,7 +31,8 @@ data class HomeUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val isViewingToday: Boolean = true,
     val prayerTimesDay: PrayerTimesDay? = null,
-    val settings: AppSettings = AppSettings()
+    val settings: AppSettings = AppSettings(),
+    val adhanHintDismissedInSession: Boolean = false
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -41,6 +42,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _selectedDate = MutableStateFlow<LocalDate?>(null)
     private val _ticker = MutableStateFlow(0L)
+    private val _adhanHintDismissedInSession = MutableStateFlow(false)
     private val prayerDayCache = PrayerDayCache()
 
     init {
@@ -56,8 +58,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<HomeUiState> = combine(
         _selectedDate,
         settingsRepository.appSettingsFlow,
-        _ticker
-    ) { customDate, settings, _ ->
+        _ticker,
+        _adhanHintDismissedInSession
+    ) { customDate, settings, _, hintDismissed ->
         val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
         val nowZoned = ZonedDateTime.now(zone)
         val today = nowZoned.toLocalDate()
@@ -82,7 +85,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             selectedDate = date,
             isViewingToday = isToday,
             prayerTimesDay = prayerTimes,
-            settings = settings
+            settings = settings,
+            adhanHintDismissedInSession = hintDismissed
         )
     }.stateIn(
         scope = viewModelScope,
@@ -105,8 +109,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun dismissAdhanHint() {
-        viewModelScope.launch {
-            settingsRepository.dismissAdhanHint()
-        }
+        _adhanHintDismissedInSession.value = true
     }
 }

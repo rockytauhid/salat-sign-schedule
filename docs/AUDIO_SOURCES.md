@@ -42,6 +42,22 @@ Every audio asset bundled with the application **must** be listed here with veri
 
 ---
 
+### 3. `adhan_beep.wav`
+- **File Name:** `adhan_beep.wav`
+- **Path:** `app-salatschedule/src/main/res/raw/adhan_beep.wav`
+- **SHA-256 Checksum:** `efc5168e4c8b77ca296aa4bbe166d9c4235db7ef3a64c5c486dacf6fa15f096f`
+- **Format:** RIFF PCM WAV, 44.1 kHz, 16-bit mono, 145,574 bytes (~1.65s)
+- **Performer / Artist:** Locally synthesized dual-tone prayer alert chime
+- **Status:** **SHIPPED BUILT-IN ALERT** (Beep-Beep notification tone)
+- **Source / Origin:** Synthetically generated mathematical sine-wave chime (880 Hz / 1046.5 Hz with soft envelope) created directly in this repository
+- **License:** CC0 1.0 Universal (Public Domain Dedication)
+- **License URL:** https://creativecommons.org/publicdomain/zero/1.0/
+- **Date Added:** 2026-11-24
+- **Modifications:** None
+- **Attribution Line:** Synthesized Beep-Beep prayer alert tone (CC0)
+
+---
+
 ## Licensing Requirements & Acceptance Criteria (Decision D15)
 
 All bundled adhan audio files must satisfy the following licensing policy — accepted licenses are CC0, public domain, CC BY, or a signed release from the performer; NonCommercial/NoDerivatives and site-specific licenses are not accepted:

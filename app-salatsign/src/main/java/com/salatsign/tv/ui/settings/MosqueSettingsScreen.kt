@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.DisplaySettings
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Security
@@ -23,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.salatsign.core.tv.R
+import com.salatsign.tv.BuildConfig
 import com.salatsign.tv.data.importing.ImportKind
 import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppLanguage
@@ -55,6 +57,7 @@ private object MosqueSettingsCategoryIds {
     const val SLIDESHOW = "slideshow"
     const val SILENT = "silent"
     const val REMOTE_SECURITY = "remote_security"
+    const val ABOUT = "about"
 }
 
 @Composable
@@ -199,6 +202,12 @@ fun MosqueSettingsScreen(
             subtitle = if (isPhoneControllerRunning) "LAN On" else if (settings.hasCustomPin) "Custom PIN" else "Default PIN",
             icon = Icons.Default.Security,
             badgeWarning = !settings.hasCustomPin
+        ),
+        SettingsHubCategory(
+            id = MosqueSettingsCategoryIds.ABOUT,
+            title = stringResource(R.string.settings_hub_cat_about),
+            subtitle = "v${BuildConfig.VERSION_NAME}",
+            icon = Icons.Default.Info
         )
     )
 
@@ -332,6 +341,10 @@ fun MosqueSettingsScreen(
                         onOpenChangePin = { showChangePinDialog = true },
                         onResetPin = onResetPin
                     )
+                }
+
+                MosqueSettingsCategoryIds.ABOUT -> {
+                    MosqueAboutPane()
                 }
             }
         }

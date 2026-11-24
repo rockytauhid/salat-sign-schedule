@@ -56,8 +56,9 @@ fun MosqueFontPreset.labelRes(): Int {
 
 fun AdhanAudioType.labelRes(): Int {
     return when (this) {
-        AdhanAudioType.DEFAULT_STANDARD -> R.string.adhan_standard
-        AdhanAudioType.DEFAULT_SUBUH -> R.string.adhan_subuh_special
+        AdhanAudioType.BEEP,
+        AdhanAudioType.DEFAULT_STANDARD,
+        AdhanAudioType.DEFAULT_SUBUH -> R.string.adhan_beep_beep
         AdhanAudioType.CUSTOM_FILE -> R.string.adhan_custom_file
         AdhanAudioType.SILENT -> R.string.adhan_silent
     }

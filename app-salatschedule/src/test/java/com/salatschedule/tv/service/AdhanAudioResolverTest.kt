@@ -16,15 +16,15 @@ import org.junit.Test
 class AdhanAudioResolverTest {
 
     @Test
-    fun resolveRawResource_subuhType_resolvesSubuhRaw() {
-        val res = AdhanAudioResolver.resolveRawResource(AdhanAudioType.DEFAULT_SUBUH)
-        assertEquals(R.raw.adhan_subuh, res)
+    fun resolveRawResource_beepType_resolvesBeepRaw() {
+        val res = AdhanAudioResolver.resolveRawResource(AdhanAudioType.BEEP)
+        assertEquals(R.raw.adhan_beep, res)
     }
 
     @Test
-    fun resolveRawResource_standardType_resolvesDefaultRaw() {
-        val res = AdhanAudioResolver.resolveRawResource(AdhanAudioType.DEFAULT_STANDARD)
-        assertEquals(R.raw.adhan_default, res)
+    fun resolveRawResource_legacyDefaultTypes_resolveBeepRaw() {
+        assertEquals(R.raw.adhan_beep, AdhanAudioResolver.resolveRawResource(AdhanAudioType.DEFAULT_SUBUH))
+        assertEquals(R.raw.adhan_beep, AdhanAudioResolver.resolveRawResource(AdhanAudioType.DEFAULT_STANDARD))
     }
 
     @Test
@@ -41,6 +41,7 @@ class AdhanAudioResolverTest {
 
     @Test
     fun adhanAudioOption_builtInDefaults_containNoHardcodedDisplayStrings() {
+        assertTrue(AdhanAudioOption.Beep.displayName.isEmpty())
         assertTrue(AdhanAudioOption.DefaultStandard.displayName.isEmpty())
         assertTrue(AdhanAudioOption.DefaultSubuh.displayName.isEmpty())
         assertTrue(AdhanAudioOption.Silent.displayName.isEmpty())
@@ -48,8 +49,9 @@ class AdhanAudioResolverTest {
 
     @Test
     fun adhanAudioOption_labelsMapToCorrectStringResources() {
-        assertEquals(CoreR.string.adhan_standard, AdhanAudioOption.DefaultStandard.labelRes())
-        assertEquals(CoreR.string.adhan_subuh_special, AdhanAudioOption.DefaultSubuh.labelRes())
+        assertEquals(CoreR.string.adhan_beep_beep, AdhanAudioOption.Beep.labelRes())
+        assertEquals(CoreR.string.adhan_beep_beep, AdhanAudioOption.DefaultStandard.labelRes())
+        assertEquals(CoreR.string.adhan_beep_beep, AdhanAudioOption.DefaultSubuh.labelRes())
         assertEquals(CoreR.string.adhan_silent, AdhanAudioOption.Silent.labelRes())
         val customOption = AdhanAudioOption(type = AdhanAudioType.CUSTOM_FILE, displayName = "custom.mp3")
         assertEquals(CoreR.string.adhan_custom_file, customOption.labelRes())

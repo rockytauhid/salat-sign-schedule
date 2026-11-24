@@ -10,7 +10,7 @@ enum class AppLanguage {
     AR;
 
     companion object {
-        val ShippedLanguages: List<AppLanguage> = listOf(EN) // Scoped to English only for launch release (F3)
+        val ShippedLanguages: List<AppLanguage> = listOf(EN, ID)
         val isMultiLanguageShipped: Boolean get() = ShippedLanguages.size > 1
     }
 }

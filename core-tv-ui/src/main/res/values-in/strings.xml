@@ -45,6 +45,7 @@
     <string name="adhan_subuh_special">Adhan Subuh (Khusus)</string>
     <string name="adhan_custom_file">Audio Kustom / USB</string>
     <string name="adhan_silent">Hening / Nonaktif</string>
+    <string name="adhan_beep_beep">Bip-Bip</string>
 
     <!-- Buttons & Actions -->
     <string name="btn_close">Tutup</string>
@@ -248,6 +249,7 @@
     <!-- Home Adhan Hint -->
     <string name="home_adhan_silent_hint">Belum ada audio adhan terpasang: impor file audio dari USB di Pengaturan.</string>
     <string name="home_adhan_silent_hint_dismiss">Tutup</string>
+    <string name="home_adhan_silent_hint_settings">Buka Pengaturan</string>
 
     <!-- Jumu'ah (Friday) Schedule -->
     <string name="settings_section_jumuah">Jadwal Shalat Jumat</string>
@@ -345,6 +347,6 @@
     <string name="settings_hub_cat_adhan">Pengingat &amp; Adzan</string>
     <string name="settings_hub_cat_calendar">Kalender Islam</string>
     <string name="settings_hub_cat_remote_security">Remote, PIN &amp; Tentang</string>
-    <string name="settings_hub_cat_about">Pengaturan &amp; Tentang</string>
+    <string name="settings_hub_cat_about">Tentang &amp; Kredit</string>
     <string name="settings_hijri_calendar_note">Dihitung dengan kalender Umm al-Qura; sesuaikan koreksi (-2 hingga +2) agar sesuai rukyat setempat.</string>
 </resources>

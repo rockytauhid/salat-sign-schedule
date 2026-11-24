@@ -360,10 +360,19 @@ private fun HomeAdhanAndRemindersPane(
             val isAudible = currentOption.type != AdhanAudioType.SILENT
             Card(
                 onClick = {
+                    val hasCustom = !currentOption.customUri.isNullOrBlank()
                     val nextOption = when (currentOption.type) {
-                        AdhanAudioType.DEFAULT_SUBUH, AdhanAudioType.DEFAULT_STANDARD -> AdhanAudioOption.Silent
-                        AdhanAudioType.SILENT -> if (prayer == Prayer.SUBUH) AdhanAudioOption.DefaultSubuh else AdhanAudioOption.DefaultStandard
-                        AdhanAudioType.CUSTOM_FILE -> AdhanAudioOption.DefaultStandard
+                        AdhanAudioType.SILENT -> currentOption.copy(type = AdhanAudioType.BEEP)
+                        AdhanAudioType.BEEP,
+                        AdhanAudioType.DEFAULT_SUBUH,
+                        AdhanAudioType.DEFAULT_STANDARD -> {
+                            if (hasCustom) {
+                                currentOption.copy(type = AdhanAudioType.CUSTOM_FILE)
+                            } else {
+                                currentOption.copy(type = AdhanAudioType.SILENT)
+                            }
+                        }
+                        AdhanAudioType.CUSTOM_FILE -> currentOption.copy(type = AdhanAudioType.SILENT)
                     }
                     onSetAdhanAudio(prayer, nextOption)
                 },

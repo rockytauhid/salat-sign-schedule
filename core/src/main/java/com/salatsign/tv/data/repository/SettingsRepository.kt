@@ -515,15 +515,14 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         var referencedAudio: Set<String> = emptySet()
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.adhanTypeKey(prayer)] = option.type.name
-            if (option.type == AdhanAudioType.CUSTOM_FILE && option.displayName.isNotBlank()) {
-                prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
-            } else {
-                prefs.remove(PreferencesKeys.adhanNameKey(prayer))
-            }
             if (option.customUri != null) {
                 prefs[PreferencesKeys.adhanUriKey(prayer)] = option.customUri
+                if (option.displayName.isNotBlank()) {
+                    prefs[PreferencesKeys.adhanNameKey(prayer)] = option.displayName
+                }
             } else {
                 prefs.remove(PreferencesKeys.adhanUriKey(prayer))
+                prefs.remove(PreferencesKeys.adhanNameKey(prayer))
             }
 
             referencedAudio = Prayer.entries.mapNotNull { p ->

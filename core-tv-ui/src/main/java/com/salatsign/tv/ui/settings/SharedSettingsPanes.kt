@@ -88,7 +88,7 @@ fun SettingsDisplayAndLanguagePane(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            for (lang in AppLanguage.entries) {
+            for (lang in AppLanguage.ShippedLanguages) {
                 val isSelected = (settings.appLanguage == lang)
                 val langShape = RoundedCornerShape(10.dp)
                 Card(
@@ -209,9 +209,9 @@ fun SettingsDisplayAndLanguagePane(
         style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
     )
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         for (mode in ThemeMode.entries) {
             val isSelected = (settings.themeMode == mode)
@@ -223,12 +223,12 @@ fun SettingsDisplayAndLanguagePane(
                     focusedContainerColor = colorScheme.surfaceVariant
                 ),
                 shape = CardDefaults.shape(themeShape),
-                scale = tvCardScale(1.02f),
+                scale = tvCardScale(1.01f),
                 border = tvSelectableCardBorder(selected = isSelected, shape = themeShape),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -241,13 +241,12 @@ fun SettingsDisplayAndLanguagePane(
                         tint = if (isSelected) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(mode.labelRes()),
                         maxLines = 1,
-                        softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        style = TvTypography.CardTitle.copy(fontSize = 12.5.sp, color = colorScheme.onSurface)
+                        style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                     )
                 }
             }

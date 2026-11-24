@@ -6,6 +6,7 @@ package com.salatsign.tv.data.model
 enum class AdhanAudioType {
     DEFAULT_SUBUH,
     DEFAULT_STANDARD,
+    BEEP,
     CUSTOM_FILE,
     SILENT
 }
@@ -22,6 +23,10 @@ data class AdhanAudioOption(
         )
         val DefaultSubuh = AdhanAudioOption(
             type = AdhanAudioType.DEFAULT_SUBUH,
+            displayName = ""
+        )
+        val Beep = AdhanAudioOption(
+            type = AdhanAudioType.BEEP,
             displayName = ""
         )
         val Silent = AdhanAudioOption(

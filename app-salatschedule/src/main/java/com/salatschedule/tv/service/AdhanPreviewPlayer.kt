@@ -83,8 +83,8 @@ class AdhanPreviewPlayer(private val context: Context) {
     private fun startNew(option: AdhanAudioOption) {
         stop()
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
         try {
@@ -115,7 +115,7 @@ class AdhanPreviewPlayer(private val context: Context) {
 
             if (!sourceLoaded) {
                 val rawResId = AdhanAudioResolver.resolveRawResource(
-                    if (option.type == AdhanAudioType.CUSTOM_FILE) AdhanAudioType.DEFAULT_STANDARD else option.type
+                    if (option.type == AdhanAudioType.CUSTOM_FILE) AdhanAudioType.BEEP else option.type
                 )
                 if (rawResId != null) {
                     val afd = context.resources.openRawResourceFd(rawResId)
