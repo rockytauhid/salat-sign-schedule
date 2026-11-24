@@ -432,6 +432,7 @@ class SalatSignLocalServer(
                 "mosqueLogoUri" to s.mosqueLogoUri,
                 "mosqueIconPreset" to s.mosqueIconPreset.name,
                 "mosqueFontPreset" to s.mosqueFontPreset.name,
+                "appLanguage" to s.appLanguage.name,
                 "cityName" to s.cityName,
                 "zoneId" to s.zoneId,
                 "calculationMethodName" to s.calculationMethodName,
@@ -520,10 +521,22 @@ class SalatSignLocalServer(
             }
         }
 
-        val newName = (patch["mosqueName"] as? String) ?: current.mosqueName
+        val newName = (patch["mosqueName"] as? String)?.trim() ?: current.mosqueName
         val newSubtitle = (patch["mosqueSubtitle"] as? String) ?: current.mosqueSubtitle
+        if (patch.containsKey("mosqueName") && newName.isBlank()) {
+            return jsonResponse(
+                400, "Bad Request",
+                mapOf("error" to "mosque_name_required", "message" to "Mosque name cannot be empty.")
+            )
+        }
         if (patch.containsKey("mosqueName") || patch.containsKey("mosqueSubtitle")) {
             settingsRepository.updateMosqueBranding(newName, newSubtitle, current.mosqueLogoUri)
+        }
+        (patch["appLanguage"] as? String)?.let { raw ->
+            runCatching { com.salatsign.tv.data.model.AppLanguage.valueOf(raw.uppercase(Locale.ROOT)) }
+                .getOrNull()
+                ?.takeIf { it in com.salatsign.tv.data.model.AppLanguage.ShippedLanguages }
+                ?.let { settingsRepository.setAppLanguage(it) }
         }
         (patch["mosqueIconPreset"] as? String)?.let { raw ->
             runCatching { MosqueIconPreset.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()?.let {

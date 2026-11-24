@@ -232,6 +232,7 @@ private fun SalatScheduleMainContent(
             !settings.isSetupCompleted -> {
                 HomeSetupWizardScreen(
                     settings = settings,
+                    onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
                     onSelectCity = { settingsViewModel.selectCity(it) },
                     onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
                     onSetMadhab = { settingsViewModel.setMadhab(it) },
@@ -279,8 +280,7 @@ private fun SalatScheduleMainContent(
                     onNextDay = { homeViewModel.nextDay() },
                     onTodayClick = { homeViewModel.resetToToday() },
                     onOpenCalendar = onOpenCalendar,
-                    onOpenSettings = onOpenSettings,
-                    onDismissAdhanHint = { homeViewModel.dismissAdhanHint() }
+                    onOpenSettings = onOpenSettings
                 )
             }
         }

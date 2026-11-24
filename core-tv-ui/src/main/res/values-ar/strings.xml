@@ -88,7 +88,9 @@
     <string name="mosque_iqamah_prefix">الإقامة: %1$s</string>
     <string name="mosque_next_prayer_badge">الصلاة القادمة</string>
     <string name="mosque_countdown_to_prayer">الوقت المتبقي للصلاة: %1$s</string>
-    <string name="mosque_default_name">مسجدنا</string>
+    <string name="mosque_default_name">اسم المسجد</string>
+    <string name="mosque_name_placeholder">مثال: المركز الإسلامي</string>
+    <string name="mosque_name_required_error">يرجى إدخال اسم المسجد قبل المتابعة.</string>
     <string name="mosque_default_subtitle">استووا وتراصوا</string>
     <string name="mosque_hold_ok_toast">اضغط مطولاً على موافق لمدة 3 ثوانٍ أو اضغط على القائمة لفتح الإعدادات</string>
 
@@ -345,7 +347,7 @@
     <string name="settings_hub_cat_silent">شاشة الصمت</string>
     <string name="settings_hub_cat_adhan">التنبيهات والأذان</string>
     <string name="settings_hub_cat_calendar">التقويم الهجري</string>
-    <string name="settings_hub_cat_remote_security">التحكم والرمز وحول التطبيق</string>
+    <string name="settings_hub_cat_remote_security">رمز PIN والتحكم</string>
     <string name="settings_hub_cat_about">حول التطبيق والاعتمادات</string>
     <string name="settings_hijri_calendar_note">يُحسب وفق تقويم أم القرى؛ عدّل الفرق (-2 إلى +2) لمطابقة الرؤية المحلية.</string>
 </resources>

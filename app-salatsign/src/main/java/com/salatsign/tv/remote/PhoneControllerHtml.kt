@@ -343,13 +343,22 @@ object PhoneControllerHtml {
         </div>
         <div class="row">
           <div>
+            <label>Language</label>
+            <select id="appLanguage">
+              <option value="EN">English</option>
+              <option value="ID">Bahasa Indonesia</option>
+            </select>
+          </div>
+          <div>
             <label>Theme Mode</label>
             <select id="themeMode">
               <option value="ALWAYS_DARK">Always Dark</option>
               <option value="ALWAYS_LIGHT">Always Light</option>
-              <option value="AUTO_DAY_NIGHT">Auto Day/Night</option>
+              <option value="AUTO_DAY_NIGHT">Automatic (Day / Night)</option>
             </select>
           </div>
+        </div>
+        <div class="row">
           <div>
             <label>Time Format</label>
             <select id="is24Hour">
@@ -357,8 +366,6 @@ object PhoneControllerHtml {
               <option value="true">24-Hour (00:00)</option>
             </select>
           </div>
-        </div>
-        <div class="row">
           <div>
             <label>Arabic Prayer Names</label>
             <select id="showArabic">
@@ -366,14 +373,12 @@ object PhoneControllerHtml {
               <option value="false">Hidden</option>
             </select>
           </div>
-          <div>
-            <label>Exact-Time Visual Strike</label>
-            <select id="showStrike">
-              <option value="true">Active (5m pulse)</option>
-              <option value="false">Disabled</option>
-            </select>
-          </div>
         </div>
+        <label>Exact-Time Visual Strike</label>
+        <select id="showStrike">
+          <option value="true">Active (5m pulse)</option>
+          <option value="false">Disabled</option>
+        </select>
         <button onclick="saveBranding()">Save Branding &amp; Display</button>
 
         <h3>Custom Mosque Logo</h3>
@@ -473,6 +478,7 @@ async function loadAll() {
     document.getElementById('mosqueSubtitle').value = d.mosqueSubtitle || '';
     document.getElementById('mosqueIconPreset').value = d.mosqueIconPreset || 'DOME_CRESCENT';
     document.getElementById('mosqueFontPreset').value = d.mosqueFontPreset || 'MODERN_SANS';
+    document.getElementById('appLanguage').value = (d.appLanguage === 'ID') ? 'ID' : 'EN';
     document.getElementById('themeMode').value = d.themeMode || 'ALWAYS_DARK';
     document.getElementById('is24Hour').value = String(!!d.is24HourFormat);
     document.getElementById('showArabic').value = String(d.showArabicPrayerNames !== false);
@@ -679,8 +685,9 @@ async function toggleSlide(s) {
 async function uploadImageSlide() {
   const file = document.getElementById('slideImageFile').files[0];
   if (!file) { showMsg('Choose an image file first.', false); return; }
+  const rawTitle = document.getElementById('imgSlideTitle').value.trim();
+  if (!rawTitle) { showMsg('Please enter a slide title before uploading.', false); return; }
   const dur = parseInt(document.getElementById('imgSlideDuration').value, 10) || 15;
-  const rawTitle = document.getElementById('imgSlideTitle').value.trim() || file.name.replace(/\.[^.]+$/, '');
   const title = encodeURIComponent(rawTitle);
   const res = await api('/api/v1/slides/image?title=' + title + '&duration=' + dur, {
     method: 'POST',
@@ -926,14 +933,17 @@ async function saveSilentSettings() {
 
 // --- BRANDING & DISPLAY ---
 async function saveBranding() {
+  const mosqueName = document.getElementById('mosqueName').value.trim();
+  if (!mosqueName) { showMsg('Please enter your mosque name before saving.', false); return; }
   const res = await api('/api/v1/settings', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      mosqueName: document.getElementById('mosqueName').value.trim(),
+      mosqueName,
       mosqueSubtitle: document.getElementById('mosqueSubtitle').value.trim(),
       mosqueIconPreset: document.getElementById('mosqueIconPreset').value,
       mosqueFontPreset: document.getElementById('mosqueFontPreset').value,
+      appLanguage: document.getElementById('appLanguage').value,
       themeMode: document.getElementById('themeMode').value,
       is24HourFormat: document.getElementById('is24Hour').value === 'true',
       showArabicPrayerNames: document.getElementById('showArabic').value === 'true',

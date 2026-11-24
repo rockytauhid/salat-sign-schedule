@@ -252,6 +252,7 @@ private fun SalatSignMainContent(
         !settings.isSetupCompleted -> {
             MosqueSetupWizardScreen(
                 settings = settings,
+                onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
                 onSelectCity = { settingsViewModel.selectCity(it) },
                 onSetCalculationMethod = { settingsViewModel.setCalculationMethod(it) },
                 onSetMadhab = { settingsViewModel.setMadhab(it) },

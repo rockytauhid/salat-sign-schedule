@@ -71,8 +71,7 @@ fun HomeScreen(
     onNextDay: () -> Unit,
     onTodayClick: () -> Unit,
     onOpenCalendar: () -> Unit = {},
-    onOpenSettings: () -> Unit,
-    onDismissAdhanHint: () -> Unit = {}
+    onOpenSettings: () -> Unit
 ) {
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
@@ -158,15 +157,6 @@ fun HomeScreen(
                         )
                     )
                 }
-            }
-
-            // Session-scoped Adhan Silent hint (reappears on next app launch if still all Silent)
-            if (!uiState.settings.hasConfiguredAudibleAdhan() && !uiState.adhanHintDismissedInSession) {
-                AdhanSilentHintBanner(
-                    onOpenSettings = onOpenSettings,
-                    onDismiss = onDismissAdhanHint,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
             }
 
             if (prayerTimes != null) {
@@ -395,85 +385,6 @@ fun NonTodaySummaryCard(
                 Text(
                     text = dateFormatted,
                     style = TvTypography.HeaderTitle.copy(fontSize = 32.sp, color = colorScheme.onSurface)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdhanSilentHintBanner(
-    onOpenSettings: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    val bannerShape = RoundedCornerShape(12.dp)
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(bannerShape)
-            .background(colorScheme.surfaceVariant, bannerShape)
-            .border(1.dp, colorScheme.onSurface.copy(alpha = 0.14f), bannerShape)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.VolumeOff,
-                contentDescription = null,
-                tint = colorScheme.secondary,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.home_adhan_silent_hint),
-                style = TvTypography.BodyLabel.copy(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.onSurface
-                )
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Button(
-                onClick = onOpenSettings,
-                colors = ButtonDefaults.colors(
-                    containerColor = colorScheme.primary.copy(alpha = 0.22f),
-                    focusedContainerColor = colorScheme.primary,
-                    contentColor = colorScheme.onSurface,
-                    focusedContentColor = Color.White
-                ),
-                shape = ButtonDefaults.shape(RoundedCornerShape(8.dp)),
-                modifier = Modifier.tvFocusable()
-            ) {
-                Text(
-                    text = stringResource(R.string.home_adhan_silent_hint_settings),
-                    style = TvTypography.ButtonText.copy(fontSize = 12.sp)
-                )
-            }
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.colors(
-                    containerColor = colorScheme.onSurface.copy(alpha = 0.12f),
-                    focusedContainerColor = colorScheme.secondary,
-                    contentColor = colorScheme.onSurface,
-                    focusedContentColor = Color.Black
-                ),
-                shape = ButtonDefaults.shape(RoundedCornerShape(8.dp)),
-                modifier = Modifier.tvFocusable()
-            ) {
-                Text(
-                    text = stringResource(R.string.home_adhan_silent_hint_dismiss),
-                    style = TvTypography.ButtonText.copy(fontSize = 12.sp)
                 )
             }
         }

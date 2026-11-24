@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.JumuahMode
@@ -84,6 +86,7 @@ import java.util.Locale
 @Composable
 fun MosqueSetupWizardScreen(
     settings: AppSettings,
+    onSetAppLanguage: (AppLanguage) -> Unit = {},
     onSelectCity: (CityPreset) -> Unit,
     onSetCalculationMethod: (String) -> Unit,
     onSetMadhab: (String) -> Unit,
@@ -95,6 +98,7 @@ fun MosqueSetupWizardScreen(
     onCompleteSetup: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
+    var mosqueNameError by remember { mutableStateOf(false) }
     val maxSteps = 4
     val initialFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
@@ -168,8 +172,56 @@ fun MosqueSetupWizardScreen(
             ) {
                 when (currentStep) {
                     1 -> {
-                        // Step 1: Country -> City Location
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Step 1: Language & Country -> City Location
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (AppLanguage.isMultiLanguageShipped) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.settings_section_language),
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colorScheme.secondary
+                                        )
+                                    )
+                                    for (lang in AppLanguage.ShippedLanguages) {
+                                        val isSelected = settings.appLanguage == lang ||
+                                            (settings.appLanguage == AppLanguage.SYSTEM && lang == AppLanguage.EN)
+                                        val langShape = RoundedCornerShape(10.dp)
+                                        Card(
+                                            onClick = { onSetAppLanguage(lang) },
+                                            colors = CardDefaults.colors(
+                                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                                focusedContainerColor = colorScheme.surfaceVariant
+                                            ),
+                                            shape = CardDefaults.shape(langShape),
+                                            scale = tvCardScale(1.02f),
+                                            border = tvSelectableCardBorder(selected = isSelected, shape = langShape)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Language,
+                                                    contentDescription = null,
+                                                    tint = if (isSelected) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = stringResource(lang.labelRes()),
+                                                    style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Text(
                                 text = stringResource(R.string.wizard_step_location_title, 1, settings.cityName),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
@@ -269,9 +321,8 @@ fun MosqueSetupWizardScreen(
 
                     3 -> {
                         // Step 3: Mosque Branding (Mosque Name, Mosque Icon, Mosque Tagline)
-                        val defaultMosqueName = stringResource(R.string.mosque_default_name)
                         var nameText by remember(settings.mosqueName) {
-                            mutableStateOf(settings.mosqueName.ifBlank { defaultMosqueName })
+                            mutableStateOf(settings.mosqueName)
                         }
                         var subtitleText by remember(settings.mosqueSubtitle) {
                             mutableStateOf(settings.mosqueSubtitle)
@@ -283,7 +334,7 @@ fun MosqueSetupWizardScreen(
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)
                             )
 
-                            // Label + Editable Input: Mosque Name (defaults to Masjiduna)
+                            // Label + Editable Input: Mosque Name (required, no default)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(
                                     text = stringResource(R.string.mosque_label_name),
@@ -297,13 +348,25 @@ fun MosqueSetupWizardScreen(
                                     value = nameText,
                                     onValueChange = {
                                         nameText = it
-                                        onSetMosqueName(it.trim().ifBlank { defaultMosqueName })
+                                        if (mosqueNameError) mosqueNameError = false
+                                        onSetMosqueName(it.trim())
                                     },
-                                    placeholder = defaultMosqueName,
+                                    placeholder = stringResource(R.string.mosque_name_placeholder),
                                     accentUnfocusedBorder = true,
                                     maxLength = MAX_MOSQUE_NAME_LENGTH,
-                                    textStyle = TvTypography.CardTitle.copy(fontSize = 17.sp)
+                                    textStyle = TvTypography.CardTitle.copy(fontSize = 17.sp),
+                                    modifier = Modifier.focusRequester(initialFocusRequester)
                                 )
+                                if (mosqueNameError) {
+                                    Text(
+                                        text = stringResource(R.string.mosque_name_required_error),
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colorScheme.error
+                                        )
+                                    )
+                                }
                             }
 
                             // Label + 4 Mosque Emblem Icons (Square Tiles)
@@ -334,9 +397,7 @@ fun MosqueSetupWizardScreen(
                                             shape = CardDefaults.shape(shape),
                                             scale = tvCardScale(1.03f),
                                             border = tvSelectableCardBorder(selected = selected, shape = shape),
-                                            modifier = Modifier
-                                                .size(116.dp)
-                                                .then(if (idx == 0) Modifier.focusRequester(initialFocusRequester) else Modifier)
+                                            modifier = Modifier.size(116.dp)
                                         ) {
                                             Column(
                                                 modifier = Modifier
@@ -606,7 +667,15 @@ fun MosqueSetupWizardScreen(
 
                 Surface(
                     onClick = {
-                        if (currentStep < maxSteps) currentStep += 1 else onCompleteSetup()
+                        if (currentStep == 3 && settings.mosqueName.isBlank()) {
+                            mosqueNameError = true
+                            runCatching { initialFocusRequester.requestFocus() }
+                        } else if (currentStep < maxSteps) {
+                            mosqueNameError = false
+                            currentStep += 1
+                        } else {
+                            onCompleteSetup()
+                        }
                     },
                     shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
                     colors = ClickableSurfaceDefaults.colors(

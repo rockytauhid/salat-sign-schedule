@@ -560,23 +560,40 @@ fun MosqueBrandingPane(
         style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
     )
 
-    val defaultMosqueName = stringResource(R.string.mosque_default_name)
+    val fallbackSampleName = stringResource(R.string.mosque_default_name)
     var mosqueNameInput by remember(settings.mosqueName) {
-        mutableStateOf(settings.mosqueName.ifBlank { defaultMosqueName })
+        mutableStateOf(settings.mosqueName)
     }
+    var mosqueNameError by remember { mutableStateOf(false) }
 
     TvEditableTextField(
         value = mosqueNameInput,
         onValueChange = {
             onUserInteraction()
             mosqueNameInput = it
-            onSetMosqueName(it.trim().ifBlank { defaultMosqueName })
+            val trimmed = it.trim()
+            if (trimmed.isEmpty()) {
+                mosqueNameError = true
+            } else {
+                mosqueNameError = false
+                onSetMosqueName(trimmed)
+            }
         },
-        placeholder = defaultMosqueName,
+        placeholder = stringResource(R.string.mosque_name_placeholder),
         accentUnfocusedBorder = true,
         maxLength = MAX_MOSQUE_NAME_LENGTH,
         textStyle = TvTypography.CardTitle.copy(fontSize = 17.sp)
     )
+    if (mosqueNameError) {
+        Text(
+            text = stringResource(R.string.mosque_name_required_error),
+            style = TvTypography.BodyLabel.copy(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colorScheme.error
+            )
+        )
+    }
 
     Text(
         text = stringResource(R.string.settings_section_mosque_font),
@@ -608,7 +625,7 @@ fun MosqueBrandingPane(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = settings.mosqueName.ifBlank { defaultMosqueName },
+                        text = settings.mosqueName.ifBlank { fallbackSampleName },
                         fontFamily = getMosqueFontFamily(font),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
@@ -1152,60 +1169,6 @@ fun MosqueRemoteSecurityPane(
     val colorScheme = MaterialTheme.colorScheme
 
     Text(
-        text = stringResource(R.string.settings_section_phone_controller),
-        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
-    )
-
-    val phoneShape = RoundedCornerShape(12.dp)
-    Surface(
-        onClick = { onTogglePhoneController(!isPhoneControllerRunning) },
-        shape = ClickableSurfaceDefaults.shape(phoneShape),
-        scale = tvSurfaceScale(1.0f),
-        colors = tvSelectableSurfaceColors(
-            selected = isPhoneControllerRunning,
-            containerColor = if (isPhoneControllerRunning) colorScheme.primary.copy(alpha = 0.16f) else colorScheme.surface
-        ),
-        border = tvSelectableSurfaceBorder(selected = isPhoneControllerRunning, shape = phoneShape),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = if (isPhoneControllerRunning) {
-                    stringResource(R.string.settings_phone_controller_on)
-                } else {
-                    stringResource(R.string.settings_phone_controller_off)
-                },
-                style = TvTypography.CardTitle.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPhoneControllerRunning) colorScheme.primary else colorScheme.onSurface
-                )
-            )
-            Text(
-                text = stringResource(R.string.settings_phone_controller_desc),
-                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
-            )
-            if (isPhoneControllerRunning) {
-                Text(
-                    text = if (!phoneControllerUrl.isNullOrBlank()) {
-                        stringResource(R.string.settings_phone_controller_url, phoneControllerUrl)
-                    } else {
-                        stringResource(R.string.settings_phone_controller_no_wifi)
-                    },
-                    style = TvTypography.CardTitle.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.secondary
-                    )
-                )
-            }
-        }
-    }
-
-    Text(
         text = stringResource(R.string.settings_section_security),
         style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
     )
@@ -1280,6 +1243,60 @@ fun MosqueRemoteSecurityPane(
                 style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
             )
+        }
+    }
+
+    Text(
+        text = stringResource(R.string.settings_section_phone_controller),
+        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+    )
+
+    val phoneShape = RoundedCornerShape(12.dp)
+    Surface(
+        onClick = { onTogglePhoneController(!isPhoneControllerRunning) },
+        shape = ClickableSurfaceDefaults.shape(phoneShape),
+        scale = tvSurfaceScale(1.0f),
+        colors = tvSelectableSurfaceColors(
+            selected = isPhoneControllerRunning,
+            containerColor = if (isPhoneControllerRunning) colorScheme.primary.copy(alpha = 0.16f) else colorScheme.surface
+        ),
+        border = tvSelectableSurfaceBorder(selected = isPhoneControllerRunning, shape = phoneShape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = if (isPhoneControllerRunning) {
+                    stringResource(R.string.settings_phone_controller_on)
+                } else {
+                    stringResource(R.string.settings_phone_controller_off)
+                },
+                style = TvTypography.CardTitle.copy(
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isPhoneControllerRunning) colorScheme.primary else colorScheme.onSurface
+                )
+            )
+            Text(
+                text = stringResource(R.string.settings_phone_controller_desc),
+                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+            )
+            if (isPhoneControllerRunning) {
+                Text(
+                    text = if (!phoneControllerUrl.isNullOrBlank()) {
+                        stringResource(R.string.settings_phone_controller_url, phoneControllerUrl)
+                    } else {
+                        stringResource(R.string.settings_phone_controller_no_wifi)
+                    },
+                    style = TvTypography.CardTitle.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colorScheme.secondary
+                    )
+                )
+            }
         }
     }
 }

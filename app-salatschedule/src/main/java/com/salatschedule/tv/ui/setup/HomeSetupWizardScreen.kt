@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +43,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -53,10 +55,12 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.salatsign.core.tv.R
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
 import com.salatsign.tv.data.model.PopularCityPresets
 import com.salatsign.tv.ui.common.CountryCitySelector
+import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.tvCardScale
 import com.salatsign.tv.ui.common.tvFocusable
@@ -72,6 +76,7 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun HomeSetupWizardScreen(
     settings: AppSettings,
+    onSetAppLanguage: (AppLanguage) -> Unit = {},
     onSelectCity: (CityPreset) -> Unit,
     onSetCalculationMethod: (String) -> Unit,
     onSetMadhab: (String) -> Unit,
@@ -175,8 +180,56 @@ fun HomeSetupWizardScreen(
             ) {
                 when (currentStep) {
                     1 -> {
-                        // Step 1: Country -> City Location
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Step 1: Language & Country -> City Location
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (AppLanguage.isMultiLanguageShipped) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.settings_section_language),
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colorScheme.secondary
+                                        )
+                                    )
+                                    for (lang in AppLanguage.ShippedLanguages) {
+                                        val isSelected = settings.appLanguage == lang ||
+                                            (settings.appLanguage == AppLanguage.SYSTEM && lang == AppLanguage.EN)
+                                        val langShape = RoundedCornerShape(10.dp)
+                                        Card(
+                                            onClick = { onSetAppLanguage(lang) },
+                                            colors = CardDefaults.colors(
+                                                containerColor = if (isSelected) colorScheme.surfaceVariant else colorScheme.surface,
+                                                focusedContainerColor = colorScheme.surfaceVariant
+                                            ),
+                                            shape = CardDefaults.shape(langShape),
+                                            scale = tvCardScale(1.02f),
+                                            border = tvSelectableCardBorder(selected = isSelected, shape = langShape)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Language,
+                                                    contentDescription = null,
+                                                    tint = if (isSelected) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = stringResource(lang.labelRes()),
+                                                    style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Text(
                                 text = stringResource(R.string.wizard_step_location_title, 1, settings.cityName),
                                 style = TvTypography.CardTitle.copy(fontSize = 22.sp, color = colorScheme.secondary)

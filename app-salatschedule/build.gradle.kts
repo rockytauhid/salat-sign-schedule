@@ -21,7 +21,7 @@ android {
     }
 
     androidResources {
-        localeFilters += listOf("en")
+        localeFilters += listOf("en", "in", "id")
     }
 
     val isReleaseTaskRequested = gradle.startParameter.taskNames.any { task ->

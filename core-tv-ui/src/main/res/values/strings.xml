@@ -88,7 +88,9 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">APPROACHING NEXT PRAYER</string>
     <string name="mosque_countdown_to_prayer">Until Prayer Time: %1$s</string>
-    <string name="mosque_default_name">Masjiduna</string>
+    <string name="mosque_default_name">Mosque Name</string>
+    <string name="mosque_name_placeholder">e.g., Canberra Islamic Centre</string>
+    <string name="mosque_name_required_error">Please enter your mosque name before continuing.</string>
     <string name="mosque_default_subtitle">Straighten and close the prayer rows</string>
     <string name="mosque_hold_ok_toast">Hold OK for 3 seconds or press Menu to open Admin Settings</string>
 
@@ -346,7 +348,7 @@
     <string name="settings_hub_cat_silent">Silent Screen</string>
     <string name="settings_hub_cat_adhan">Reminders &amp; Adhan</string>
     <string name="settings_hub_cat_calendar">Islamic Calendar</string>
-    <string name="settings_hub_cat_remote_security">Remote, PIN &amp; About</string>
+    <string name="settings_hub_cat_remote_security">PIN &amp; Remote</string>
     <string name="settings_hub_cat_about">About &amp; Credit</string>
     <string name="settings_hijri_calendar_note">Calculated using the Umm al-Qura calendar; adjust offset (-2 to +2) to match local moon sighting.</string>
 </resources>

@@ -88,7 +88,9 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">MENUJU SHALAT BERIKUTNYA</string>
     <string name="mosque_countdown_to_prayer">Menuju Waktu Shalat: %1$s</string>
-    <string name="mosque_default_name">Masjiduna</string>
+    <string name="mosque_default_name">Nama Masjid</string>
+    <string name="mosque_name_placeholder">mis., Masjid Agung Al-Ikhlas</string>
+    <string name="mosque_name_required_error">Harap masukkan nama masjid sebelum melanjutkan.</string>
     <string name="mosque_default_subtitle">Luruskan dan Rapatkan Shaf</string>
     <string name="mosque_hold_ok_toast">Tahan OK selama 3 detik atau tekan Menu untuk Pengaturan Admin</string>
 
@@ -346,7 +348,7 @@
     <string name="settings_hub_cat_silent">Layar Hening</string>
     <string name="settings_hub_cat_adhan">Pengingat &amp; Adzan</string>
     <string name="settings_hub_cat_calendar">Kalender Islam</string>
-    <string name="settings_hub_cat_remote_security">Remote, PIN &amp; Tentang</string>
+    <string name="settings_hub_cat_remote_security">PIN &amp; Remot</string>
     <string name="settings_hub_cat_about">Tentang &amp; Kredit</string>
     <string name="settings_hijri_calendar_note">Dihitung dengan kalender Umm al-Qura; sesuaikan koreksi (-2 hingga +2) agar sesuai rukyat setempat.</string>
 </resources>
