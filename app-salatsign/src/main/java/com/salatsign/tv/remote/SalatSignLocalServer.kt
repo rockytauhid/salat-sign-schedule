@@ -639,6 +639,9 @@ class SalatSignLocalServer(
                 "type" to slide.type.name,
                 "title" to slide.title,
                 "body" to slide.body,
+                "lines" to slide.effectiveLines().map { line ->
+                    mapOf("text" to line.text, "align" to line.align.name)
+                },
                 "imageFile" to slide.imageFile,
                 "durationSeconds" to slide.durationSeconds,
                 "enabled" to slide.enabled,
@@ -657,10 +660,25 @@ class SalatSignLocalServer(
         )
     }
 
+    private fun parseSlideLines(raw: Any?): List<com.salatsign.tv.data.model.SlideTextLine> {
+        val list = raw as? List<*> ?: return emptyList()
+        return list.take(10).mapNotNull { entry ->
+            val map = entry as? Map<*, *> ?: return@mapNotNull null
+            val text = (map["text"] as? String)?.replace("\n", " ")?.trimEnd()?.take(100) ?: ""
+            if (text.isBlank()) return@mapNotNull null
+            val align = (map["align"] as? String)?.let {
+                runCatching { SlideTextAlign.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
+            } ?: SlideTextAlign.CENTER
+            com.salatsign.tv.data.model.SlideTextLine(text = text, align = align)
+        }
+    }
+
     private suspend fun handleAddTextSlide(req: HttpRequest): HttpResponse {
         val body = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
         val title = (body["title"] as? String)?.trim().orEmpty()
-        val text = (body["body"] as? String)?.trim().orEmpty()
+        val parsedLines = parseSlideLines(body["lines"])
+        val rawText = (body["body"] as? String)?.trim().orEmpty()
+        val text = if (parsedLines.isNotEmpty()) parsedLines.joinToString("\n") { it.text } else rawText
         if (title.isEmpty() && text.isEmpty()) {
             return jsonResponse(400, "Bad Request", mapOf("error" to "empty_slide", "message" to "Slide title or body is required"))
         }
@@ -680,13 +698,14 @@ class SalatSignLocalServer(
         val duration = ((body["durationSeconds"] as? Number)?.toInt() ?: 15).coerceIn(3, 120)
         val textAlign = (body["textAlign"] as? String)?.let { raw ->
             runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
-        } ?: SlideTextAlign.CENTER
+        } ?: parsedLines.firstOrNull()?.align ?: SlideTextAlign.CENTER
         val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
             id = "slide_${UUID.randomUUID()}",
             type = SlideType.TEXT,
             title = title,
             body = text,
+            lines = parsedLines,
             durationSeconds = duration,
             enabled = enabled,
             textAlign = textAlign,
@@ -761,14 +780,21 @@ class SalatSignLocalServer(
             }
         }
         val targetTitle = (patch["title"] as? String)?.trim() ?: current.title
-        val targetBody = (patch["body"] as? String)?.trim() ?: current.body
+        val hasLinesPatch = patch.containsKey("lines")
+        val targetLines = if (hasLinesPatch) parseSlideLines(patch["lines"]) else current.lines
+        val targetBody = if (hasLinesPatch) {
+            targetLines.joinToString("\n") { it.text }
+        } else {
+            (patch["body"] as? String)?.trim() ?: current.body
+        }
         val targetDuration = ((patch["durationSeconds"] as? Number)?.toInt() ?: current.durationSeconds).coerceIn(3, 120)
         val targetAlign = (patch["textAlign"] as? String)?.let { raw ->
             runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
-        } ?: current.textAlign
+        } ?: targetLines.firstOrNull()?.align ?: current.textAlign
         val updated = current.copy(
             title = targetTitle,
             body = if (current.type == SlideType.TEXT) targetBody else current.body,
+            lines = if (current.type == SlideType.TEXT) targetLines else current.lines,
             durationSeconds = targetDuration,
             enabled = targetEnabled,
             textAlign = targetAlign

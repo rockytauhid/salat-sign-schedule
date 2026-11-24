@@ -122,35 +122,23 @@ object PhoneControllerHtml {
         <label>Title</label>
         <input id="slideTitle" type="text" maxlength="80" placeholder="e.g. Friday Khutbah &amp; Community Dinner" />
         <div class="flex-between" style="margin-top:10px">
-          <label style="margin:0">Message (up to 6 rows)</label>
+          <label style="margin:0">Message (up to 10 rows)</label>
           <div class="flex-gap">
-            <button type="button" class="sm secondary" onclick="insertBullet()">• Bullet</button>
-            <button type="button" class="sm secondary" onclick="insertNumbered()">1. Number</button>
+            <button type="button" class="sm secondary" onclick="addTextRow('', '')">+ Row</button>
+            <button type="button" class="sm secondary" onclick="addTextRow('• ', 'LEFT')">• Bullet</button>
+            <button type="button" class="sm secondary" onclick="addNumberedRow()">1. Number</button>
           </div>
         </div>
-        <textarea id="slideBody" maxlength="400" placeholder="Type announcement message..." oninput="enforceBodyLines()"></textarea>
-        <div class="meta" id="bodyCounter">1/6 rows • 0/400 chars</div>
-        <div class="row">
-          <div>
-            <label>Text Alignment</label>
-            <select id="slideAlign">
-              <option value="CENTER" selected>Center</option>
-              <option value="LEFT">Left</option>
-              <option value="RIGHT">Right</option>
-            </select>
-          </div>
-          <div>
-            <label>Display Duration</label>
-            <select id="slideDuration">
-              <option value="10">10s</option>
-              <option value="15" selected>15s</option>
-              <option value="20">20s</option>
-              <option value="30">30s</option>
-              <option value="45">45s</option>
-              <option value="60">60s</option>
-            </select>
-          </div>
-        </div>
+        <div id="textRowsContainer" style="margin-top:8px"></div>
+        <label>Display Duration</label>
+        <select id="slideDuration">
+          <option value="10">10s</option>
+          <option value="15" selected>15s</option>
+          <option value="20">20s</option>
+          <option value="30">30s</option>
+          <option value="45">45s</option>
+          <option value="60">60s</option>
+        </select>
         <div class="row">
           <button id="saveTextSlideBtn" onclick="saveTextSlide()">Add Text Slide</button>
           <button id="cancelEditBtn" class="secondary hidden" onclick="cancelEditSlide()">Cancel Edit</button>
@@ -374,9 +362,9 @@ object PhoneControllerHtml {
             </select>
           </div>
         </div>
-        <label>Exact-Time Visual Strike</label>
+        <label>Prayer-Time Alert Banner (5 min)</label>
         <select id="showStrike">
-          <option value="true">Active (5m pulse)</option>
+          <option value="true">Active (5m highlight)</option>
           <option value="false">Disabled</option>
         </select>
         <button onclick="saveBranding()">Save Branding &amp; Display</button>
@@ -613,6 +601,76 @@ function renderSlides(slides) {
   });
 }
 
+let textRows = [{ text: '', align: 'CENTER' }];
+
+function renderTextRows() {
+  const c = document.getElementById('textRowsContainer');
+  if (!c) return;
+  c.innerHTML = '';
+  textRows.forEach((row, idx) => {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'grid';
+    wrap.style.gridTemplateColumns = '1fr 96px auto';
+    wrap.style.gap = '6px';
+    wrap.style.marginBottom = '6px';
+    wrap.style.alignItems = 'center';
+
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.maxLength = 100;
+    inp.placeholder = 'Row ' + (idx + 1) + '...';
+    inp.value = row.text;
+    inp.style.marginTop = '0';
+    inp.oninput = (e) => { textRows[idx].text = e.target.value; };
+
+    const sel = document.createElement('select');
+    sel.style.marginTop = '0';
+    [['CENTER', 'Center'], ['LEFT', 'Left'], ['RIGHT', 'Right']].forEach(([v, l]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = l;
+      if (row.align === v) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = (e) => { textRows[idx].align = e.target.value; };
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'sm danger';
+    del.textContent = '✕';
+    del.style.marginTop = '0';
+    del.disabled = textRows.length <= 1;
+    del.onclick = () => {
+      if (textRows.length > 1) { textRows.splice(idx, 1); renderTextRows(); }
+    };
+
+    wrap.appendChild(inp);
+    wrap.appendChild(sel);
+    wrap.appendChild(del);
+    c.appendChild(wrap);
+  });
+}
+
+function addTextRow(prefix, align) {
+  const targetAlign = align || (textRows.length ? textRows[textRows.length - 1].align : 'CENTER');
+  if (prefix && textRows.length && !textRows[textRows.length - 1].text.trim()) {
+    textRows[textRows.length - 1] = { text: prefix, align: targetAlign };
+    renderTextRows();
+    return;
+  }
+  if (textRows.length >= 10) return;
+  textRows.push({ text: prefix || '', align: targetAlign });
+  renderTextRows();
+}
+
+function addNumberedRow() {
+  let maxN = 0;
+  textRows.forEach(r => {
+    const m = r.text.match(/^\s*(\d+)\./);
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+  });
+  addTextRow((maxN + 1) + '. ', 'LEFT');
+}
+
 function startEditSlide(s) {
   if (s.type === 'IMAGE') {
     const newTitle = prompt('Edit Image Slide Title:', s.title || 'Poster');
@@ -628,10 +686,15 @@ function startEditSlide(s) {
   document.getElementById('saveTextSlideBtn').textContent = 'Save Changes';
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   document.getElementById('slideTitle').value = s.title || '';
-  document.getElementById('slideBody').value = s.body || '';
-  document.getElementById('slideAlign').value = s.textAlign || 'CENTER';
+  if (Array.isArray(s.lines) && s.lines.length) {
+    textRows = s.lines.slice(0, 10).map(l => ({ text: l.text || '', align: l.align || 'CENTER' }));
+  } else if (s.body) {
+    textRows = s.body.split('\n').slice(0, 10).map(t => ({ text: t, align: s.textAlign || 'CENTER' }));
+  } else {
+    textRows = [{ text: '', align: 'CENTER' }];
+  }
+  renderTextRows();
   document.getElementById('slideDuration').value = String([10,15,20,30,45,60].includes(s.durationSeconds) ? s.durationSeconds : 15);
-  enforceBodyLines();
   document.getElementById('slideTitle').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -641,28 +704,30 @@ function cancelEditSlide() {
   document.getElementById('saveTextSlideBtn').textContent = 'Add Text Slide';
   document.getElementById('cancelEditBtn').classList.add('hidden');
   document.getElementById('slideTitle').value = '';
-  document.getElementById('slideBody').value = '';
-  document.getElementById('slideAlign').value = 'CENTER';
+  textRows = [{ text: '', align: 'CENTER' }];
+  renderTextRows();
   document.getElementById('slideDuration').value = '15';
-  enforceBodyLines();
 }
 
 async function saveTextSlide() {
   const editId = document.getElementById('editingSlideId').value;
   const title = document.getElementById('slideTitle').value.trim();
-  const body = document.getElementById('slideBody').value.trim();
-  const textAlign = document.getElementById('slideAlign').value || 'CENTER';
+  const cleanLines = textRows
+    .map(r => ({ text: (r.text || '').replace(/\n/g, ' ').trimEnd(), align: r.align || 'CENTER' }))
+    .filter(r => r.text.trim().length > 0);
+  const body = cleanLines.map(r => r.text).join('\n');
+  const textAlign = cleanLines.length ? cleanLines[0].align : 'CENTER';
   const durationSeconds = parseInt(document.getElementById('slideDuration').value, 10) || 15;
-  if (!title && !body) { showMsg('Enter a title or message first.', false); return; }
+  if (!title && !cleanLines.length) { showMsg('Enter a title or message first.', false); return; }
   if (editId) {
-    await patchSlide(editId, { title, body, textAlign, durationSeconds });
+    await patchSlide(editId, { title, body, textAlign, lines: cleanLines, durationSeconds });
     cancelEditSlide();
     return;
   }
   const res = await api('/api/v1/slides/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, body, textAlign, durationSeconds })
+    body: JSON.stringify({ title, body, textAlign, lines: cleanLines, durationSeconds })
   });
   showMsg(res.ok ? 'Text slide added.' : (res.data.message || 'Failed to add slide.'), res.ok);
   if (res.ok) { cancelEditSlide(); await loadAll(); }
@@ -965,6 +1030,7 @@ async function uploadLogo() {
   if (res.ok) { document.getElementById('logoFile').value = ''; await loadAll(); }
 }
 
+renderTextRows();
 loadStatus();
 if (token) {
   document.getElementById('loginCard').classList.add('hidden');

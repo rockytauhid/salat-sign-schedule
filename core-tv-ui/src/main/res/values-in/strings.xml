@@ -93,6 +93,7 @@
     <string name="mosque_name_required_error">Harap masukkan nama masjid sebelum melanjutkan.</string>
     <string name="mosque_default_subtitle">Luruskan dan Rapatkan Shaf</string>
     <string name="mosque_hold_ok_toast">Tahan OK selama 3 detik atau tekan Menu untuk Pengaturan Admin</string>
+    <string name="mosque_hold_back_exit_toast">Tahan Kembali selama 3 detik untuk keluar</string>
 
     <!-- Notifications & Services -->
     <string name="notif_channel_adhan_name">Pemutaran Adhan</string>
@@ -182,10 +183,10 @@
     <string name="settings_reminder_toggle_desc">Menampilkan notifikasi di layar TV 15 menit menjelang waktu adhan tiba.</string>
     <string name="settings_section_home_adhan">Pilihan Suara Adhan per Waktu Shalat</string>
     <string name="settings_btn_usb_file">USB / File</string>
-    <string name="settings_mosque_strike_toggle">Highlight Visual Tepat Waktu Shalat</string>
-    <string name="settings_mosque_strike_on">Highlight Visual: AKTIF (Default)</string>
-    <string name="settings_mosque_strike_off">Highlight Visual: NONAKTIF</string>
-    <string name="settings_mosque_strike_desc">Menginterupsi slideshow pengumuman dengan banner visual berkedip saat waktu shalat tiba.</string>
+    <string name="settings_mosque_strike_toggle">Banner Peringatan Waktu Shalat (5 mnt)</string>
+    <string name="settings_mosque_strike_on">Banner Waktu Shalat: AKTIF (Default)</string>
+    <string name="settings_mosque_strike_off">Banner Waktu Shalat: NONAKTIF</string>
+    <string name="settings_mosque_strike_desc">Menjeda slide dan menyorot kartu shalat selama 5 menit saat waktu shalat masuk.</string>
     <string name="settings_section_mosque_symbol">Pilihan Ikon / Simbol Masjid</string>
     <string name="settings_btn_import_logo_usb">Pilih Logo Masjid dari USB Flashdisk</string>
     <string name="settings_custom_logo_active">Logo Masjid Kustom Aktif</string>

@@ -93,6 +93,7 @@
     <string name="mosque_name_required_error">يرجى إدخال اسم المسجد قبل المتابعة.</string>
     <string name="mosque_default_subtitle">استووا وتراصوا</string>
     <string name="mosque_hold_ok_toast">اضغط مطولاً على موافق لمدة 3 ثوانٍ أو اضغط على القائمة لفتح الإعدادات</string>
+    <string name="mosque_hold_back_exit_toast">اضغط مطولاً على زر الرجوع لمدة 3 ثوانٍ للخروج</string>
 
     <!-- Notifications & Services -->
     <string name="notif_channel_adhan_name">تشغيل الأذان</string>
@@ -182,10 +183,10 @@
     <string name="settings_reminder_toggle_desc">إظهار تنبيه على الشاشة قبل موعد الصلاة بـ 15 دقيقة.</string>
     <string name="settings_section_home_adhan">أصوات الأذان لكل صلاة</string>
     <string name="settings_btn_usb_file">ملف USB</string>
-    <string name="settings_mosque_strike_toggle">وميض وتنبيه بصري عند وقت الصلاة</string>
-    <string name="settings_mosque_strike_on">التنبيه البصري: مفعل (افتراضي)</string>
-    <string name="settings_mosque_strike_off">التنبيه البصري: معطل</string>
-    <string name="settings_mosque_strike_desc">إيقاف عرض الإعلانات وعرض تنبيه بصري بارز فور دخول وقت الصلاة.</string>
+    <string name="settings_mosque_strike_toggle">تنبيه وقت الصلاة المرئي (5 دقائق)</string>
+    <string name="settings_mosque_strike_on">تنبيه وقت الصلاة: مفعل (افتراضي)</string>
+    <string name="settings_mosque_strike_off">تنبيه وقت الصلاة: معطل</string>
+    <string name="settings_mosque_strike_desc">يوقف الشرائح مؤقتاً ويبرز بطاقة الصلاة لمدة 5 دقائق عند دخول وقت الصلاة.</string>
     <string name="settings_section_mosque_symbol">رمز وشعار المسجد</string>
     <string name="settings_btn_import_logo_usb">اختيار شعار المسجد من ذاكرة USB</string>
     <string name="settings_custom_logo_active">الشعار المخصص مفعل</string>

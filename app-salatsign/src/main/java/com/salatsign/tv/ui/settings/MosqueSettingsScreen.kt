@@ -83,7 +83,7 @@ fun MosqueSettingsScreen(
     phoneControllerUrl: String? = null,
     onTogglePhoneController: (Boolean) -> Unit = {},
     onSetScheduleDuration: (Int) -> Unit,
-    onAddTextSlide: (String, String, Int, Boolean, SlideTextAlign) -> Unit,
+    onAddTextSlide: (String, String, Int, Boolean, SlideTextAlign, List<com.salatsign.tv.data.model.SlideTextLine>) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
     onUpdateSlide: (AnnouncementSlide) -> Unit = {},
     onToggleSlideEnabled: (String) -> Unit = {},
@@ -390,19 +390,20 @@ fun MosqueSettingsScreen(
             AddTextSlideDialog(
                 canAddEnabledSlide = addSlideCanEnable,
                 existingSlide = targetEditSlide,
-                onSave = { title, body, durationSeconds, enabled, textAlign ->
+                onSave = { title, body, durationSeconds, enabled, textAlign, lines ->
                     recordInteraction()
                     if (targetEditSlide != null) {
                         onUpdateSlide(
                             targetEditSlide.copy(
                                 title = title,
                                 body = body,
+                                lines = lines,
                                 durationSeconds = durationSeconds,
                                 textAlign = textAlign
                             )
                         )
                     } else {
-                        onAddTextSlide(title, body, durationSeconds, enabled, textAlign)
+                        onAddTextSlide(title, body, durationSeconds, enabled, textAlign, lines)
                     }
                     showAddTextSlideDialog = false
                     editingTextSlide = null

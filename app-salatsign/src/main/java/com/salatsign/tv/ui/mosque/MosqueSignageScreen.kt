@@ -87,12 +87,14 @@ import com.salatsign.tv.ui.theme.TvTypography
 fun MosqueSignageScreen(
     uiState: MosqueSignageUiState,
     adminHintTrigger: Long = 0L,
+    exitHintTrigger: Long = 0L,
     onSkipOverflowQuranVerse: () -> Unit = {},
     onOpenSettings: () -> Unit
 ) {
     val screenFocusRequester = remember { FocusRequester() }
     val colorScheme = MaterialTheme.colorScheme
     var showAdminHint by remember { mutableStateOf(false) }
+    var showExitHint by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         screenFocusRequester.requestFocus()
@@ -100,9 +102,19 @@ fun MosqueSignageScreen(
 
     LaunchedEffect(adminHintTrigger) {
         if (adminHintTrigger > 0L) {
+            showExitHint = false
             showAdminHint = true
             delay(4000L)
             showAdminHint = false
+        }
+    }
+
+    LaunchedEffect(exitHintTrigger) {
+        if (exitHintTrigger > 0L) {
+            showAdminHint = false
+            showExitHint = true
+            delay(4000L)
+            showExitHint = false
         }
     }
 
@@ -158,9 +170,9 @@ fun MosqueSignageScreen(
             }
         }
 
-        // Sliding remote-control instruction banner when user taps D-pad or OK (neutral low-glare styling)
+        // Sliding remote-control instruction banner when user taps D-pad, OK, or Back (neutral low-glare styling)
         AnimatedVisibility(
-            visible = showAdminHint,
+            visible = showAdminHint || showExitHint,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(tween(250)),
             exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(tween(300)),
             modifier = Modifier
@@ -182,7 +194,10 @@ fun MosqueSignageScreen(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = stringResource(R.string.mosque_hold_ok_toast),
+                    text = stringResource(
+                        if (showExitHint) R.string.mosque_hold_back_exit_toast
+                        else R.string.mosque_hold_ok_toast
+                    ),
                     style = TvTypography.BodyLabel.copy(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -626,15 +641,16 @@ fun MosqueTextSlideContent(
         val availableWidthPx = with(density) { (maxWidth * 0.90f).roundToPx().coerceAtLeast(1) }
         val availableHeightPx = with(density) { maxHeight.roundToPx().coerceAtLeast(1) }
         val hasTitle = slide.title.isNotBlank()
-        val hasBody = slide.body.isNotBlank()
+        val effectiveLines = remember(slide.lines, slide.body, slide.textAlign) { slide.effectiveLines() }
+        val hasBody = effectiveLines.isNotEmpty()
 
-        val bodyTextAlign = when (slide.textAlign) {
+        fun toComposeAlign(align: com.salatsign.tv.data.model.SlideTextAlign): TextAlign = when (align) {
             com.salatsign.tv.data.model.SlideTextAlign.LEFT -> TextAlign.Left
             com.salatsign.tv.data.model.SlideTextAlign.CENTER -> TextAlign.Center
             com.salatsign.tv.data.model.SlideTextAlign.RIGHT -> TextAlign.Right
         }
 
-        val chosenStep = remember(slide.title, slide.body, slide.textAlign, availableWidthPx, availableHeightPx) {
+        val chosenStep = remember(slide.title, effectiveLines, availableWidthPx, availableHeightPx) {
             val widthConstraint = Constraints(maxWidth = availableWidthPx)
             TEXT_SLIDE_STEPS.firstOrNull { step ->
                 val titleHeight = if (hasTitle) {
@@ -652,17 +668,20 @@ fun MosqueTextSlideContent(
                 } else 0
 
                 val bodyHeight = if (hasBody) {
-                    textMeasurer.measure(
-                        text = slide.body,
-                        style = TvTypography.BodyLabel.copy(
-                            fontSize = step.bodySp.sp,
-                            lineHeight = step.bodyLineHeightSp.sp,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = bodyTextAlign,
-                            textDirection = TextDirection.ContentOrLtr
-                        ),
-                        constraints = widthConstraint
-                    ).size.height
+                    val rowGapPx = with(density) { (step.gapDp / 3).coerceAtLeast(2).dp.roundToPx() }
+                    effectiveLines.sumOf { line ->
+                        textMeasurer.measure(
+                            text = line.text.ifEmpty { " " },
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = step.bodySp.sp,
+                                lineHeight = step.bodyLineHeightSp.sp,
+                                fontWeight = FontWeight.Normal,
+                                textAlign = toComposeAlign(line.align),
+                                textDirection = TextDirection.ContentOrLtr
+                            ),
+                            constraints = widthConstraint
+                        ).size.height
+                    } + rowGapPx * (effectiveLines.size - 1).coerceAtLeast(0)
                 } else 0
 
                 val gapPx = if (hasTitle && hasBody) with(density) { step.gapDp.dp.roundToPx() } else 0
@@ -694,18 +713,25 @@ fun MosqueTextSlideContent(
             }
 
             if (hasBody) {
-                Text(
-                    text = slide.body,
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = chosenStep.bodySp.sp,
-                        lineHeight = chosenStep.bodyLineHeightSp.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = colorScheme.onSurface,
-                        textAlign = bodyTextAlign,
-                        textDirection = TextDirection.ContentOrLtr
-                    )
-                )
+                    verticalArrangement = Arrangement.spacedBy((chosenStep.gapDp / 3).coerceAtLeast(2).dp)
+                ) {
+                    for (line in effectiveLines) {
+                        Text(
+                            text = line.text,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = chosenStep.bodySp.sp,
+                                lineHeight = chosenStep.bodyLineHeightSp.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = colorScheme.onSurface,
+                                textAlign = toComposeAlign(line.align),
+                                textDirection = TextDirection.ContentOrLtr
+                            )
+                        )
+                    }
+                }
             }
         }
     }

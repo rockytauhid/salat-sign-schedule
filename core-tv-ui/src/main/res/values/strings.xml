@@ -93,6 +93,7 @@
     <string name="mosque_name_required_error">Please enter your mosque name before continuing.</string>
     <string name="mosque_default_subtitle">Straighten and close the prayer rows</string>
     <string name="mosque_hold_ok_toast">Hold OK for 3 seconds or press Menu to open Admin Settings</string>
+    <string name="mosque_hold_back_exit_toast">Hold Back for 3 seconds to exit</string>
 
     <!-- Notifications & Services -->
     <string name="notif_channel_adhan_name">Adhan Playback</string>
@@ -182,10 +183,10 @@
     <string name="settings_reminder_toggle_desc">Display a notification on the TV 15 minutes before prayer time.</string>
     <string name="settings_section_home_adhan">Adhan Audio per Prayer Time</string>
     <string name="settings_btn_usb_file">USB / File</string>
-    <string name="settings_mosque_strike_toggle">Exact-Time Visual Highlight Strike</string>
-    <string name="settings_mosque_strike_on">Visual Highlight Strike: ACTIVE (Default)</string>
-    <string name="settings_mosque_strike_off">Visual Highlight Strike: DISABLED</string>
-    <string name="settings_mosque_strike_desc">Interrupt announcement slideshow with a pulsing visual highlight at prayer time.</string>
+    <string name="settings_mosque_strike_toggle">Prayer-Time Alert Banner (5 min)</string>
+    <string name="settings_mosque_strike_on">Prayer-Time Alert Banner: ON (Default)</string>
+    <string name="settings_mosque_strike_off">Prayer-Time Alert Banner: OFF</string>
+    <string name="settings_mosque_strike_desc">Pauses slides and highlights the prayer card for 5 minutes when a prayer time starts.</string>
     <string name="settings_section_mosque_symbol">Mosque Icon / Emblem Preset</string>
     <string name="settings_btn_import_logo_usb">Select Mosque Logo from USB Drive</string>
     <string name="settings_custom_logo_active">Custom Mosque Logo Active</string>

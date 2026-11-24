@@ -55,10 +55,12 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: MosqueSettingsViewModel by viewModels()
 
     private var dpadCenterHoldJob: Job? = null
+    private var backHoldJob: Job? = null
     private var ignoreNextConfirmKeyUp = false
     private val isSettingsOpen = mutableStateOf(false)
     private val isPinDialogOpen = mutableStateOf(false)
     private val adminHintTrigger = mutableLongStateOf(0L)
+    private val exitHintTrigger = mutableLongStateOf(0L)
 
     override fun attachBaseContext(newBase: Context) {
         val language = LanguageSyncCache.getLanguage(newBase)
@@ -128,6 +130,7 @@ class MainActivity : ComponentActivity() {
                     isSettingsOpen = isSettingsOpen.value,
                     isPinDialogOpen = isPinDialogOpen.value,
                     adminHintTrigger = adminHintTrigger.longValue,
+                    exitHintTrigger = exitHintTrigger.longValue,
                     onRequestOpenSettings = { requestOpenSettings() },
                     onOpenSettingsDirect = { isSettingsOpen.value = true },
                     onCloseSettings = { isSettingsOpen.value = false },
@@ -184,12 +187,33 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    backHoldJob?.cancel()
+                    backHoldJob = lifecycleScope.launch {
+                        delay(3000)
+                        backHoldJob = null
+                        finish()
+                    }
+                    return true
+                } else if (event.action == KeyEvent.ACTION_DOWN) {
+                    return true
+                } else if (event.action == KeyEvent.ACTION_UP) {
+                    val wasStillPending = backHoldJob?.isActive == true
+                    backHoldJob?.cancel()
+                    backHoldJob = null
+                    if (wasStillPending) {
+                        exitHintTrigger.longValue = System.currentTimeMillis()
+                    }
+                    return true
+                }
+            }
+
             if (event.action == KeyEvent.ACTION_DOWN && (
                     event.keyCode == KeyEvent.KEYCODE_DPAD_UP ||
                     event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
                     event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
-                    event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
-                    event.keyCode == KeyEvent.KEYCODE_BACK
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
                 )
             ) {
                 adminHintTrigger.longValue = System.currentTimeMillis()
@@ -203,6 +227,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         dpadCenterHoldJob?.cancel()
+        backHoldJob?.cancel()
     }
 }
 
@@ -213,6 +238,7 @@ private fun SalatSignMainContent(
     isSettingsOpen: Boolean,
     isPinDialogOpen: Boolean,
     adminHintTrigger: Long,
+    exitHintTrigger: Long,
     onRequestOpenSettings: () -> Unit,
     onOpenSettingsDirect: () -> Unit,
     onCloseSettings: () -> Unit,
@@ -284,7 +310,7 @@ private fun SalatSignMainContent(
                 onSetMosqueIconPreset = { settingsViewModel.setMosqueIconPreset(it) },
                 onSetMosqueFontPreset = { settingsViewModel.setMosqueFontPreset(it) },
                 onSetScheduleDuration = { settingsViewModel.setScheduleDuration(it) },
-                onAddTextSlide = { title, body, dur, enabled, align -> settingsViewModel.addTextSlide(title, body, dur, enabled, align) },
+                onAddTextSlide = { title, body, dur, enabled, align, lines -> settingsViewModel.addTextSlide(title, body, dur, enabled, align, lines) },
                 onAddImageSlide = { title, imgFile, dur -> settingsViewModel.addImageSlide(title, imgFile, dur) },
                 onUpdateSlide = { settingsViewModel.updateSlide(it) },
                 onToggleSlideEnabled = { settingsViewModel.toggleSlideEnabled(it) },
@@ -332,6 +358,7 @@ private fun SalatSignMainContent(
             MosqueSignageScreen(
                 uiState = mosqueUiState,
                 adminHintTrigger = adminHintTrigger,
+                exitHintTrigger = exitHintTrigger,
                 onSkipOverflowQuranVerse = { mosqueViewModel.skipCurrentQuranVerse() },
                 onOpenSettings = onRequestOpenSettings
             )

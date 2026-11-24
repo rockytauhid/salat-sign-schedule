@@ -182,8 +182,8 @@ class ContentRepositoryTest {
         val res1 = runCatching { repository.validate(AnnouncementSlide(id = "t1", title = longTitle)) }
         assertTrue(res1.isFailure)
 
-        // 2. Body length > 400
-        val longBody = "B".repeat(401)
+        // 2. Body length > MAX_BODY_LENGTH
+        val longBody = "B".repeat(ContentRepository.MAX_BODY_LENGTH + 1)
         val res2 = runCatching { repository.validate(AnnouncementSlide(id = "t2", body = longBody)) }
         assertTrue(res2.isFailure)
 

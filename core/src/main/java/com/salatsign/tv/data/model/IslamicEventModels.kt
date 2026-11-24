@@ -55,7 +55,7 @@ object IslamicEventDefinitions {
     const val FUTURE_YEARS: Int = 3
     const val SLIDE_MAX_ROWS: Int = 6
     const val SLIDE_PAST_WINDOW_DAYS: Long = 14L
-    const val SLIDE_MAX_UPCOMING_ROWS: Int = 4
+    const val SLIDE_MAX_UPCOMING_ROWS: Int = 5
 
     const val MIN_SLIDE_DURATION_SECONDS: Int = 10
     const val MAX_SLIDE_DURATION_SECONDS: Int = 60

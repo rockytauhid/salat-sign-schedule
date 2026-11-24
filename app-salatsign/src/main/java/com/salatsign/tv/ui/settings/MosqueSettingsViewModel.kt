@@ -184,7 +184,8 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
         body: String,
         durationSeconds: Int,
         enabled: Boolean = true,
-        textAlign: SlideTextAlign = SlideTextAlign.CENTER
+        textAlign: SlideTextAlign = SlideTextAlign.CENTER,
+        lines: List<com.salatsign.tv.data.model.SlideTextLine> = emptyList()
     ): Boolean {
         if (enabled && !SlideBudget.canEnableOrAddAnnouncement(
                 enabledAnnouncements = currentEnabledAnnouncementCount(),
@@ -202,6 +203,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
                 type = SlideType.TEXT,
                 title = title,
                 body = body,
+                lines = lines,
                 durationSeconds = durationSeconds.coerceIn(3, 120),
                 enabled = enabled,
                 textAlign = textAlign,

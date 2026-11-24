@@ -34,7 +34,7 @@ class ContentRepository(
         private const val TAG = "ContentRepository"
         const val MAX_SLIDES = 30
         const val MAX_TITLE_LENGTH = 80
-        const val MAX_BODY_LENGTH = 400
+        const val MAX_BODY_LENGTH = 1000
         const val MIN_DURATION_SECONDS = 3
         const val MAX_DURATION_SECONDS = 120
     }
