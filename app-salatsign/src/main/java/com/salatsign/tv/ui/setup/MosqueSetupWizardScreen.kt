@@ -201,13 +201,13 @@ fun MosqueSetupWizardScreen(
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                methods.chunked(3).forEachIndexed { rowIdx, rowMethods ->
+                                methods.chunked(2).forEachIndexed { rowIdx, rowMethods ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
                                         rowMethods.forEachIndexed { colIdx, (key, label) ->
-                                            val idx = rowIdx * 3 + colIdx
+                                            val idx = rowIdx * 2 + colIdx
                                             val selected = settings.calculationMethodName.equals(key, ignoreCase = true)
                                             val shape = RoundedCornerShape(12.dp)
                                             Card(

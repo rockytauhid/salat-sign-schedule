@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -46,6 +47,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
@@ -83,7 +86,8 @@ fun PinDialog(
 ) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val initialFocusRequester = remember { FocusRequester() }
+    val keypadFocusRequesters = remember { List(12) { FocusRequester() } }
+    val cancelFocusRequester = remember { FocusRequester() }
 
     val isResetRequired = remember(mode, settings.hasCustomPin, settings.pinSaltHex, settings.pinHashHex) {
         mode == PinDialogMode.VERIFY && PinHasher.isStoredPinCorrupted(
@@ -116,7 +120,8 @@ fun PinDialog(
     }
 
     LaunchedEffect(Unit) {
-        initialFocusRequester.requestFocus()
+        val target = if (lockoutSeconds > 0) cancelFocusRequester else keypadFocusRequesters[0]
+        runCatching { target.requestFocus() }
     }
 
     fun submitPin() {
@@ -225,12 +230,20 @@ fun PinDialog(
     // Guard against stray KeyUp / repeat KeyDown from the OK hold that opened the dialog
     var pressedConfirmKeys by remember { mutableStateOf(emptySet<Key>()) }
 
-    // Modal background & Key Event Interceptor for Remote NumPad
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
-            .onPreviewKeyEvent { event ->
+    // Modal Dialog window traps D-pad focus so it can never escape to the background screen
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .onPreviewKeyEvent { event ->
                 val isConfirmKey = event.key == Key.Enter ||
                     event.key == Key.NumPadEnter ||
                     event.key == Key.DirectionCenter
@@ -397,8 +410,8 @@ fun PinDialog(
                     val keyShape = RoundedCornerShape(10.dp)
                     for ((rowIndex, row) in keypadRows.withIndex()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            for (key in row) {
-                                val isFirstKey = (rowIndex == 0 && key == "1")
+                            for ((colIndex, key) in row.withIndex()) {
+                                val flatIndex = rowIndex * 3 + colIndex
                                 val isOkKey = (key == "OK")
 
                                 Surface(
@@ -419,7 +432,19 @@ fun PinDialog(
                                     border = tvSelectableSurfaceBorder(selected = false, shape = keyShape),
                                     modifier = Modifier
                                         .size(width = 90.dp, height = 48.dp)
-                                        .then(if (isFirstKey) Modifier.focusRequester(initialFocusRequester) else Modifier)
+                                        .focusRequester(keypadFocusRequesters[flatIndex])
+                                        .focusProperties {
+                                            if (colIndex == 2) {
+                                                right = if (flatIndex < 11) {
+                                                    keypadFocusRequesters[flatIndex + 1]
+                                                } else {
+                                                    cancelFocusRequester
+                                                }
+                                            }
+                                            if (colIndex == 0 && flatIndex > 0) {
+                                                left = keypadFocusRequesters[flatIndex - 1]
+                                            }
+                                        }
                                 ) {
                                     Box(
                                         modifier = Modifier.fillMaxSize(),
@@ -463,7 +488,8 @@ fun PinDialog(
                     shape = ClickableSurfaceDefaults.shape(cancelShape),
                     scale = tvSurfaceScale(1.03f),
                     colors = tvSelectableSurfaceColors(selected = false),
-                    border = tvSelectableSurfaceBorder(selected = false, shape = cancelShape)
+                    border = tvSelectableSurfaceBorder(selected = false, shape = cancelShape),
+                    modifier = Modifier.focusRequester(cancelFocusRequester)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -484,5 +510,6 @@ fun PinDialog(
                 }
             }
         }
+    }
     }
 }
