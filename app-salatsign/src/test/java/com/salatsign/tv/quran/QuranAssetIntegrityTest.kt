@@ -50,7 +50,7 @@ class QuranAssetIntegrityTest {
     fun bundledQuranAssets_matchCanonicalVerseListAndIntegrityRules() {
         val root = repoRoot()
         val verseListFile = File(root, "tools/verse-list.txt")
-        val assetsDir = File(root, "app-salatsign/src/main/assets/quran")
+        val assetsDir = File(root, "core-tv-ui/src/main/assets/quran")
 
         val canonicalRefs = verseListFile.readLines(Charsets.UTF_8)
             .map { it.trim() }

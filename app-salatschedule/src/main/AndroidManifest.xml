@@ -77,6 +77,30 @@
             </intent-filter>
         </receiver>
 
+        <!-- Android TV Screensaver (DreamService) — strictly silent, non-interactive -->
+        <service
+            android:name=".screensaver.SalatScreensaverService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:banner="@drawable/ic_tv_banner"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/screensaver" />
+        </service>
+
+        <!-- In-app Screensaver Preview Activity -->
+        <activity
+            android:name=".screensaver.ScreensaverPreviewActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation"
+            android:theme="@style/Theme.SalatSign" />
+
     </application>
 
 </manifest>

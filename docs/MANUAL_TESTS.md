@@ -242,3 +242,33 @@ This document tracks test cases that require real Android TV hardware or emulato
    - Click **Preview a verse now** -> **Verify:** Plain, undecorated layout, crisp Uthmani Arabic diacritics (superscript alef, stop marks) in Amiri Quran font, readable translation, and `"Surah <Name> <S>:<A>"` reference (`Q2`, `Q3`).
 3. Scroll to **About & Credits** -> **Verify:** Credits `Tanzil.net (http://tanzil.net)`, `Saheeh International, via Tanzil.net`, and `Kementerian Agama Republik Indonesia`.
 4. Return to live signage -> **Verify:** Rotation shows Prayer Schedule → Enabled Announcements → Islamic Calendar (if enabled) → Quran Verse (1 verse per cycle) → Prayer Schedule, with Silent Screen taking priority whenever active.
+
+---
+
+## MT-6.4: SalatSchedule Android TV Screensaver (`DreamService`) (Human Tasks S1, S2, S3)
+
+**Objective:** Verify that **SalatSchedule** (`com.salatschedule.tv`) registers as a standard Android TV screensaver (`DreamService`), runs completely silently in dark-only near-black mode with gentle burn-in pixel shift, rotates configured slides smoothly, and exits cleanly on any remote key press.
+
+### Test Setup
+- Device: Sony Bravia KD-55X9300D (Android 8.0.0, API 26) or Android TV device with standard Screensaver picker (note: Fire TV does not expose a third-party `DreamService` picker; use **Preview Screensaver** in Settings on Fire TV).
+- Confirm Home Settings → **Screensaver** has Prayer Schedule, Islamic Calendar, and Quran Verse enabled.
+
+### Test Procedure
+1. **Settings & Preview (`S2`, `S3`):**
+   - Open SalatSchedule → Settings → **Screensaver**.
+   - Try turning off all 3 slide toggles -> **Verify:** The last enabled slide stays ON (cannot leave all 3 disabled).
+   - Adjust **Prayer Schedule Duration** and **Islamic Calendar Duration** (`10s`..`60s`) -> **Verify:** Selected chip highlights clearly.
+   - Select **How to Set as Screensaver** -> **Verify:** Clear 4-step instructions appear; if the device supports `ACTION_DREAM_SETTINGS`, the **Open TV Screensaver Settings** button opens the system picker.
+   - Select **Preview Screensaver** -> **Verify:** Full-screen dark-only screensaver launches immediately; pressing any key (Back, D-pad, OK) returns cleanly to Settings.
+   - Switch Display Language to **Bahasa Indonesia** and verify all Screensaver labels, durations, and help dialog copy read naturally (`S3`).
+2. **System Screensaver Picker & Idle Launch (`S1`):**
+   - Open Android TV Settings → Device Preferences → Screen saver → **SalatSchedule**.
+   - Set **When to start** to 5 minutes (or trigger via `adb shell am start -n com.android.systemui/.Somnambulator` / dream command).
+   - **Verify:** SalatSchedule screensaver launches automatically on idle.
+3. **Visual, Silence & Burn-In Checks (`S2`):**
+   - Observe at 10-foot living-room distance in a dim room -> **Verify:** Near-black `#060E0A` background, calm low-glare typography, minute-only clock (no seconds), configured timezone matches Home screen, and 500ms smooth crossfade between slides.
+   - Verify **zero sound** is emitted (no click, chime, or Adhan from the screensaver; scheduled Adhan alarms still fire normally via `AdhanPlaybackService`).
+   - Observe across 1+ minute -> **Verify:** Content shifts subtly (≤ 8 px) every 60 seconds without clipping inside overscan margins.
+4. **Wake & Stability:**
+   - Press any remote key -> **Verify:** Screensaver exits immediately back to Android TV.
+   - Start and stop **Preview Screensaver** 10+ times -> **Verify:** Smooth transitions, no crashes, no orphaned windows or memory leaks.

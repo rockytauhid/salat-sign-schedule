@@ -7,6 +7,8 @@ import android.app.Application
 import com.salatschedule.tv.service.DailyScheduleWorker
 import com.salatschedule.tv.service.PrayerAlarmScheduler
 import com.salatsign.tv.data.repository.SettingsRepository
+import com.salatsign.tv.engine.QuranVerseRepository
+import com.salatsign.tv.quran.AssetQuranVerseRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -24,10 +26,14 @@ class SalatScheduleApp : Application() {
     lateinit var alarmScheduler: PrayerAlarmScheduler
         private set
 
+    lateinit var quranVerseRepository: QuranVerseRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         settingsRepository = SettingsRepository(this)
         alarmScheduler = PrayerAlarmScheduler(this)
+        quranVerseRepository = AssetQuranVerseRepository(this)
 
         CoroutineScope(Dispatchers.IO).launch {
             settingsRepository.setMosqueMode(false)

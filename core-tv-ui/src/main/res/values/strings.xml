@@ -353,4 +353,9 @@
     <string name="settings_hub_cat_remote_security">PIN &amp; Remote</string>
     <string name="settings_hub_cat_about">About &amp; Credit</string>
     <string name="settings_hijri_calendar_note">Calculated using the Umm al-Qura calendar; adjust offset (-2 to +2) to match local moon sighting.</string>
+    <!-- Shared Quran Verse Reference & Credits -->
+    <string name="quran_surah_reference">Surah %1$s %2$s</string>
+    <string name="about_quran_tanzil">Quran text: Tanzil.net (http://tanzil.net)</string>
+    <string name="about_quran_en">English translation: Saheeh International, via Tanzil.net</string>
+    <string name="about_quran_id">Indonesian translation: Kementerian Agama Republik Indonesia</string>
 </resources>

@@ -50,7 +50,6 @@
     <string name="settings_slides_builtin_quran_verse">Ayat Al-Qur\'an</string>
 
     <!-- Offline Quran Verse Slide (SalatSign only) -->
-    <string name="quran_surah_reference">Surah %1$s %2$s</string>
     <string name="settings_section_quran_slide">Slide Ayat Al-Qur\'an</string>
     <string name="settings_quran_enable_title">Tampilkan Slide Ayat Al-Qur\'an di Rotasi</string>
     <string name="settings_quran_enable_desc">Menampilkan satu ayat per siklus dari 63 ayat pilihan offline (menggunakan 1 dari 6 slot).</string>
@@ -63,9 +62,6 @@
     <string name="settings_quran_fit_check_title">Pemeriksaan Kesesuaian Ayat Al-Qur\'an</string>
     <string name="settings_quran_fit_all_ok">Semua %1$d ayat muat dengan rapi di satu layar pada ukuran minimum 40sp Arab / 24sp terjemahan.</string>
     <string name="settings_quran_fit_overflow">%1$d ayat melebihi satu layar pada ukuran minimum (akan dilewati dengan aman): %2$s</string>
-    <string name="about_quran_tanzil">Teks Al-Qur\'an: Tanzil.net (http://tanzil.net)</string>
-    <string name="about_quran_en">Terjemahan Inggris: Saheeh International, melalui Tanzil.net</string>
-    <string name="about_quran_id">Terjemahan Indonesia: Kementerian Agama Republik Indonesia</string>
 
     <!-- Add / Edit Announcement Slide Dialogs (SalatSign only) -->
     <string name="settings_text_slide_dialog_title">Tambah Slide Pengumuman Teks</string>

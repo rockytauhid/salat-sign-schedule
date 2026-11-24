@@ -147,6 +147,21 @@ class SalatSignLocalServerTest {
         override suspend fun setQuranShuffleBagState(serializedState: String) {
             state.value = state.value.copy(quranShuffleBagState = serializedState)
         }
+        override suspend fun setScreensaverScheduleEnabled(enabled: Boolean) {
+            state.value = state.value.copy(screensaverScheduleEnabled = enabled)
+        }
+        override suspend fun setScreensaverCalendarEnabled(enabled: Boolean) {
+            state.value = state.value.copy(screensaverCalendarEnabled = enabled)
+        }
+        override suspend fun setScreensaverQuranEnabled(enabled: Boolean) {
+            state.value = state.value.copy(screensaverQuranEnabled = enabled)
+        }
+        override suspend fun setScreensaverScheduleDurationSeconds(seconds: Int) {
+            state.value = state.value.copy(screensaverScheduleDurationSeconds = seconds)
+        }
+        override suspend fun setScreensaverCalendarDurationSeconds(seconds: Int) {
+            state.value = state.value.copy(screensaverCalendarDurationSeconds = seconds)
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {

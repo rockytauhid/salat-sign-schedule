@@ -131,6 +131,13 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val QURAN_SHOW_TRANSLATION = booleanPreferencesKey("quran_show_translation")
         val QURAN_VERSE_DURATION_SECONDS = intPreferencesKey("quran_verse_duration_seconds")
         val QURAN_SHUFFLE_BAG_STATE = stringPreferencesKey("quran_shuffle_bag_state")
+
+        // Android TV Screensaver keys (SalatSchedule Home Mode only)
+        val SCREENSAVER_SCHEDULE_ENABLED = booleanPreferencesKey("screensaver_schedule_enabled")
+        val SCREENSAVER_CALENDAR_ENABLED = booleanPreferencesKey("screensaver_calendar_enabled")
+        val SCREENSAVER_QURAN_ENABLED = booleanPreferencesKey("screensaver_quran_enabled")
+        val SCREENSAVER_SCHEDULE_DURATION_SECONDS = intPreferencesKey("screensaver_schedule_duration_seconds")
+        val SCREENSAVER_CALENDAR_DURATION_SECONDS = intPreferencesKey("screensaver_calendar_duration_seconds")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -336,7 +343,18 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 quranVerseEnabled = quranVerseEnabled,
                 quranShowTranslation = quranShowTranslation,
                 quranVerseDurationSeconds = quranVerseDurationSeconds,
-                quranShuffleBagState = quranShuffleBagState
+                quranShuffleBagState = quranShuffleBagState,
+                screensaverScheduleEnabled = preferences[PreferencesKeys.SCREENSAVER_SCHEDULE_ENABLED] ?: true,
+                screensaverCalendarEnabled = preferences[PreferencesKeys.SCREENSAVER_CALENDAR_ENABLED] ?: true,
+                screensaverQuranEnabled = preferences[PreferencesKeys.SCREENSAVER_QURAN_ENABLED] ?: true,
+                screensaverScheduleDurationSeconds = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(
+                    preferences[PreferencesKeys.SCREENSAVER_SCHEDULE_DURATION_SECONDS]
+                        ?: com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_SCHEDULE_DURATION_SECONDS
+                ),
+                screensaverCalendarDurationSeconds = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(
+                    preferences[PreferencesKeys.SCREENSAVER_CALENDAR_DURATION_SECONDS]
+                        ?: com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_CALENDAR_DURATION_SECONDS
+                )
             )
         }
 
@@ -789,6 +807,38 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setQuranShuffleBagState(serializedState: String) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.QURAN_SHUFFLE_BAG_STATE] = serializedState
+        }
+    }
+
+    override suspend fun setScreensaverScheduleEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SCREENSAVER_SCHEDULE_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setScreensaverCalendarEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SCREENSAVER_CALENDAR_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setScreensaverQuranEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SCREENSAVER_QURAN_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setScreensaverScheduleDurationSeconds(seconds: Int) {
+        val clamped = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(seconds)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SCREENSAVER_SCHEDULE_DURATION_SECONDS] = clamped
+        }
+    }
+
+    override suspend fun setScreensaverCalendarDurationSeconds(seconds: Int) {
+        val clamped = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(seconds)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.SCREENSAVER_CALENDAR_DURATION_SECONDS] = clamped
         }
     }
 }

@@ -268,7 +268,13 @@ data class AppSettings(
     val quranVerseEnabled: Boolean = false,
     val quranShowTranslation: Boolean = true,
     val quranVerseDurationSeconds: Int = QuranSlideDefaults.DURATION_AUTO,
-    val quranShuffleBagState: String = ""
+    val quranShuffleBagState: String = "",
+    // Android TV Screensaver (SalatSchedule Home Mode only)
+    val screensaverScheduleEnabled: Boolean = true,
+    val screensaverCalendarEnabled: Boolean = true,
+    val screensaverQuranEnabled: Boolean = true,
+    val screensaverScheduleDurationSeconds: Int = com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_SCHEDULE_DURATION_SECONDS,
+    val screensaverCalendarDurationSeconds: Int = com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_CALENDAR_DURATION_SECONDS
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

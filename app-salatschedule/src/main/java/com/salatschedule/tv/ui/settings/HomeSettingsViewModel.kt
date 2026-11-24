@@ -163,6 +163,50 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch { repository.setShowNextEventOnHome(show) }
     }
 
+    fun setScreensaverScheduleEnabled(enabled: Boolean) {
+        val s = settings.value
+        if (!enabled && !com.salatsign.tv.engine.ScreensaverRotationEngine.canDisableSlide(
+                com.salatsign.tv.engine.ScreensaverSlideKind.SCHEDULE,
+                s.screensaverScheduleEnabled,
+                s.screensaverCalendarEnabled,
+                s.screensaverQuranEnabled
+            )
+        ) return
+        viewModelScope.launch { repository.setScreensaverScheduleEnabled(enabled) }
+    }
+
+    fun setScreensaverCalendarEnabled(enabled: Boolean) {
+        val s = settings.value
+        if (!enabled && !com.salatsign.tv.engine.ScreensaverRotationEngine.canDisableSlide(
+                com.salatsign.tv.engine.ScreensaverSlideKind.CALENDAR,
+                s.screensaverScheduleEnabled,
+                s.screensaverCalendarEnabled,
+                s.screensaverQuranEnabled
+            )
+        ) return
+        viewModelScope.launch { repository.setScreensaverCalendarEnabled(enabled) }
+    }
+
+    fun setScreensaverQuranEnabled(enabled: Boolean) {
+        val s = settings.value
+        if (!enabled && !com.salatsign.tv.engine.ScreensaverRotationEngine.canDisableSlide(
+                com.salatsign.tv.engine.ScreensaverSlideKind.QURAN,
+                s.screensaverScheduleEnabled,
+                s.screensaverCalendarEnabled,
+                s.screensaverQuranEnabled
+            )
+        ) return
+        viewModelScope.launch { repository.setScreensaverQuranEnabled(enabled) }
+    }
+
+    fun setScreensaverScheduleDurationSeconds(seconds: Int) {
+        viewModelScope.launch { repository.setScreensaverScheduleDurationSeconds(seconds) }
+    }
+
+    fun setScreensaverCalendarDurationSeconds(seconds: Int) {
+        viewModelScope.launch { repository.setScreensaverCalendarDurationSeconds(seconds) }
+    }
+
     fun completeSetup() {
         viewModelScope.launch {
             repository.setMosqueMode(false)

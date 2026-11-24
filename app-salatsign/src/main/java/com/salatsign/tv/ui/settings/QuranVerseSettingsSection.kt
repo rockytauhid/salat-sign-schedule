@@ -48,6 +48,7 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.salatsign.core.tv.R
 import com.salatsign.tv.R as AppR
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.QuranSlideDefaults
@@ -57,8 +58,8 @@ import com.salatsign.tv.ui.common.tvSelectableCardBorder
 import com.salatsign.tv.ui.common.tvSelectableSurfaceBorder
 import com.salatsign.tv.ui.common.tvSelectableSurfaceColors
 import com.salatsign.tv.ui.common.tvSurfaceScale
-import com.salatsign.tv.ui.mosque.QuranVerseSlide
-import com.salatsign.tv.ui.mosque.measureQuranVerseFit
+import com.salatsign.tv.ui.slides.QuranVerseSlide
+import com.salatsign.tv.ui.slides.measureQuranVerseFit
 import com.salatsign.tv.ui.theme.TvTypography
 
 @Composable
@@ -357,7 +358,7 @@ private fun QuranVerseFitCheckDialog(
             val nonFittingRefs = remember(allVerses, showTranslation, usableWidthPx, usableHeightPx) {
                 allVerses.mapNotNull { verse ->
                     val refLabel = context.getString(
-                        AppR.string.quran_surah_reference,
+                        R.string.quran_surah_reference,
                         verse.surahTransliteration,
                         verse.reference
                     )

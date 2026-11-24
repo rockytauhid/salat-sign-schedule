@@ -11,4 +11,22 @@
     <string name="settings_adhan_test_silent_hint">Selected prayer is set to Silent. Pick Beep-Beep or USB/File above to test.</string>
     <string name="settings_adhan_test_playing">Playing %1$s…</string>
     <string name="settings_adhan_test_paused">Paused (%1$s)</string>
+
+    <!-- Android TV Screensaver (SalatSchedule only) -->
+    <string name="settings_hub_cat_screensaver">Screensaver</string>
+    <string name="screensaver_countdown_hm">%1$s in %2$d h %3$d min</string>
+    <string name="screensaver_countdown_m">%1$s in %2$d min</string>
+    <string name="settings_screensaver_section">Android TV Screensaver</string>
+    <string name="settings_screensaver_desc">Silent, dark-mode slideshow when your TV is idle. Any key press closes it.</string>
+    <string name="settings_screensaver_slide_schedule">Prayer Schedule Slide</string>
+    <string name="settings_screensaver_slide_calendar">Islamic Calendar Slide</string>
+    <string name="settings_screensaver_slide_quran">Quran Verse Slide (Auto duration)</string>
+    <string name="settings_screensaver_duration_label">Display duration</string>
+    <string name="settings_screensaver_min_one_note">At least one slide must stay enabled.</string>
+    <string name="settings_screensaver_btn_preview">Preview Screensaver</string>
+    <string name="settings_screensaver_btn_help">How to Set as Screensaver</string>
+    <string name="settings_screensaver_help_title">How to Set as TV Screensaver</string>
+    <string name="settings_screensaver_help_android_tv">On Android TV (e.g. Sony Bravia): open Settings → Device Preferences → Screen saver → Screen saver, then choose SalatSchedule.</string>
+    <string name="settings_screensaver_help_google_tv">On newer Google TV devices that hide third-party screensavers, see docs/SCREENSAVER.md for the one-time ADB command. Stock Amazon Fire TV does not support third-party Android DreamService screensavers.</string>
+    <string name="settings_screensaver_open_tv_settings">Open TV Screen Saver Settings</string>
 </resources>

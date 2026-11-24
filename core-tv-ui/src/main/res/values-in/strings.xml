@@ -353,4 +353,9 @@
     <string name="settings_hub_cat_remote_security">PIN &amp; Remot</string>
     <string name="settings_hub_cat_about">Tentang &amp; Kredit</string>
     <string name="settings_hijri_calendar_note">Dihitung dengan kalender Umm al-Qura; sesuaikan koreksi (-2 hingga +2) agar sesuai rukyat setempat.</string>
+    <!-- Shared Quran Verse Reference & Credits -->
+    <string name="quran_surah_reference">Surah %1$s %2$s</string>
+    <string name="about_quran_tanzil">Teks Al-Qur\'an: Tanzil.net (http://tanzil.net)</string>
+    <string name="about_quran_en">Terjemahan Inggris: Saheeh International, melalui Tanzil.net</string>
+    <string name="about_quran_id">Terjemahan Indonesia: Kementerian Agama Republik Indonesia</string>
 </resources>

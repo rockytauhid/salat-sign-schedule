@@ -352,4 +352,9 @@
     <string name="settings_hub_cat_remote_security">رمز PIN والتحكم</string>
     <string name="settings_hub_cat_about">حول التطبيق والاعتمادات</string>
     <string name="settings_hijri_calendar_note">يُحسب وفق تقويم أم القرى؛ عدّل الفرق (-2 إلى +2) لمطابقة الرؤية المحلية.</string>
+    <!-- Shared Quran Verse Reference & Credits -->
+    <string name="quran_surah_reference">سورة %1$s %2$s</string>
+    <string name="about_quran_tanzil">نص القرآن: Tanzil.net (http://tanzil.net)</string>
+    <string name="about_quran_en">الترجمة الإنجليزية: Saheeh International عبر Tanzil.net</string>
+    <string name="about_quran_id">الترجمة الإندونيسية: Kementerian Agama Republik Indonesia</string>
 </resources>

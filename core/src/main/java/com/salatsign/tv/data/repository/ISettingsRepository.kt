@@ -89,4 +89,10 @@ interface ISettingsRepository {
     suspend fun setQuranShowTranslation(show: Boolean)
     suspend fun setQuranVerseDurationSeconds(seconds: Int)
     suspend fun setQuranShuffleBagState(serializedState: String)
+    // Android TV Screensaver settings (Home / SalatSchedule)
+    suspend fun setScreensaverScheduleEnabled(enabled: Boolean)
+    suspend fun setScreensaverCalendarEnabled(enabled: Boolean)
+    suspend fun setScreensaverQuranEnabled(enabled: Boolean)
+    suspend fun setScreensaverScheduleDurationSeconds(seconds: Int)
+    suspend fun setScreensaverCalendarDurationSeconds(seconds: Int)
 }

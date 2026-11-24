@@ -78,6 +78,7 @@ import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.common.PrayerCardsRow
 import com.salatsign.tv.ui.common.pulsingGlow
+import com.salatsign.tv.ui.slides.QuranVerseSlide
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.EmeraldLight

@@ -1326,15 +1326,15 @@ internal fun MosqueAboutPane() {
         versionCode = BuildConfig.VERSION_CODE,
         extraCredits = {
             Text(
-                text = stringResource(AppR.string.about_quran_tanzil),
+                text = stringResource(R.string.about_quran_tanzil),
                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
             )
             Text(
-                text = stringResource(AppR.string.about_quran_en),
+                text = stringResource(R.string.about_quran_en),
                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
             )
             Text(
-                text = stringResource(AppR.string.about_quran_id),
+                text = stringResource(R.string.about_quran_id),
                 style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
             )
         }

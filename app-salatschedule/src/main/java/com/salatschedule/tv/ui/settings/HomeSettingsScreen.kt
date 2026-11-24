@@ -3,7 +3,10 @@
 
 package com.salatschedule.tv.ui.settings
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -26,8 +31,14 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Slideshow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.salatschedule.tv.screensaver.ScreensaverPreviewActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -90,6 +101,7 @@ private object HomeSettingsCategoryIds {
     const val PRAYER_TIMES = "prayer_times"
     const val ADHAN = "adhan"
     const val CALENDAR = "calendar"
+    const val SCREENSAVER = "screensaver"
     const val ABOUT = "about"
 }
 
@@ -113,6 +125,11 @@ fun HomeSettingsScreen(
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
     onSetShowNextEventOnHome: (Boolean) -> Unit = {},
     onToggleIslamicEvent: (String) -> Unit = {},
+    onSetScreensaverScheduleEnabled: (Boolean) -> Unit = {},
+    onSetScreensaverCalendarEnabled: (Boolean) -> Unit = {},
+    onSetScreensaverQuranEnabled: (Boolean) -> Unit = {},
+    onSetScreensaverScheduleDuration: (Int) -> Unit = {},
+    onSetScreensaverCalendarDuration: (Int) -> Unit = {},
     onRestartSetupWizard: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -122,6 +139,7 @@ fun HomeSettingsScreen(
     var selectedCategoryId by remember { mutableStateOf(HomeSettingsCategoryIds.DISPLAY) }
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var pickerTargetPrayer by remember { mutableStateOf<Prayer?>(null) }
+    var showScreensaverHelp by remember { mutableStateOf(false) }
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val recordInteraction = { lastInteractionTime = System.currentTimeMillis() }
 
@@ -177,6 +195,12 @@ fun HomeSettingsScreen(
             title = stringResource(R.string.settings_hub_cat_calendar),
             subtitle = "${settings.enabledIslamicEventIds.size} events",
             icon = Icons.Default.CalendarMonth
+        ),
+        SettingsHubCategory(
+            id = HomeSettingsCategoryIds.SCREENSAVER,
+            title = stringResource(AppR.string.settings_hub_cat_screensaver),
+            subtitle = "${listOf(settings.screensaverScheduleEnabled, settings.screensaverCalendarEnabled, settings.screensaverQuranEnabled).count { it }}/3 slides",
+            icon = Icons.Default.Slideshow
         ),
         SettingsHubCategory(
             id = HomeSettingsCategoryIds.ABOUT,
@@ -251,13 +275,51 @@ fun HomeSettingsScreen(
                     )
                 }
 
+                HomeSettingsCategoryIds.SCREENSAVER -> {
+                    HomeScreensaverPane(
+                        settings = settings,
+                        onSetScheduleEnabled = onSetScreensaverScheduleEnabled,
+                        onSetCalendarEnabled = onSetScreensaverCalendarEnabled,
+                        onSetQuranEnabled = onSetScreensaverQuranEnabled,
+                        onSetScheduleDuration = onSetScreensaverScheduleDuration,
+                        onSetCalendarDuration = onSetScreensaverCalendarDuration,
+                        onOpenPreview = {
+                            recordInteraction()
+                            context.startActivity(Intent(context, ScreensaverPreviewActivity::class.java))
+                        },
+                        onOpenHelp = {
+                            recordInteraction()
+                            showScreensaverHelp = true
+                        }
+                    )
+                }
+
                 HomeSettingsCategoryIds.ABOUT -> {
+                    val colorScheme = MaterialTheme.colorScheme
                     SettingsAboutCard(
                         versionName = BuildConfig.VERSION_NAME,
-                        versionCode = BuildConfig.VERSION_CODE
+                        versionCode = BuildConfig.VERSION_CODE,
+                        extraCredits = {
+                            Text(
+                                text = stringResource(R.string.about_quran_tanzil),
+                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+                            )
+                            Text(
+                                text = stringResource(R.string.about_quran_en),
+                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+                            )
+                            Text(
+                                text = stringResource(R.string.about_quran_id),
+                                style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+                            )
+                        }
                     )
                 }
             }
+        }
+
+        if (showScreensaverHelp) {
+            ScreensaverHelpDialog(onDismiss = { showScreensaverHelp = false })
         }
 
         if (activePickerKind != null) {
@@ -686,4 +748,318 @@ private fun HomeIslamicCalendarPane(
         hijriOffsetDays = settings.hijriOffsetDays,
         onToggleEvent = onToggleIslamicEvent
     )
+}
+
+@Composable
+private fun HomeScreensaverPane(
+    settings: AppSettings,
+    onSetScheduleEnabled: (Boolean) -> Unit,
+    onSetCalendarEnabled: (Boolean) -> Unit,
+    onSetQuranEnabled: (Boolean) -> Unit,
+    onSetScheduleDuration: (Int) -> Unit,
+    onSetCalendarDuration: (Int) -> Unit,
+    onOpenPreview: () -> Unit,
+    onOpenHelp: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val durations = listOf(10, 15, 20, 30, 45, 60)
+    val cardShape = RoundedCornerShape(12.dp)
+    val chipShape = RoundedCornerShape(8.dp)
+
+    Text(
+        text = stringResource(AppR.string.settings_screensaver_section),
+        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+    )
+    Text(
+        text = stringResource(AppR.string.settings_screensaver_desc),
+        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+    )
+
+    // Action Row: Preview + How to Set as Screensaver
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            onClick = onOpenPreview,
+            shape = ClickableSurfaceDefaults.shape(cardShape),
+            scale = tvSurfaceScale(1.02f),
+            colors = tvSelectableSurfaceColors(selected = true),
+            border = tvSelectableSurfaceBorder(selected = true, shape = cardShape),
+            modifier = Modifier.weight(1f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(AppR.string.settings_screensaver_btn_preview),
+                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                )
+            }
+        }
+
+        Surface(
+            onClick = onOpenHelp,
+            shape = ClickableSurfaceDefaults.shape(cardShape),
+            scale = tvSurfaceScale(1.02f),
+            colors = tvSelectableSurfaceColors(selected = false),
+            border = tvSelectableSurfaceBorder(selected = false, shape = cardShape),
+            modifier = Modifier.weight(1f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                    contentDescription = null,
+                    tint = colorScheme.secondary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(AppR.string.settings_screensaver_btn_help),
+                    style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                )
+            }
+        }
+    }
+
+    // Slide 1: Prayer Schedule toggle + duration
+    ScreensaverSlideToggleCard(
+        title = stringResource(AppR.string.settings_screensaver_slide_schedule),
+        enabled = settings.screensaverScheduleEnabled,
+        onToggle = { onSetScheduleEnabled(!settings.screensaverScheduleEnabled) }
+    )
+    if (settings.screensaverScheduleEnabled) {
+        ScreensaverDurationRow(
+            selectedSeconds = settings.screensaverScheduleDurationSeconds,
+            durations = durations,
+            chipShape = chipShape,
+            onSelect = onSetScheduleDuration
+        )
+    }
+
+    // Slide 2: Islamic Calendar toggle + duration
+    ScreensaverSlideToggleCard(
+        title = stringResource(AppR.string.settings_screensaver_slide_calendar),
+        enabled = settings.screensaverCalendarEnabled,
+        onToggle = { onSetCalendarEnabled(!settings.screensaverCalendarEnabled) }
+    )
+    if (settings.screensaverCalendarEnabled) {
+        ScreensaverDurationRow(
+            selectedSeconds = settings.screensaverCalendarDurationSeconds,
+            durations = durations,
+            chipShape = chipShape,
+            onSelect = onSetCalendarDuration
+        )
+    }
+
+    // Slide 3: Quran Verse toggle (Auto duration)
+    ScreensaverSlideToggleCard(
+        title = stringResource(AppR.string.settings_screensaver_slide_quran),
+        enabled = settings.screensaverQuranEnabled,
+        onToggle = { onSetQuranEnabled(!settings.screensaverQuranEnabled) }
+    )
+
+    Text(
+        text = stringResource(AppR.string.settings_screensaver_min_one_note),
+        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface.copy(alpha = 0.65f))
+    )
+}
+
+@Composable
+private fun ScreensaverSlideToggleCard(
+    title: String,
+    enabled: Boolean,
+    onToggle: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(12.dp)
+    Card(
+        onClick = onToggle,
+        colors = CardDefaults.colors(
+            containerColor = if (enabled) colorScheme.surfaceVariant else colorScheme.surface,
+            focusedContainerColor = colorScheme.surfaceVariant
+        ),
+        shape = CardDefaults.shape(shape),
+        scale = tvCardScale(1.0f),
+        border = tvSelectableCardBorder(selected = enabled, shape = shape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+            )
+            Box(
+                modifier = Modifier
+                    .background(
+                        if (enabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.16f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = if (enabled) "On" else "Off",
+                    style = TvTypography.ButtonText.copy(
+                        fontSize = 12.sp,
+                        color = if (enabled) Color.White else colorScheme.onSurface
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScreensaverDurationRow(
+    selectedSeconds: Int,
+    durations: List<Int>,
+    chipShape: RoundedCornerShape,
+    onSelect: (Int) -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(start = 8.dp)
+    ) {
+        Text(
+            text = stringResource(AppR.string.settings_screensaver_duration_label),
+            style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.75f))
+        )
+        for (secs in durations) {
+            val isSel = selectedSeconds == secs
+            Surface(
+                onClick = { onSelect(secs) },
+                shape = ClickableSurfaceDefaults.shape(chipShape),
+                scale = tvSurfaceScale(1.03f),
+                colors = tvSelectableSurfaceColors(selected = isSel),
+                border = tvSelectableSurfaceBorder(selected = isSel, shape = chipShape)
+            ) {
+                Text(
+                    text = "${secs}s",
+                    style = TvTypography.ButtonText.copy(
+                        fontSize = 13.sp,
+                        color = if (isSel) colorScheme.primary else colorScheme.onSurface
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScreensaverHelpDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+    val closeFocus = remember { FocusRequester() }
+    val canOpenDreamSettings = remember {
+        Intent(Settings.ACTION_DREAM_SETTINGS).resolveActivity(context.packageManager) != null
+    }
+
+    LaunchedEffect(Unit) {
+        runCatching { closeFocus.requestFocus() }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.72f))
+                .padding(horizontal = 48.dp, vertical = 27.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 720.dp)
+                    .fillMaxWidth()
+                    .background(colorScheme.background, RoundedCornerShape(16.dp))
+                    .border(2.dp, colorScheme.primary, RoundedCornerShape(16.dp))
+                    .padding(28.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = stringResource(AppR.string.settings_screensaver_help_title),
+                    style = TvTypography.HeaderTitle.copy(fontSize = 24.sp, color = colorScheme.primary)
+                )
+                Text(
+                    text = stringResource(AppR.string.settings_screensaver_help_android_tv),
+                    style = TvTypography.BodyLabel.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                )
+                Text(
+                    text = stringResource(AppR.string.settings_screensaver_help_google_tv),
+                    style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val btnShape = RoundedCornerShape(8.dp)
+                    if (canOpenDreamSettings) {
+                        Surface(
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_DREAM_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                            },
+                            shape = ClickableSurfaceDefaults.shape(btnShape),
+                            scale = tvSurfaceScale(1.03f),
+                            colors = tvSelectableSurfaceColors(selected = true),
+                            border = tvSelectableSurfaceBorder(selected = true, shape = btnShape)
+                        ) {
+                            Text(
+                                text = stringResource(AppR.string.settings_screensaver_open_tv_settings),
+                                style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.primary),
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+
+                    Surface(
+                        onClick = onDismiss,
+                        shape = ClickableSurfaceDefaults.shape(btnShape),
+                        scale = tvSurfaceScale(1.03f),
+                        colors = tvSelectableSurfaceColors(selected = false),
+                        border = tvSelectableSurfaceBorder(selected = false, shape = btnShape),
+                        modifier = Modifier.focusRequester(closeFocus)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.btn_close),
+                            style = TvTypography.ButtonText.copy(fontSize = 14.sp, color = colorScheme.onSurface),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

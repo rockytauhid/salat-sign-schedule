@@ -8,4 +8,22 @@
     <string name="settings_adhan_test_silent_hint">Shalat terpilih disetel Senyap. Pilih Bip-Bip atau USB/Berkas di atas untuk menguji.</string>
     <string name="settings_adhan_test_playing">Memutar %1$s…</string>
     <string name="settings_adhan_test_paused">Dijeda (%1$s)</string>
+
+    <!-- Android TV Screensaver (SalatSchedule only) -->
+    <string name="settings_hub_cat_screensaver">Screensaver</string>
+    <string name="screensaver_countdown_hm">%1$s dalam %2$d jam %3$d mnt</string>
+    <string name="screensaver_countdown_m">%1$s dalam %2$d mnt</string>
+    <string name="settings_screensaver_section">Screensaver Android TV</string>
+    <string name="settings_screensaver_desc">Tayangan slide gelap tanpa suara saat TV tidak digunakan. Tekan tombol apa saja untuk menutup.</string>
+    <string name="settings_screensaver_slide_schedule">Slide Jadwal Shalat</string>
+    <string name="settings_screensaver_slide_calendar">Slide Kalender Islam</string>
+    <string name="settings_screensaver_slide_quran">Slide Ayat Al-Qur\'an (Durasi otomatis)</string>
+    <string name="settings_screensaver_duration_label">Durasi tampilan</string>
+    <string name="settings_screensaver_min_one_note">Minimal satu slide harus tetap aktif.</string>
+    <string name="settings_screensaver_btn_preview">Pratinjau Screensaver</string>
+    <string name="settings_screensaver_btn_help">Cara Mengatur Screensaver</string>
+    <string name="settings_screensaver_help_title">Cara Mengatur Screensaver TV</string>
+    <string name="settings_screensaver_help_android_tv">Di Android TV (mis. Sony Bravia): buka Pengaturan → Preferensi Perangkat → Pengaman Layar → Pengaman Layar, lalu pilih SalatSchedule.</string>
+    <string name="settings_screensaver_help_google_tv">Di perangkat Google TV baru yang menyembunyikan screensaver pihak ketiga, lihat docs/SCREENSAVER.md untuk perintah ADB satu kali. Amazon Fire TV bawaan tidak mendukung DreamService pihak ketiga.</string>
+    <string name="settings_screensaver_open_tv_settings">Buka Pengaturan Pengaman Layar TV</string>
 </resources>

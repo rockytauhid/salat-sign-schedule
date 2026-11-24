@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
 
-package com.salatsign.tv.ui.mosque
+package com.salatsign.tv.ui.slides
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import com.salatsign.tv.R
+import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.QuranVerseItem
 import com.salatsign.tv.ui.common.overscanPadding
 
@@ -90,7 +90,6 @@ fun measureQuranVerseFit(
     val hasTranslation = showTranslation && verse.translationText.isNotEmpty()
     val translationCandidates = if (hasTranslation) TRANSLATION_CANDIDATE_SP else listOf(0f)
 
-    // Try largest balanced pairs first; never go below 40sp Arabic or 24sp translation
     val pairs = buildList {
         val maxIdx = maxOf(ARABIC_CANDIDATE_SP.lastIndex, translationCandidates.lastIndex)
         for (step in 0..maxIdx) {
@@ -98,7 +97,6 @@ fun measureQuranVerseFit(
             val tr = translationCandidates[step.coerceAtMost(translationCandidates.lastIndex)]
             add(ar to tr)
         }
-        // Final exhaustive pass over smaller combinations down to (40sp, 24sp)
         for (ar in ARABIC_CANDIDATE_SP) {
             for (tr in translationCandidates) {
                 if ((ar to tr) !in this) add(ar to tr)
@@ -149,10 +147,8 @@ fun measureQuranVerseFit(
 }
 
 /**
- * Plain, reverent single-screen Quran verse display for SalatSign.
- * Shows ONLY the verbatim Arabic verse (Amiri Quran font, RTL), optional translation (LTR),
- * and Surah reference line. Never truncates or ellipsises; skips via [onOverflowSkip] if a verse
- * cannot fit at minimum 40sp / 24sp sizes on the display.
+ * Shared single-screen Quran verse display used by both SalatSign (Mosque slideshow)
+ * and SalatSchedule (Android TV Screensaver). Takes plain data and active MaterialTheme.
  */
 @Composable
 fun QuranVerseSlide(

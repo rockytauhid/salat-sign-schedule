@@ -260,6 +260,11 @@ private fun SalatScheduleMainContent(
                     onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
                     onToggleIslamicEvent = { settingsViewModel.toggleIslamicEvent(it) },
                     onSetShowNextEventOnHome = { settingsViewModel.setShowNextEventOnHome(it) },
+                    onSetScreensaverScheduleEnabled = { settingsViewModel.setScreensaverScheduleEnabled(it) },
+                    onSetScreensaverCalendarEnabled = { settingsViewModel.setScreensaverCalendarEnabled(it) },
+                    onSetScreensaverQuranEnabled = { settingsViewModel.setScreensaverQuranEnabled(it) },
+                    onSetScreensaverScheduleDuration = { settingsViewModel.setScreensaverScheduleDurationSeconds(it) },
+                    onSetScreensaverCalendarDuration = { settingsViewModel.setScreensaverCalendarDurationSeconds(it) },
                     onRestartSetupWizard = {
                         onCloseSettings()
                         settingsViewModel.restartSetupWizard()
