@@ -154,6 +154,7 @@
     <string name="settings_pin_warning_title">Security Warning: Default PIN (0000) In Use</string>
     <string name="settings_pin_warning_desc">The public mosque TV display is accessible to anyone. Change to a custom 4–8 digit PIN immediately.</string>
     <string name="settings_section_language">Display Language</string>
+    <string name="settings_section_time_display">Time &amp; Display</string>
     <string name="settings_section_theme">Display Theme (Dark / Light)</string>
     <string name="settings_section_calc_method">Prayer Calculation Method</string>
     <string name="settings_section_madhab">Asr Prayer Madhab</string>

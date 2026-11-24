@@ -154,6 +154,7 @@
     <string name="settings_pin_warning_title">تنبيه أمان: الرمز الافتراضي (0000) قيد الاستخدام</string>
     <string name="settings_pin_warning_desc">شاشة المسجد العامة متاحة للجميع، يرجى تعيين رمز PIN مخصص لحماية الإعدادات.</string>
     <string name="settings_section_language">لغة العرض</string>
+    <string name="settings_section_time_display">الوقت والعرض</string>
     <string name="settings_section_theme">سمة الشاشة (فاتح / داكن)</string>
     <string name="settings_section_calc_method">طريقة حساب أوقات الصلاة</string>
     <string name="settings_section_madhab">مذهب صلاة العصر</string>

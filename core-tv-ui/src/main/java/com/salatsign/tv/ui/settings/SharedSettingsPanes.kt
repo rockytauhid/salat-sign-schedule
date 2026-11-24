@@ -84,12 +84,13 @@ fun SettingsDisplayAndLanguagePane(
             style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
         )
 
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             for (lang in AppLanguage.ShippedLanguages) {
-                val isSelected = (settings.appLanguage == lang)
+                val isSelected = (settings.appLanguage == lang) ||
+                    (settings.appLanguage == AppLanguage.SYSTEM && lang == AppLanguage.EN)
                 val langShape = RoundedCornerShape(10.dp)
                 Card(
                     onClick = { onSetAppLanguage(lang) },
@@ -100,10 +101,10 @@ fun SettingsDisplayAndLanguagePane(
                     shape = CardDefaults.shape(langShape),
                     scale = tvCardScale(1.01f),
                     border = tvSelectableCardBorder(selected = isSelected, shape = langShape),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -112,10 +113,10 @@ fun SettingsDisplayAndLanguagePane(
                             tint = if (isSelected) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = stringResource(lang.labelRes()),
-                            style = TvTypography.CardTitle.copy(fontSize = 14.sp, color = colorScheme.onSurface)
+                            style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
                         )
                     }
                 }
@@ -123,7 +124,12 @@ fun SettingsDisplayAndLanguagePane(
         }
     }
 
-    // Time Format & Arabic Prayer Names
+    // Time & Display Preferences
+    Text(
+        text = stringResource(R.string.settings_section_time_display),
+        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+    )
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(14.dp)

@@ -154,6 +154,7 @@
     <string name="settings_pin_warning_title">Peringatan Keamanan: PIN Bawaan (0000) Masih Digunakan</string>
     <string name="settings_pin_warning_desc">Layar publik TV masjid mudah diakses siapapun. Segera ganti dengan PIN 4-8 digit kustom demi keamanan.</string>
     <string name="settings_section_language">Bahasa Tampilan</string>
+    <string name="settings_section_time_display">Waktu &amp; Tampilan</string>
     <string name="settings_section_theme">Pilihan Tema Tampilan (Dark / Light)</string>
     <string name="settings_section_calc_method">Metode Perhitungan Waktu Shalat</string>
     <string name="settings_section_madhab">Mazhab untuk Waktu Ashr</string>

@@ -383,12 +383,15 @@ fun AddTextSlideDialog(
                                 shape = ClickableSurfaceDefaults.shape(rowBtnShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
-                                border = tvSelectableSurfaceBorder(selected = false, shape = rowBtnShape)
+                                border = tvSelectableSurfaceBorder(selected = false, shape = rowBtnShape),
+                                modifier = Modifier.width(96.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                                 ) {
                                     Icon(
                                         imageVector = alignIcon,
@@ -398,6 +401,8 @@ fun AddTextSlideDialog(
                                     )
                                     Text(
                                         text = stringResource(alignLabelRes),
+                                        maxLines = 1,
+                                        softWrap = false,
                                         style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface)
                                     )
                                 }
