@@ -5,6 +5,9 @@ package com.salatschedule.tv.ui.settings
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.core.content.ContextCompat
+import com.salatschedule.tv.service.AdhanPlaybackService
+import com.salatschedule.tv.service.PrayerAlarmScheduler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -263,6 +266,19 @@ fun HomeSettingsScreen(
                             pickerTargetPrayer = prayer
                             activePickerKind = ImportKind.CUSTOM_ADHAN
                         },
+                        onTestOnSchedule = { prayer, option ->
+                            recordInteraction()
+                            adhanPreviewPlayer.stop()
+                            val serviceIntent = Intent(context, AdhanPlaybackService::class.java).apply {
+                                putExtra(PrayerAlarmScheduler.EXTRA_PRAYER_NAME, prayer.name)
+                                putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_TYPE, option.type.name)
+                                putExtra(PrayerAlarmScheduler.EXTRA_ADHAN_URI, option.customUri)
+                                putExtra(PrayerAlarmScheduler.EXTRA_LANGUAGE, settings.appLanguage.name)
+                                putExtra(PrayerAlarmScheduler.EXTRA_ZONE_ID, settings.zoneId)
+                            }
+                            ContextCompat.startForegroundService(context, serviceIntent)
+                            onBack()
+                        },
                         onUserInteraction = recordInteraction
                     )
                 }
@@ -364,6 +380,7 @@ private fun HomeAdhanAndRemindersPane(
     onToggleReminder: (Boolean) -> Unit,
     onSetAdhanAudio: (Prayer, AdhanAudioOption) -> Unit,
     onOpenAudioPicker: (Prayer) -> Unit,
+    onTestOnSchedule: (Prayer, AdhanAudioOption) -> Unit,
     onUserInteraction: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -529,45 +546,86 @@ private fun HomeAdhanAndRemindersPane(
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = null,
-                        tint = colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = null,
+                            tint = colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(AppR.string.settings_adhan_test_label),
+                            style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                        )
+                    }
+
+                    val statusText = when {
+                        adhanPreviewError != null -> adhanPreviewError
+                        isPlayingPreview -> stringResource(AppR.string.settings_adhan_test_playing, testOption.displayLabel())
+                        isPausedPreview -> stringResource(AppR.string.settings_adhan_test_paused, testOption.displayLabel())
+                        isTestSilent -> stringResource(AppR.string.settings_adhan_test_silent_hint)
+                        else -> "${stringResource(selectedTestPrayer.labelRes())} • ${testOption.displayLabel()}"
+                    }
                     Text(
-                        text = stringResource(AppR.string.settings_adhan_test_label),
-                        style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                        text = statusText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 12.sp,
+                            fontWeight = if (isPlayingPreview) FontWeight.SemiBold else FontWeight.Normal,
+                            color = when {
+                                adhanPreviewError != null -> colorScheme.error
+                                isPlayingPreview -> colorScheme.primary
+                                isPausedPreview -> colorScheme.secondary
+                                else -> colorScheme.onSurface.copy(alpha = 0.72f)
+                            }
+                        )
                     )
                 }
 
-                val statusText = when {
-                    adhanPreviewError != null -> adhanPreviewError
-                    isPlayingPreview -> stringResource(AppR.string.settings_adhan_test_playing, testOption.displayLabel())
-                    isPausedPreview -> stringResource(AppR.string.settings_adhan_test_paused, testOption.displayLabel())
-                    isTestSilent -> stringResource(AppR.string.settings_adhan_test_silent_hint)
-                    else -> "${stringResource(selectedTestPrayer.labelRes())} • ${testOption.displayLabel()}"
+                Spacer(modifier = Modifier.width(12.dp))
+
+                val liveShape = RoundedCornerShape(8.dp)
+                Surface(
+                    onClick = { onTestOnSchedule(selectedTestPrayer, testOption) },
+                    enabled = !isTestSilent,
+                    shape = ClickableSurfaceDefaults.shape(liveShape),
+                    scale = tvSurfaceScale(1.03f),
+                    colors = tvSelectableSurfaceColors(selected = false),
+                    border = tvSelectableSurfaceBorder(selected = false, shape = liveShape)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = if (isTestSilent) colorScheme.onSurface.copy(alpha = 0.35f) else colorScheme.secondary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = stringResource(AppR.string.settings_adhan_btn_test_schedule),
+                            style = TvTypography.ButtonText.copy(
+                                fontSize = 12.sp,
+                                color = if (isTestSilent) colorScheme.onSurface.copy(alpha = 0.35f) else colorScheme.onSurface
+                            )
+                        )
+                    }
                 }
-                Text(
-                    text = statusText,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = 12.sp,
-                        fontWeight = if (isPlayingPreview) FontWeight.SemiBold else FontWeight.Normal,
-                        color = when {
-                            adhanPreviewError != null -> colorScheme.error
-                            isPlayingPreview -> colorScheme.primary
-                            isPausedPreview -> colorScheme.secondary
-                            else -> colorScheme.onSurface.copy(alpha = 0.72f)
-                        }
-                    )
-                )
             }
 
             Row(

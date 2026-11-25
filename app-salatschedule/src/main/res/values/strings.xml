@@ -8,6 +8,7 @@
     <string name="settings_adhan_btn_play">Play</string>
     <string name="settings_adhan_btn_pause">Pause</string>
     <string name="settings_adhan_btn_stop">Stop</string>
+    <string name="settings_adhan_btn_test_schedule">Test on Schedule</string>
     <string name="settings_adhan_test_silent_hint">Selected prayer is set to Silent. Pick Beep-Beep or USB/File above to test.</string>
     <string name="settings_adhan_test_playing">Playing %1$s…</string>
     <string name="settings_adhan_test_paused">Paused (%1$s)</string>

@@ -5,6 +5,7 @@
     <string name="settings_adhan_btn_play">Putar</string>
     <string name="settings_adhan_btn_pause">Jeda</string>
     <string name="settings_adhan_btn_stop">Hentikan</string>
+    <string name="settings_adhan_btn_test_schedule">Uji di Layar Jadwal</string>
     <string name="settings_adhan_test_silent_hint">Shalat terpilih disetel Senyap. Pilih Bip-Bip atau USB/Berkas di atas untuk menguji.</string>
     <string name="settings_adhan_test_playing">Memutar %1$s…</string>
     <string name="settings_adhan_test_paused">Dijeda (%1$s)</string>
