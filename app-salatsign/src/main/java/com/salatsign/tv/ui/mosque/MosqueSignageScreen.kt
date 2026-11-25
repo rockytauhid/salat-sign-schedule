@@ -580,7 +580,7 @@ fun MosqueNextPrayerBanner(
                     style = TvTypography.CountdownText.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = accentSecondary
+                        color = colorScheme.onSurfaceVariant
                     )
                 )
             }

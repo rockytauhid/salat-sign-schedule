@@ -88,7 +88,7 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">APPROACHING NEXT PRAYER</string>
     <string name="mosque_countdown_to_prayer">Until Prayer Time: %1$s</string>
-    <string name="schedule_until_prayer">Until %1$s</string>
+    <string name="schedule_until_prayer">until %1$s</string>
     <string name="urgent_notice_clears_in">Clears in %1$s</string>
     <string name="mosque_default_name">Mosque Name</string>
     <string name="mosque_name_placeholder">e.g., Canberra Islamic Centre</string>
