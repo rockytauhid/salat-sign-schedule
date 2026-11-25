@@ -452,6 +452,8 @@ const SIZE_TITLE = { SMALL: 'Size: Small (tap to cycle)', MEDIUM: 'Size: Medium 
 const TRASH_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 3v8h2v-8H9zm4 0v8h2v-8h-2zM9 4l1-1h4l1 1h4v2H5V4h4z"/></svg>';
 
 function renderTextRows() {
+  const lbl = document.getElementById('textRowsLabel');
+  if (lbl) lbl.textContent = 'Message (' + textRows.length + ' out of 10 rows)';
   const c = document.getElementById('textRowsContainer');
   if (!c) return;
   c.innerHTML = '';

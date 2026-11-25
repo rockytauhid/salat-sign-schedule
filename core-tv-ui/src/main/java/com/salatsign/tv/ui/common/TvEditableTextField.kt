@@ -130,8 +130,10 @@ fun TvEditableTextField(
                         text = placeholder,
                         maxLines = if (isMultiLine) maxLines else 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 14.sp,
+                            textAlign = textStyle.textAlign,
                             color = colorScheme.onSurface.copy(alpha = 0.45f)
                         )
                     )
@@ -256,8 +258,10 @@ fun TvEditableTextField(
                             maxLines = if (isMultiLine) maxLines else 1,
                             minLines = minLines.coerceAtMost(maxLines),
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
                             style = TvTypography.BodyLabel.copy(
                                 fontSize = 14.sp,
+                                textAlign = textStyle.textAlign,
                                 color = colorScheme.onSurface.copy(alpha = 0.45f)
                             )
                         )
@@ -267,6 +271,7 @@ fun TvEditableTextField(
                             maxLines = maxLines,
                             minLines = minLines.coerceAtMost(maxLines),
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
                             style = textStyle.copy(color = colorScheme.onSurface)
                         )
                     }

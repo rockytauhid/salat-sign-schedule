@@ -26,10 +26,11 @@ import androidx.compose.material.icons.automirrored.filled.FormatAlignRight
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FormatAlignCenter
 import androidx.compose.material.icons.filled.FormatListNumbered
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -219,7 +220,7 @@ fun AddTextSlideDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(AppR.string.settings_text_slide_body_label, MAX_TEXT_SLIDE_LINES),
+                            text = stringResource(AppR.string.settings_text_slide_body_label, lines.size, MAX_TEXT_SLIDE_LINES),
                             style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.secondary)
                         )
 
@@ -331,27 +332,56 @@ fun AddTextSlideDialog(
                                     )
                                 }
                             }
+
+                            Surface(
+                                onClick = {
+                                    onUserInteraction()
+                                    if (lines.lastOrNull()?.text?.isBlank() == true) {
+                                        lines = lines.dropLast(1) + SlideTextLine("qrc:", SlideTextAlign.CENTER)
+                                    } else if (canAddRow) {
+                                        lines = lines + SlideTextLine("qrc:", SlideTextAlign.CENTER)
+                                    }
+                                    if (validationError) validationError = false
+                                },
+                                enabled = canAddRow || lines.lastOrNull()?.text?.isBlank() == true,
+                                shape = ClickableSurfaceDefaults.shape(toolBtnShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = false),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = toolBtnShape)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCode2,
+                                        contentDescription = null,
+                                        tint = colorScheme.primary,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(AppR.string.settings_text_slide_qr),
+                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                    )
+                                }
+                            }
                         }
                     }
 
                     val rowBtnShape = RoundedCornerShape(8.dp)
                     lines.forEachIndexed { idx, line ->
+                        val rowTextAlign = when (line.align) {
+                            SlideTextAlign.LEFT -> TextAlign.Left
+                            SlideTextAlign.CENTER -> TextAlign.Center
+                            SlideTextAlign.RIGHT -> TextAlign.Right
+                        }
+                        val isQrRow = line.text.trimStart().startsWith("qrc:", ignoreCase = true)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = "${idx + 1}",
-                                textAlign = TextAlign.Center,
-                                style = TvTypography.BodyLabel.copy(
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = colorScheme.secondary
-                                ),
-                                modifier = Modifier.width(22.dp)
-                            )
-
                             TvEditableTextField(
                                 value = line.text,
                                 onValueChange = { newText ->
@@ -362,14 +392,16 @@ fun AddTextSlideDialog(
                                     }
                                     if (validationError) validationError = false
                                 },
-                                placeholder = stringResource(AppR.string.settings_text_slide_body_placeholder),
+                                placeholder = if (isQrRow) "qrc:https://..." else stringResource(AppR.string.settings_text_slide_body_placeholder),
+                                leadingIcon = if (isQrRow) Icons.Default.QrCode2 else Icons.Default.Edit,
                                 accentUnfocusedBorder = true,
-                                maxLength = MAX_LINE_CHARS,
+                                maxLength = if (isQrRow) 240 else MAX_LINE_CHARS,
                                 maxLines = 1,
+                                textStyle = TvTypography.BodyLabel.copy(fontSize = 16.sp, textAlign = rowTextAlign),
                                 modifier = Modifier.weight(1f)
                             )
 
-                            // Per-row alignment cycle button (Left -> Right -> Center)
+                            // Per-row alignment cycle button (icon only: Left -> Right -> Center)
                             val alignIcon = when (line.align) {
                                 SlideTextAlign.LEFT -> Icons.AutoMirrored.Filled.FormatAlignLeft
                                 SlideTextAlign.CENTER -> Icons.Default.FormatAlignCenter
@@ -391,35 +423,26 @@ fun AddTextSlideDialog(
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
                                 border = tvSelectableSurfaceBorder(selected = false, shape = rowBtnShape),
-                                modifier = Modifier.width(96.dp)
+                                modifier = Modifier.size(42.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = alignIcon,
                                         contentDescription = stringResource(alignLabelRes),
                                         tint = colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(alignLabelRes),
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.onSurface)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
 
-                            // Per-row font size toggle button (Medium -> Large -> Small)
-                            val sizeLabelRes = when (line.fontSize) {
-                                SlideFontSize.SMALL -> AppR.string.settings_text_slide_size_small
-                                SlideFontSize.MEDIUM -> AppR.string.settings_text_slide_size_medium
-                                SlideFontSize.LARGE -> AppR.string.settings_text_slide_size_large
+                            // Per-row font size toggle button (scaling Aa icon, matching Phone Controller)
+                            val sizeFontSp = when (line.fontSize) {
+                                SlideFontSize.SMALL -> 11.sp
+                                SlideFontSize.MEDIUM -> 15.sp
+                                SlideFontSize.LARGE -> 19.sp
                             }
                             Surface(
                                 onClick = {
@@ -432,22 +455,20 @@ fun AddTextSlideDialog(
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = line.fontSize != SlideFontSize.MEDIUM),
                                 border = tvSelectableSurfaceBorder(selected = line.fontSize != SlideFontSize.MEDIUM, shape = rowBtnShape),
-                                modifier = Modifier.width(76.dp)
+                                modifier = Modifier.size(42.dp)
                             ) {
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 6.dp, vertical = 10.dp),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = stringResource(sizeLabelRes),
+                                        text = "Aa",
                                         maxLines = 1,
                                         softWrap = false,
                                         style = TvTypography.BodyLabel.copy(
-                                            fontSize = 12.sp,
-                                            fontWeight = if (line.fontSize == SlideFontSize.LARGE) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (line.fontSize != SlideFontSize.MEDIUM) colorScheme.primary else colorScheme.onSurface
+                                            fontSize = sizeFontSp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (line.fontSize == SlideFontSize.LARGE) colorScheme.secondary else colorScheme.onSurface
                                         )
                                     )
                                 }
@@ -462,16 +483,20 @@ fun AddTextSlideDialog(
                                     shape = ClickableSurfaceDefaults.shape(rowBtnShape),
                                     scale = tvSurfaceScale(1.03f),
                                     colors = tvSelectableSurfaceColors(selected = false),
-                                    border = tvSelectableSurfaceBorder(selected = false, shape = rowBtnShape)
+                                    border = tvSelectableSurfaceBorder(selected = false, shape = rowBtnShape),
+                                    modifier = Modifier.size(42.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.btn_delete),
-                                        tint = colorScheme.error,
-                                        modifier = Modifier
-                                            .padding(10.dp)
-                                            .size(16.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = stringResource(R.string.btn_delete),
+                                            tint = colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

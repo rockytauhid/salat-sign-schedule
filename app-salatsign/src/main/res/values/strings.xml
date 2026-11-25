@@ -77,7 +77,8 @@
     <string name="settings_slide_save_changes">Save Changes</string>
     <string name="settings_text_slide_title_label">Title</string>
     <string name="settings_text_slide_title_placeholder">e.g., Friday Khutbah &amp; Community Dinner</string>
-    <string name="settings_text_slide_body_label">Message (up to %1$d rows)</string>
+    <string name="settings_text_slide_body_label">Message (%1$d out of %2$d rows)</string>
+    <string name="settings_text_slide_qr">QR Code</string>
     <string name="settings_text_slide_body_placeholder">Type your announcement message here…</string>
     <string name="settings_text_slide_body_hint">Press OK to type • Use Enter, + New Line, • Bullet, or 1. Number for list rows • Press Back when done</string>
     <string name="settings_text_slide_new_line">+ New Line</string>

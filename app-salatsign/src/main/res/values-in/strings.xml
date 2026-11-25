@@ -75,7 +75,8 @@
     <string name="settings_slide_save_changes">Simpan Perubahan</string>
     <string name="settings_text_slide_title_label">Judul</string>
     <string name="settings_text_slide_title_placeholder">mis., Khutbah Jumat &amp; Makan Bersama</string>
-    <string name="settings_text_slide_body_label">Pesan (maksimal %1$d baris)</string>
+    <string name="settings_text_slide_body_label">Pesan (%1$d dari %2$d baris)</string>
+    <string name="settings_text_slide_qr">Kode QR</string>
     <string name="settings_text_slide_body_placeholder">Ketik pesan pengumuman Anda di sini…</string>
     <string name="settings_text_slide_body_hint">Tekan OK untuk mengetik • Gunakan Enter, + Baris Baru, • Poin, atau 1. Nomor • Tekan Kembali jika selesai</string>
     <string name="settings_text_slide_new_line">+ Baris Baru</string>
