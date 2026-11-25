@@ -5,6 +5,8 @@ package com.salatschedule.tv.service
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
@@ -23,7 +25,8 @@ enum class AdhanPreviewState {
 
 /**
  * In-Settings Adhan audio preview player for SalatSchedule.
- * Uses USAGE_ALARM to match the exact audio stream used by [AdhanPlaybackService].
+ * Uses USAGE_MEDIA + AUDIOFOCUS_GAIN_TRANSIENT to match [AdhanPlaybackService] and ensure
+ * consistent TV speaker / HDMI ARC routing on both Android TV and Fire TV.
  */
 class AdhanPreviewPlayer(private val context: Context) {
 
@@ -31,7 +34,9 @@ class AdhanPreviewPlayer(private val context: Context) {
         private const val TAG = "AdhanPreviewPlayer"
     }
 
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     private var mediaPlayer: MediaPlayer? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
     private var loadedOption: AdhanAudioOption? = null
 
     private val _state = MutableStateFlow(AdhanPreviewState.STOPPED)
@@ -87,6 +92,19 @@ class AdhanPreviewPlayer(private val context: Context) {
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
+        val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(audioAttributes)
+            .setAcceptsDelayedFocusGain(false)
+            .setOnAudioFocusChangeListener { focusChange ->
+                if (focusChange == AudioManager.AUDIOFOCUS_LOSS ||
+                    focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+                ) {
+                    stop()
+                }
+            }
+            .build()
+        audioFocusRequest = focusRequest
+
         try {
             val player = MediaPlayer().apply {
                 setAudioAttributes(audioAttributes)
@@ -133,6 +151,8 @@ class AdhanPreviewPlayer(private val context: Context) {
             }
 
             player.setOnPreparedListener { mp ->
+                val focusResult = audioManager?.requestAudioFocus(focusRequest)
+                Log.d(TAG, "Preview audio focus request result: $focusResult")
                 mp.start()
                 _state.value = AdhanPreviewState.PLAYING
             }
@@ -166,6 +186,10 @@ class AdhanPreviewPlayer(private val context: Context) {
             runCatching { player.release() }
         }
         mediaPlayer = null
+        audioFocusRequest?.let { req ->
+            runCatching { audioManager?.abandonAudioFocusRequest(req) }
+        }
+        audioFocusRequest = null
         loadedOption = null
         _state.value = AdhanPreviewState.STOPPED
     }

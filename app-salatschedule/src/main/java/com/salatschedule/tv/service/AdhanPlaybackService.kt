@@ -163,10 +163,12 @@ class AdhanPlaybackService : Service() {
             return
         }
 
-        // Note: USAGE_ALARM may not follow the TV's volume control on some devices; this needs testing on real hardware (human task H3).
+        // Use USAGE_MEDIA + CONTENT_TYPE_MUSIC so Adhan follows the TV remote volume on Android TV
+        // (Sony Bravia / Google TV / HDMI ARC), where STREAM_ALARM is not remote-controllable and
+        // often stuck near minimum. AUDIOFOCUS_GAIN_TRANSIENT still pauses background media cleanly.
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
 
         val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
