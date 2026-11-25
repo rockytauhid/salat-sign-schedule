@@ -9,7 +9,9 @@ import com.salatsign.tv.data.api.PeerJoinRequest
 import com.salatsign.tv.data.api.PeerJoinResponse
 import com.salatsign.tv.data.api.PeerJoinSecretPayload
 import com.salatsign.tv.data.api.PeerNoticeMessage
+import com.salatsign.tv.data.api.PeerSecretRotatePayload
 import com.salatsign.tv.data.api.PeerSecretRotateRequest
+import com.salatsign.tv.data.api.PeerSyncAckResponse
 import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PhoneControllerJson
 import com.salatsign.tv.security.GroupJoinManager
@@ -59,14 +61,22 @@ class PeerSyncClient(
                 "Join code must be ${GroupJoinManager.CODE_LENGTH} characters"
             }
             val clientKeyPair = PeerJoinCrypto.generateEphemeralKeyPair()
+            val clientPubB64 = PeerJoinCrypto.encodePublicKey(clientKeyPair)
+            // Review 5 R5-2: Prove knowledge of join code via PBKDF2-HMAC proof without sending code in cleartext
+            val codeProof = PeerJoinCrypto.computeJoinCodeProof(
+                normalizedJoinCode = normalizedCode,
+                deviceId = selfPeer.deviceId,
+                clientPublicKeyBase64 = clientPubB64
+            )
             val req = PeerJoinRequest(
-                code = normalizedCode,
+                codeProofHex = codeProof,
                 deviceId = selfPeer.deviceId,
                 deviceName = selfPeer.deviceName,
                 roomGroup = selfPeer.roomGroup,
                 host = selfPeer.lastKnownHost,
                 port = selfPeer.port,
-                clientPublicKeyBase64 = PeerJoinCrypto.encodePublicKey(clientKeyPair)
+                clientPublicKeyBase64 = clientPubB64,
+                identityPublicKeyBase64 = selfPeer.publicKeyBase64
             )
             val body = PhoneControllerJson.encode(req).toByteArray(StandardCharsets.UTF_8)
             val conn = (URL("http://$targetHost:$targetPort/api/v1/peer/join").openConnection() as HttpURLConnection).apply {
@@ -157,7 +167,7 @@ class PeerSyncClient(
         val body = PhoneControllerJson.encode(payload).toByteArray(StandardCharsets.UTF_8)
         peers.map { peer ->
             async(Dispatchers.IO) {
-                sendSignedPost(peer, "/api/v1/peer/sync", body, groupSecretHex, selfDeviceId)
+                sendSignedPost(peer, "/api/v1/peer/sync", body, groupSecretHex, selfDeviceId, parseSyncAck = true)
             }
         }.awaitAll()
     }
@@ -178,19 +188,66 @@ class PeerSyncClient(
     }
 
     /**
-     * Review 4 M3: Pushes a new group secret to remaining peers signed under the old group secret.
+     * Review 5 R5-1: ECIES-encrypts the rotated group secret individually to each remaining peer's
+     * long-term EC public key so neither LAN sniffers nor a removed TV can decrypt the new secret.
      */
     suspend fun rotateSecretOnPeers(
         peers: List<PeerTvRecord>,
-        request: PeerSecretRotateRequest,
+        payload: PeerSecretRotatePayload,
         oldGroupSecretHex: String,
         selfDeviceId: String
     ): List<PeerDeliveryStatusDto> = coroutineScope {
         if (oldGroupSecretHex.isBlank() || peers.isEmpty()) return@coroutineScope emptyList()
-        val body = PhoneControllerJson.encode(request).toByteArray(StandardCharsets.UTF_8)
+        val plaintext = PhoneControllerJson.encode(payload).toByteArray(StandardCharsets.UTF_8)
         peers.map { peer ->
             async(Dispatchers.IO) {
-                sendSignedPost(peer, "/api/v1/peer/rotate", body, oldGroupSecretHex, selfDeviceId)
+                if (peer.publicKeyBase64.isBlank()) {
+                    PeerDeliveryStatusDto(
+                        deviceId = peer.deviceId,
+                        deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
+                        status = "failed",
+                        message = "Peer missing EC key — re-join required"
+                    )
+                } else {
+                    val env = runCatching {
+                        PeerJoinCrypto.encryptForRecipientPublicKey(
+                            recipientPublicKeyBase64 = peer.publicKeyBase64,
+                            recipientDeviceId = peer.deviceId,
+                            plaintextUtf8 = plaintext
+                        )
+                    }.getOrElse { err ->
+                        return@async PeerDeliveryStatusDto(
+                            deviceId = peer.deviceId,
+                            deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
+                            status = "failed",
+                            message = "ECIES encrypt failed: ${err.message}"
+                        )
+                    }
+                    val req = PeerSecretRotateRequest(
+                        ephemeralPublicKeyBase64 = env.serverPublicKeyBase64,
+                        ivBase64 = env.ivBase64,
+                        ciphertextBase64 = env.ciphertextBase64
+                    )
+                    val body = PhoneControllerJson.encode(req).toByteArray(StandardCharsets.UTF_8)
+                    sendSignedPost(peer, "/api/v1/peer/rotate", body, oldGroupSecretHex, selfDeviceId)
+                }
+            }
+        }.awaitAll()
+    }
+
+    /**
+     * Review 5 R5-5: Best-effort signed notification to peers before a TV leaves the group locally.
+     */
+    suspend fun notifyLeaveToPeers(
+        peers: List<PeerTvRecord>,
+        groupSecretHex: String,
+        selfDeviceId: String
+    ): List<PeerDeliveryStatusDto> = coroutineScope {
+        if (groupSecretHex.isBlank() || peers.isEmpty()) return@coroutineScope emptyList()
+        val body = "{}".toByteArray(StandardCharsets.UTF_8)
+        peers.map { peer ->
+            async(Dispatchers.IO) {
+                sendSignedPost(peer, "/api/v1/peer/leave", body, groupSecretHex, selfDeviceId)
             }
         }.awaitAll()
     }
@@ -307,7 +364,8 @@ class PeerSyncClient(
         path: String,
         body: ByteArray,
         groupSecretHex: String,
-        selfDeviceId: String
+        selfDeviceId: String,
+        parseSyncAck: Boolean = false
     ): PeerDeliveryStatusDto {
         return try {
             val ts = nowMillisProvider()
@@ -347,6 +405,38 @@ class PeerSyncClient(
                             status = "failed",
                             message = "Unauthenticated peer response"
                         )
+                    } else if (parseSyncAck) {
+                        // Review 5 R5-3: Report actual post-apply adoption and missing assets from peer
+                        val ack = runCatching {
+                            PhoneControllerJson.decode<PeerSyncAckResponse>(respBytes.toString(StandardCharsets.UTF_8))
+                        }.getOrNull()
+                        if (ack == null) {
+                            PeerDeliveryStatusDto(
+                                deviceId = peer.deviceId,
+                                deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
+                                status = "delivered"
+                            )
+                        } else {
+                            val st = when {
+                                ack.missingAssets.isNotEmpty() -> "missing_assets"
+                                !ack.adopted -> "not_adopted"
+                                else -> "delivered"
+                            }
+                            val msg = when {
+                                ack.missingAssets.isNotEmpty() -> "Missing ${ack.missingAssets.size} image(s)"
+                                !ack.adopted -> "Peer at v${ack.configVersion}"
+                                else -> null
+                            }
+                            PeerDeliveryStatusDto(
+                                deviceId = peer.deviceId,
+                                deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
+                                status = st,
+                                message = msg,
+                                configVersion = ack.configVersion,
+                                adopted = ack.adopted,
+                                missingAssets = ack.missingAssets
+                            )
+                        }
                     } else {
                         PeerDeliveryStatusDto(
                             deviceId = peer.deviceId,

@@ -340,6 +340,10 @@ async function removePeerAndRotate(deviceId, label) {
     body: JSON.stringify({ deviceId })
   });
   showMsg(res.ok ? 'Removed TV and rotated group secret.' : (res.data.message || 'Remove failed.'), res.ok);
+  const delEl = document.getElementById('pushDeliveries');
+  if (delEl && res.ok && Array.isArray(res.data.deliveries) && res.data.deliveries.length) {
+    delEl.textContent = 'Key rotation: ' + formatDeliveries(res.data.deliveries);
+  }
   if (res.ok) await loadNoticeAndPeers();
 }
 

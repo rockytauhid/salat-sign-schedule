@@ -11,13 +11,16 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.spec.ECGenParameterSpec
+import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.Cipher
 import javax.crypto.KeyAgreement
 import javax.crypto.Mac
+import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.abs
 
@@ -28,7 +31,8 @@ data class PeerTvRecord(
     val roomGroup: String = "",
     val lastKnownHost: String,
     val port: Int = 8088,
-    val lastSeenEpochMillis: Long = 0L
+    val lastSeenEpochMillis: Long = 0L,
+    val publicKeyBase64: String = ""
 )
 
 @Serializable
@@ -72,14 +76,17 @@ object PeerAssetValidator {
 }
 
 /**
- * Ephemeral ECDH (P-256) + AES-256-GCM key exchange bound to the one-time group join code (Review 4 H1).
- * Protects `groupSecretHex` against both passive LAN sniffing and active MITMs who do not possess the join code.
- * Uses standard JCA APIs available on Android API 26+ and JVM 17+.
+ * Ephemeral ECDH (P-256) + PBKDF2 + AES-256-GCM key exchange & ECIES per-peer encryption
+ * (Review 4 H1 + Review 5 R5-1 & R5-2).
+ * - Join codes are NEVER sent in cleartext; clients prove knowledge via PBKDF2-derived HMAC proof.
+ * - Group secret rotation is ECIES-encrypted to each remaining peer's long-term EC public key so
+ *   neither LAN sniffers nor a removed TV can decrypt the new group secret.
  */
 object PeerJoinCrypto {
     private const val CURVE = "secp256r1"
     private const val GCM_IV_BYTES = 12
     private const val GCM_TAG_BITS = 128
+    private const val JOIN_KDF_ITERATIONS = 10_000
     private val secureRandom = SecureRandom()
 
     data class EncryptedJoinEnvelope(
@@ -96,6 +103,29 @@ object PeerJoinCrypto {
 
     fun encodePublicKey(keyPair: KeyPair): String {
         return Base64.getEncoder().encodeToString(keyPair.public.encoded)
+    }
+
+    fun encodePrivateKey(keyPair: KeyPair): String {
+        return Base64.getEncoder().encodeToString(keyPair.private.encoded)
+    }
+
+    /**
+     * Review 5 R5-2: Proves knowledge of [normalizedJoinCode] bound to [deviceId] and
+     * [clientPublicKeyBase64] without sending the join code in cleartext.
+     */
+    fun computeJoinCodeProof(
+        normalizedJoinCode: String,
+        deviceId: String,
+        clientPublicKeyBase64: String
+    ): String {
+        val proofKey = pbkdf2Sha256(
+            password = normalizedJoinCode,
+            salt = "salatsign-join-proof-v1:$deviceId".toByteArray(StandardCharsets.UTF_8)
+        )
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(proofKey, "HmacSHA256"))
+        val msg = "join:$deviceId:$clientPublicKeyBase64".toByteArray(StandardCharsets.UTF_8)
+        return PinHasher.bytesToHex(mac.doFinal(msg))
     }
 
     fun encryptForPeer(
@@ -135,22 +165,85 @@ object PeerJoinCrypto {
         return cipher.doFinal(ciphertext)
     }
 
+    /**
+     * Review 5 R5-1: ECIES encryption of a rotated group secret to a specific peer's long-term EC public key.
+     */
+    fun encryptForRecipientPublicKey(
+        recipientPublicKeyBase64: String,
+        recipientDeviceId: String,
+        plaintextUtf8: ByteArray
+    ): EncryptedJoinEnvelope {
+        val ephemeral = generateEphemeralKeyPair()
+        val shared = computeEcdhSharedSecret(ephemeral.private, recipientPublicKeyBase64)
+        val aesKey = deriveRotationKey(shared, recipientDeviceId)
+        val iv = ByteArray(GCM_IV_BYTES)
+        secureRandom.nextBytes(iv)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(aesKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, iv))
+        cipher.updateAAD(recipientDeviceId.toByteArray(StandardCharsets.UTF_8))
+        val ciphertext = cipher.doFinal(plaintextUtf8)
+        return EncryptedJoinEnvelope(
+            serverPublicKeyBase64 = encodePublicKey(ephemeral),
+            ivBase64 = Base64.getEncoder().encodeToString(iv),
+            ciphertextBase64 = Base64.getEncoder().encodeToString(ciphertext)
+        )
+    }
+
+    /**
+     * Review 5 R5-1: Decrypts an ECIES-encrypted secret rotation envelope using this TV's long-term EC private key.
+     */
+    fun decryptWithRecipientPrivateKey(
+        ownPrivateKeyBase64: String,
+        ephemeralPublicKeyBase64: String,
+        ivBase64: String,
+        ciphertextBase64: String,
+        ownDeviceId: String
+    ): ByteArray {
+        val privBytes = Base64.getDecoder().decode(ownPrivateKeyBase64)
+        val privKey = KeyFactory.getInstance("EC").generatePrivate(PKCS8EncodedKeySpec(privBytes))
+        val shared = computeEcdhSharedSecret(privKey, ephemeralPublicKeyBase64)
+        val aesKey = deriveRotationKey(shared, ownDeviceId)
+        val iv = Base64.getDecoder().decode(ivBase64)
+        require(iv.size == GCM_IV_BYTES) { "Invalid GCM IV length" }
+        val ciphertext = Base64.getDecoder().decode(ciphertextBase64)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(aesKey, "AES"), GCMParameterSpec(GCM_TAG_BITS, iv))
+        cipher.updateAAD(ownDeviceId.toByteArray(StandardCharsets.UTF_8))
+        return cipher.doFinal(ciphertext)
+    }
+
+    private fun computeEcdhSharedSecret(
+        ownPrivateKey: java.security.PrivateKey,
+        remotePublicKeyBase64: String
+    ): ByteArray {
+        val remotePubBytes = Base64.getDecoder().decode(remotePublicKeyBase64)
+        val remotePub = KeyFactory.getInstance("EC").generatePublic(X509EncodedKeySpec(remotePubBytes))
+        val ka = KeyAgreement.getInstance("ECDH")
+        ka.init(ownPrivateKey)
+        ka.doPhase(remotePub, true)
+        return ka.generateSecret()
+    }
+
     private fun deriveJoinKey(
         ownKeyPair: KeyPair,
         remotePublicKeyBase64: String,
         normalizedJoinCode: String
     ): ByteArray {
-        val remotePubBytes = Base64.getDecoder().decode(remotePublicKeyBase64)
-        val remotePub = KeyFactory.getInstance("EC").generatePublic(X509EncodedKeySpec(remotePubBytes))
-        val ka = KeyAgreement.getInstance("ECDH")
-        ka.init(ownKeyPair.private)
-        ka.doPhase(remotePub, true)
-        val sharedSecret = ka.generateSecret()
+        val sharedSecret = computeEcdhSharedSecret(ownKeyPair.private, remotePublicKeyBase64)
+        return pbkdf2Sha256(password = normalizedJoinCode, salt = sharedSecret)
+    }
+
+    private fun deriveRotationKey(sharedSecret: ByteArray, recipientDeviceId: String): ByteArray {
         val md = MessageDigest.getInstance("SHA-256")
         md.update(sharedSecret)
-        md.update(":salatsign-peer-join-v1:".toByteArray(StandardCharsets.US_ASCII))
-        md.update(normalizedJoinCode.toByteArray(StandardCharsets.US_ASCII))
+        md.update(":salatsign-peer-rotate-v1:".toByteArray(StandardCharsets.US_ASCII))
+        md.update(recipientDeviceId.toByteArray(StandardCharsets.UTF_8))
         return md.digest()
+    }
+
+    private fun pbkdf2Sha256(password: String, salt: ByteArray): ByteArray {
+        val spec = PBEKeySpec(password.toCharArray(), salt, JOIN_KDF_ITERATIONS, 256)
+        return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
     }
 }
 
@@ -467,7 +560,48 @@ class GroupJoinManager(
         cur
     }
 
-    fun redeemCode(enteredCode: String, remoteIp: String = "unknown"): JoinCodeRedeemResult = synchronized(lock) {
+    fun redeemCode(enteredCode: String, remoteIp: String = "unknown"): JoinCodeRedeemResult {
+        val cleaned = normalizeCode(enteredCode)
+        return redeemInternal(remoteIp) { expectedCode ->
+            MessageDigest.isEqual(
+                cleaned.toByteArray(StandardCharsets.US_ASCII),
+                expectedCode.toByteArray(StandardCharsets.US_ASCII)
+            )
+        }
+    }
+
+    /**
+     * Review 5 R5-2: Verifies a client's PBKDF2-HMAC proof of knowledge of the join code
+     * without the join code ever being transmitted in cleartext.
+     */
+    fun redeemByProof(
+        deviceId: String,
+        clientPublicKeyBase64: String,
+        codeProofHex: String,
+        remoteIp: String = "unknown"
+    ): JoinCodeRedeemResult {
+        val cleanedProof = codeProofHex.trim().lowercase()
+        return redeemInternal(remoteIp) { expectedCode ->
+            if (cleanedProof.length != 64 || deviceId.isBlank() || clientPublicKeyBase64.isBlank()) {
+                false
+            } else {
+                val expectedProof = PeerJoinCrypto.computeJoinCodeProof(
+                    normalizedJoinCode = expectedCode,
+                    deviceId = deviceId,
+                    clientPublicKeyBase64 = clientPublicKeyBase64
+                )
+                MessageDigest.isEqual(
+                    cleanedProof.toByteArray(StandardCharsets.US_ASCII),
+                    expectedProof.toByteArray(StandardCharsets.US_ASCII)
+                )
+            }
+        }
+    }
+
+    private fun redeemInternal(
+        remoteIp: String,
+        verifier: (expectedCode: String) -> Boolean
+    ): JoinCodeRedeemResult = synchronized(lock) {
         val now = nowMillisProvider()
         val ipKey = remoteIp.ifBlank { "unknown" }
         val ipState = failuresByIp[ipKey] ?: IpFailState()
@@ -483,12 +617,7 @@ class GroupJoinManager(
             return JoinCodeRedeemResult.Expired
         }
 
-        val cleaned = normalizeCode(enteredCode)
-        val ok = MessageDigest.isEqual(
-            cleaned.toByteArray(StandardCharsets.US_ASCII),
-            cur.code.toByteArray(StandardCharsets.US_ASCII)
-        )
-        if (!ok) {
+        if (!verifier(cur.code)) {
             val nextIpFails = ipState.failedAttempts + 1
             val lockedUntil = if (nextIpFails >= MAX_WRONG_CODES_PER_IP) {
                 val exp = (nextIpFails - MAX_WRONG_CODES_PER_IP).coerceAtMost(5)

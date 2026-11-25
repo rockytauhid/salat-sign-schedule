@@ -106,6 +106,69 @@ class PeerHmacAuthTest {
     }
 
     @Test
+    fun review5_joinCodeProofEciesRotationAndPerIpSignatureLockout() {
+        var now = 1_700_000_000_000L
+        val mgr = GroupJoinManager(nowMillisProvider = { now })
+        val active = mgr.generateJoinCode()
+        val clientKp = PeerJoinCrypto.generateEphemeralKeyPair()
+        val clientPub = PeerJoinCrypto.encodePublicKey(clientKp)
+
+        // R5-2: Wrong proof fails, valid proof succeeds without sending code in cleartext
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, "0".repeat(64), "192.168.4.55") is JoinCodeRedeemResult.InvalidCode)
+        val validProof = PeerJoinCrypto.computeJoinCodeProof(active.code, "tv-join", clientPub)
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55") is JoinCodeRedeemResult.Success)
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55") is JoinCodeRedeemResult.NoActiveCode)
+
+        // R5-1: ECIES rotation envelope can ONLY be decrypted by the intended peer's private key (not a removed TV)
+        val goodPeerKp = PeerJoinCrypto.generateEphemeralKeyPair()
+        val removedPeerKp = PeerJoinCrypto.generateEphemeralKeyPair()
+        val rotPlain = """{"newGroupSecretHex":"${"b".repeat(64)}"}""".toByteArray(StandardCharsets.UTF_8)
+        val env = PeerJoinCrypto.encryptForRecipientPublicKey(
+            recipientPublicKeyBase64 = PeerJoinCrypto.encodePublicKey(goodPeerKp),
+            recipientDeviceId = "tv-good",
+            plaintextUtf8 = rotPlain
+        )
+        val decrypted = PeerJoinCrypto.decryptWithRecipientPrivateKey(
+            ownPrivateKeyBase64 = PeerJoinCrypto.encodePrivateKey(goodPeerKp),
+            ephemeralPublicKeyBase64 = env.serverPublicKeyBase64,
+            ivBase64 = env.ivBase64,
+            ciphertextBase64 = env.ciphertextBase64,
+            ownDeviceId = "tv-good"
+        )
+        assertEquals(rotPlain.toString(StandardCharsets.UTF_8), decrypted.toString(StandardCharsets.UTF_8))
+
+        val removedTried = runCatching {
+            PeerJoinCrypto.decryptWithRecipientPrivateKey(
+                ownPrivateKeyBase64 = PeerJoinCrypto.encodePrivateKey(removedPeerKp),
+                ephemeralPublicKeyBase64 = env.serverPublicKeyBase64,
+                ivBase64 = env.ivBase64,
+                ciphertextBase64 = env.ciphertextBase64,
+                ownDeviceId = "tv-good"
+            )
+        }
+        assertTrue("Removed TV with different EC key must NOT decrypt rotated secret", removedTried.isFailure)
+
+        // R5-6 / M2: Per-IP signature lockout after 10 bad signatures blocks even a valid signature from that IP for 60s
+        val auth = PeerHmacAuth(nowMillisProvider = { now })
+        val secret = PeerHmacAuth.generateGroupSecretHex()
+        repeat(PeerHmacAuth.MAX_FAILED_SIGS_PER_IP) { i ->
+            assertFalse(
+                auth.verifyRequest(
+                    secret, "GET", "/api/v1/peer/ping", "tv-b", "tv-bad", "tv-b",
+                    now.toString(), "bad-nonce-$i-000000", "f".repeat(64), ByteArray(0), "192.168.4.77"
+                )
+            )
+        }
+        val goodNonce = PeerHmacAuth.generateNonce()
+        val goodSig = PeerHmacAuth.computeSignature(secret, "GET", "/api/v1/peer/ping", "tv-a", "tv-b", now, goodNonce, ByteArray(0))
+        assertFalse("Locked IP must be rejected even with valid signature", auth.verifyRequest(secret, "GET", "/api/v1/peer/ping", "tv-b", "tv-a", "tv-b", now.toString(), goodNonce, goodSig, ByteArray(0), "192.168.4.77"))
+        now += 61_000L
+        val goodNonceAfter = PeerHmacAuth.generateNonce()
+        val goodSigAfter = PeerHmacAuth.computeSignature(secret, "GET", "/api/v1/peer/ping", "tv-a", "tv-b", now, goodNonceAfter, ByteArray(0))
+        assertTrue("After lockout expires, valid signature succeeds", auth.verifyRequest(secret, "GET", "/api/v1/peer/ping", "tv-b", "tv-a", "tv-b", now.toString(), goodNonceAfter, goodSigAfter, ByteArray(0), "192.168.4.77"))
+    }
+
+    @Test
     fun peerAssetValidator_rejectsPathTraversalAndUnsafeNames() {
         assertTrue(PeerAssetValidator.isSafeFileName("slide_1234.jpg"))
         assertTrue(PeerAssetValidator.isSafeFileName("poster-01.webp"))

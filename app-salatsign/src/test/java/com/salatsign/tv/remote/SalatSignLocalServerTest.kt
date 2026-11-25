@@ -14,6 +14,9 @@ import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PeerJoinResponse
 import com.salatsign.tv.data.api.PeerJoinSecretPayload
 import com.salatsign.tv.data.api.PeerListResponse
+import com.salatsign.tv.data.api.PeerSecretRotatePayload
+import com.salatsign.tv.data.api.PeerSecretRotateRequest
+import com.salatsign.tv.data.api.PeerSyncAckResponse
 import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PhoneControllerJson
 import com.salatsign.tv.data.api.SettingsPatchRequest
@@ -186,6 +189,17 @@ class SalatSignLocalServerTest {
             val created = "tv-test-uuid-0001"
             state.value = state.value.copy(deviceId = created)
             return created
+        }
+        override suspend fun ensureDeviceEcKeyPair(): Pair<String, String> {
+            val cur = state.value
+            if (cur.deviceEcPublicKeyBase64.isNotBlank() && cur.deviceEcPrivateKeyBase64.isNotBlank()) {
+                return cur.deviceEcPublicKeyBase64 to cur.deviceEcPrivateKeyBase64
+            }
+            val kp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
+            val pub = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(kp)
+            val priv = com.salatsign.tv.security.PeerJoinCrypto.encodePrivateKey(kp)
+            state.value = cur.copy(deviceEcPublicKeyBase64 = pub, deviceEcPrivateKeyBase64 = priv)
+            return pub to priv
         }
         override suspend fun setDeviceIdentity(name: String, roomGroup: String) {
             state.value = state.value.copy(deviceName = name.trim(), roomGroup = roomGroup.trim())
@@ -932,14 +946,18 @@ class SalatSignLocalServerTest {
         val joinCode = PhoneControllerJson.decode<GroupJoinCodeResponse>(joinCodeResp.body.toString(StandardCharsets.UTF_8)).code
         assertEquals(8, joinCode.length)
 
-        // Review 4 H1: Peer join uses ephemeral ECDH + AES-256-GCM so groupSecretHex is never sent in cleartext
+        // Review 4 H1 + Review 5 R5-2: Peer join uses PBKDF2-HMAC code proof (zero cleartext code!)
+        // and ephemeral ECDH + AES-256-GCM so groupSecretHex is never sent in cleartext.
         val clientKp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
         val clientPubB64 = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(clientKp)
+        val identityKp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
+        val identityPubB64 = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(identityKp)
+        val codeProofHex = com.salatsign.tv.security.PeerJoinCrypto.computeJoinCodeProof(joinCode, "tv-downstairs-1", clientPubB64)
         val peerJoinResp = server.handleRequest(
             HttpRequest(
                 method = "POST",
                 path = "/api/v1/peer/join",
-                body = """{"code":"$joinCode","deviceId":"tv-downstairs-1","deviceName":"Downstairs Left","roomGroup":"Downstairs","host":"192.168.4.40","port":8088,"clientPublicKeyBase64":"$clientPubB64"}""".toByteArray()
+                body = """{"codeProofHex":"$codeProofHex","deviceId":"tv-downstairs-1","deviceName":"Downstairs Left","roomGroup":"Downstairs","host":"192.168.4.40","port":8088,"clientPublicKeyBase64":"$clientPubB64","identityPublicKeyBase64":"$identityPubB64"}""".toByteArray()
             )
         )
         assertEquals(200, peerJoinResp.statusCode)
@@ -1006,6 +1024,119 @@ class SalatSignLocalServerTest {
             )
         )
         assertEquals(200, signedSyncResp.statusCode)
+        val syncAck = PhoneControllerJson.decode<PeerSyncAckResponse>(signedSyncResp.body.toString(StandardCharsets.UTF_8))
+        assertTrue(syncAck.adopted)
+        assertEquals(99L, syncAck.configVersion)
+        assertTrue(syncAck.missingAssets.isEmpty())
+
+        // Review 5 R5-3: Older incoming version returns adopted=false without downgrading configVersion
+        val stalePayload = syncPayload.copy(configVersion = 50L)
+        val staleBytes = PhoneControllerJson.encode(stalePayload).toByteArray(StandardCharsets.UTF_8)
+        val staleNonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
+        val staleSig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
+            joined.groupSecretHex, "POST", "/api/v1/peer/sync", "tv-downstairs-1", selfDeviceId, now, staleNonce, staleBytes
+        )
+        val staleResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peer/sync",
+                headers = mapOf(
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TARGET_ID to selfDeviceId,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to staleNonce,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to staleSig
+                ),
+                body = staleBytes
+            )
+        )
+        assertEquals(200, staleResp.statusCode)
+        val staleAck = PhoneControllerJson.decode<PeerSyncAckResponse>(staleResp.body.toString(StandardCharsets.UTF_8))
+        assertFalse(staleAck.adopted)
+        assertEquals(99L, staleAck.configVersion)
+
+        // Review 5 R5-6: Signed /peer/ping returns signed response
+        val pingNonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
+        val pingSig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
+            joined.groupSecretHex, "GET", "/api/v1/peer/ping", "tv-downstairs-1", selfDeviceId, now, pingNonce, ByteArray(0)
+        )
+        val pingResp = server.handleRequest(
+            HttpRequest(
+                method = "GET",
+                path = "/api/v1/peer/ping",
+                headers = mapOf(
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TARGET_ID to selfDeviceId,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to pingNonce,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to pingSig
+                )
+            )
+        )
+        assertEquals(200, pingResp.statusCode)
+        assertTrue(
+            com.salatsign.tv.security.PeerHmacAuth.verifyResponse(
+                joined.groupSecretHex, selfDeviceId, pingNonce,
+                pingResp.extraHeaders[com.salatsign.tv.security.PeerHmacAuth.HEADER_RESP_TIMESTAMP],
+                pingResp.extraHeaders[com.salatsign.tv.security.PeerHmacAuth.HEADER_RESP_SIGNATURE],
+                pingResp.body, now
+            )
+        )
+
+        // Review 5 R5-1: ECIES-encrypted /peer/rotate updates local groupSecretHex cleanly
+        val (selfEcPub, _) = settingsRepo.ensureDeviceEcKeyPair()
+        val rotatedSecret = com.salatsign.tv.security.PeerHmacAuth.generateGroupSecretHex()
+        val rotPayloadBytes = PhoneControllerJson.encode(
+            PeerSecretRotatePayload(newGroupSecretHex = rotatedSecret, removedDeviceId = "tv-retired")
+        ).toByteArray(StandardCharsets.UTF_8)
+        val rotEnv = com.salatsign.tv.security.PeerJoinCrypto.encryptForRecipientPublicKey(selfEcPub, selfDeviceId, rotPayloadBytes)
+        val rotReqBytes = PhoneControllerJson.encode(
+            PeerSecretRotateRequest(rotEnv.serverPublicKeyBase64, rotEnv.ivBase64, rotEnv.ciphertextBase64)
+        ).toByteArray(StandardCharsets.UTF_8)
+        assertFalse("Rotated secret must NOT appear in cleartext", rotReqBytes.toString(StandardCharsets.UTF_8).contains(rotatedSecret))
+        val rotNonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
+        val rotSig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
+            joined.groupSecretHex, "POST", "/api/v1/peer/rotate", "tv-downstairs-1", selfDeviceId, now, rotNonce, rotReqBytes
+        )
+        val rotResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peer/rotate",
+                headers = mapOf(
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TARGET_ID to selfDeviceId,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to rotNonce,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to rotSig
+                ),
+                body = rotReqBytes
+            )
+        )
+        assertEquals(200, rotResp.statusCode)
+        assertEquals(rotatedSecret, settingsRepo.current.groupSecretHex)
+
+        // Review 5 R5-5: Signed /peer/leave removes leaving peer from peerTvs
+        val leaveNonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
+        val leaveSig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
+            rotatedSecret, "POST", "/api/v1/peer/leave", "tv-downstairs-1", selfDeviceId, now, leaveNonce, "{}".toByteArray()
+        )
+        val peerLeaveResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peer/leave",
+                headers = mapOf(
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TARGET_ID to selfDeviceId,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to leaveNonce,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to leaveSig
+                ),
+                body = "{}".toByteArray()
+            )
+        )
+        assertEquals(200, peerLeaveResp.statusCode)
+        assertTrue(settingsRepo.current.peerTvs.isEmpty())
+
         // Review 4 H2: Response must carry a valid HMAC signature bound to request nonce + responder deviceId
         assertTrue(
             com.salatsign.tv.security.PeerHmacAuth.verifyResponse(

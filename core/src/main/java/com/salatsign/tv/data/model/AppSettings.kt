@@ -288,7 +288,9 @@ data class AppSettings(
     // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3)
     val groupSecretHex: String = "",
     val peerTvs: List<com.salatsign.tv.security.PeerTvRecord> = emptyList(),
-    val activeUrgentNotice: com.salatsign.tv.security.UrgentNoticeRecord? = null
+    val activeUrgentNotice: com.salatsign.tv.security.UrgentNoticeRecord? = null,
+    val deviceEcPublicKeyBase64: String = "",
+    val deviceEcPrivateKeyBase64: String = ""
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

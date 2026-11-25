@@ -97,6 +97,7 @@ interface ISettingsRepository {
     suspend fun setScreensaverCalendarDurationSeconds(seconds: Int)
     // TV Identity & Multi-TV Sync Metadata (SalatSign Phone Controller Phase 0)
     suspend fun ensureDeviceId(): String
+    suspend fun ensureDeviceEcKeyPair(): Pair<String, String>
     suspend fun setDeviceIdentity(name: String, roomGroup: String)
     suspend fun bumpConfigVersion(): Long
     suspend fun setConfigVersion(version: Long)

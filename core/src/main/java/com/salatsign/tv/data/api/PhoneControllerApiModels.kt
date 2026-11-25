@@ -360,13 +360,14 @@ data class FullConfigWriteRequest(
 
 @Serializable
 data class PeerJoinRequest(
-    val code: String = "",
+    val codeProofHex: String = "",
     val deviceId: String = "",
     val deviceName: String = "",
     val roomGroup: String = "",
     val host: String = "",
     val port: Int = ApiConstants.DEFAULT_HTTP_PORT,
-    val clientPublicKeyBase64: String = ""
+    val clientPublicKeyBase64: String = "",
+    val identityPublicKeyBase64: String = ""
 )
 
 @Serializable
@@ -401,10 +402,17 @@ data class BrowserRemovePeerRequest(
 )
 
 @Serializable
-data class PeerSecretRotateRequest(
+data class PeerSecretRotatePayload(
     val newGroupSecretHex: String,
     val removedDeviceId: String = "",
     val peers: List<com.salatsign.tv.security.PeerTvRecord> = emptyList()
+)
+
+@Serializable
+data class PeerSecretRotateRequest(
+    val ephemeralPublicKeyBase64: String,
+    val ivBase64: String,
+    val ciphertextBase64: String
 )
 
 @Serializable
@@ -424,15 +432,26 @@ data class PeerListResponse(
     val roomGroups: List<String>,
     val groupLinked: Boolean,
     val configVersion: Long = 1L,
-    val peerHealth: List<PeerHealthDto> = emptyList()
+    val peerHealth: List<PeerHealthDto> = emptyList(),
+    val deliveries: List<PeerDeliveryStatusDto> = emptyList()
+)
+
+@Serializable
+data class PeerSyncAckResponse(
+    val configVersion: Long,
+    val adopted: Boolean,
+    val missingAssets: List<String> = emptyList()
 )
 
 @Serializable
 data class PeerDeliveryStatusDto(
     val deviceId: String,
     val deviceName: String,
-    val status: String, // "delivered", "failed"
-    val message: String? = null
+    val status: String, // "delivered", "not_adopted", "missing_assets", "failed"
+    val message: String? = null,
+    val configVersion: Long? = null,
+    val adopted: Boolean? = null,
+    val missingAssets: List<String> = emptyList()
 )
 
 @Serializable

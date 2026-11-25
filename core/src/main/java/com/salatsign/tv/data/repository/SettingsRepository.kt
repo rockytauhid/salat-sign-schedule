@@ -151,10 +151,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val PAIRED_TOKEN_EXPIRY_DAYS = intPreferencesKey("paired_token_expiry_days")
         val PHONE_CONTROLLER_ALWAYS_ON = booleanPreferencesKey("phone_controller_always_on")
 
-        // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3)
+        // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3 & Review 5 R5-1)
         val GROUP_SECRET_HEX = stringPreferencesKey("group_secret_hex")
         val PEER_TVS_JSON = stringPreferencesKey("peer_tvs_json")
         val ACTIVE_URGENT_NOTICE_JSON = stringPreferencesKey("active_urgent_notice_json")
+        val DEVICE_EC_PUBLIC_KEY = stringPreferencesKey("device_ec_public_key")
+        val DEVICE_EC_PRIVATE_KEY = stringPreferencesKey("device_ec_private_key")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -396,7 +398,9 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                     if (raw.isBlank()) null else runCatching {
                         com.salatsign.tv.data.api.PhoneControllerJson.decode<com.salatsign.tv.security.UrgentNoticeRecord>(raw)
                     }.getOrNull()
-                }
+                },
+                deviceEcPublicKeyBase64 = preferences[PreferencesKeys.DEVICE_EC_PUBLIC_KEY] ?: "",
+                deviceEcPrivateKeyBase64 = preferences[PreferencesKeys.DEVICE_EC_PRIVATE_KEY] ?: ""
             )
         }
 
@@ -897,6 +901,26 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             }
         }
         return resolved
+    }
+
+    override suspend fun ensureDeviceEcKeyPair(): Pair<String, String> {
+        var pub = ""
+        var priv = ""
+        context.dataStore.edit { prefs ->
+            val existingPub = prefs[PreferencesKeys.DEVICE_EC_PUBLIC_KEY]?.trim().orEmpty()
+            val existingPriv = prefs[PreferencesKeys.DEVICE_EC_PRIVATE_KEY]?.trim().orEmpty()
+            if (existingPub.isNotEmpty() && existingPriv.isNotEmpty()) {
+                pub = existingPub
+                priv = existingPriv
+            } else {
+                val kp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
+                pub = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(kp)
+                priv = com.salatsign.tv.security.PeerJoinCrypto.encodePrivateKey(kp)
+                prefs[PreferencesKeys.DEVICE_EC_PUBLIC_KEY] = pub
+                prefs[PreferencesKeys.DEVICE_EC_PRIVATE_KEY] = priv
+            }
+        }
+        return pub to priv
     }
 
     override suspend fun setDeviceIdentity(name: String, roomGroup: String) {
