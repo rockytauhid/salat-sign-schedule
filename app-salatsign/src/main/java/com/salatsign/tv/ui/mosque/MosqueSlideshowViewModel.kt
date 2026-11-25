@@ -25,11 +25,12 @@ import com.salatsign.tv.engine.DailyPrayerCacheKey
 import com.salatsign.tv.engine.IslamicCalendarSlideRows
 import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
-import com.salatsign.tv.engine.QuranDurationCalculator
 import com.salatsign.tv.engine.QuranShuffleBag
 import com.salatsign.tv.engine.RotationSlideItem
 import com.salatsign.tv.engine.SilentScreenCalculator
 import com.salatsign.tv.engine.SlideshowRotationBuilder
+import com.salatsign.tv.engine.WallClockSlideshowScheduler
+import com.salatsign.tv.engine.WallClockSlot
 import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -187,201 +188,163 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private fun startSlideshowLoop() {
         slideshowLoopJob?.cancel()
         slideshowLoopJob = viewModelScope.launch {
+            var activeQuranSlotKey: Triple<Long, Int, Pair<String, Boolean>>? = null
+            var activeQuranSlide: SlideState.QuranVerse? = null
+
             while (isActive) {
-                // Get current settings
                 val settings = settingsState.value
                 val zone = runCatching { ZoneId.of(settings.zoneId) }.getOrDefault(ZoneId.systemDefault())
                 val nowZoned = ZonedDateTime.now(zone)
                 val now = nowZoned.toLocalTime()
-
                 val prayerTimes = getPrayerTimesDay(settings, nowZoned)
+                val scheduleDuration = settings.scheduleDurationSeconds.coerceAtLeast(10)
 
                 // Highest priority: Silent Screen ("Jumu'ah / Prayer in progress")
                 val silentNow = evaluateSilentScreen(settings, nowZoned)
                 if (silentNow != null) {
                     _interruptedActivePrayer.value = null
+                    activeQuranSlotKey = null
+                    activeQuranSlide = null
                     _slideState.value = SlideState.SilentScreen(silentNow.kind)
-                    delay(1000)
-                    continue
-                }
-
-                // Check if currently within exact prayer strike window (5 minutes)
-                val strikingPrayer = evaluateStrike(prayerTimes, now, settings.showStrikeHighlight)
-
-                if (strikingPrayer != null) {
-                    _interruptedActivePrayer.value = strikingPrayer
-                    // Stay on Prayer Schedule silently pulsing during exact strike
-                    _slideState.value = SlideState.PrayerSchedule(settings.scheduleDurationSeconds)
-                    delay(5000) // Re-evaluate in 5 seconds
-                    continue
                 } else {
-                    _interruptedActivePrayer.value = null
-                }
-
-                // Step 1: Show Prayer Schedule for T_schedule seconds
-                val scheduleDuration = settings.scheduleDurationSeconds.coerceAtLeast(10)
-                _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
-
-                // Wait for scheduleDuration with 1-second interval checks for silent screen or exact prayer strike
-                var interruptedBySilent = false
-                for (sec in 0 until scheduleDuration) {
-                    delay(1000)
-                    val tickSettings = settingsState.value
-                    val tickZone = runCatching { ZoneId.of(tickSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-                    val tickNowZoned = ZonedDateTime.now(tickZone)
-                    val tickSilent = evaluateSilentScreen(tickSettings, tickNowZoned)
-                    if (tickSilent != null) {
+                    // Exact prayer strike window (5 minutes): hold on Prayer Schedule
+                    val strikingPrayer = evaluateStrike(prayerTimes, now, settings.showStrikeHighlight)
+                    if (strikingPrayer != null) {
+                        _interruptedActivePrayer.value = strikingPrayer
+                        activeQuranSlotKey = null
+                        activeQuranSlide = null
+                        _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
+                    } else {
                         _interruptedActivePrayer.value = null
-                        _slideState.value = SlideState.SilentScreen(tickSilent.kind)
-                        interruptedBySilent = true
-                        break
-                    }
-                    val strike = evaluateStrike(prayerTimes, tickNowZoned.toLocalTime(), tickSettings.showStrikeHighlight)
 
-                    if (strike != null) {
-                        _interruptedActivePrayer.value = strike
-                        break
-                    }
-                }
-
-                if (interruptedBySilent || _interruptedActivePrayer.value != null) {
-                    continue
-                }
-
-                // Step 2: Transition through Rotation Items (first 6 slots: enabled announcements by sortOrder, then built-in slides)
-                val currentSettings = settingsState.value
-                val currentZone = runCatching { ZoneId.of(currentSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-                val filterToday = ZonedDateTime.now(currentZone).toLocalDate()
-                val allSlides = contentRepository.slidesFlow.value.slides
-                val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
-                val calendarSlideRows = if (currentSettings.islamicCalendarSlideEnabled) {
-                    IslamicCalendarSlideRows.compute(
-                        today = filterToday,
-                        enabledIds = currentSettings.enabledIslamicEventIds,
-                        adjustmentDays = currentSettings.hijriOffsetDays
-                    )
-                } else {
-                    emptyList()
-                }
-                val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(
-                    settings = currentSettings,
-                    islamicCalendarHasContent = calendarSlideRows.isNotEmpty(),
-                    quranVerseHasContent = quranRepository.allReferences().isNotEmpty()
-                )
-                val rotationPlan = SlideshowRotationBuilder.build(activeSlides, builtInRegistrations)
-
-                if (rotationPlan.runtimeItems.isNotEmpty()) {
-                    for ((index, item) in rotationPlan.runtimeItems.withIndex()) {
-                        // Recompute today and prayerTimes at the start of every slide
-                        val slideSettings = settingsState.value
-                        val slideZone = runCatching { ZoneId.of(slideSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-                        val slideNowZoned = ZonedDateTime.now(slideZone)
-                        val slideNow = slideNowZoned.toLocalTime()
-
-                        val startSilent = evaluateSilentScreen(slideSettings, slideNowZoned)
-                        if (startSilent != null) {
-                            _interruptedActivePrayer.value = null
-                            _slideState.value = SlideState.SilentScreen(startSilent.kind)
-                            break
+                        // Decision D25: Pure offline wall-clock slideshow sync (epochSeconds % totalCycleSeconds)
+                        val filterToday = nowZoned.toLocalDate()
+                        val allSlides = contentRepository.slidesFlow.value.slides
+                        val activeSlides = contentRepository.getActiveSlides(allSlides, filterToday)
+                        val calendarSlideRows = if (settings.islamicCalendarSlideEnabled) {
+                            IslamicCalendarSlideRows.compute(
+                                today = filterToday,
+                                enabledIds = settings.enabledIslamicEventIds,
+                                adjustmentDays = settings.hijriOffsetDays
+                            )
+                        } else {
+                            emptyList()
                         }
+                        val quranRefs = quranRepository.allReferences()
+                        val builtInRegistrations = BuiltInSlideRegistry.registrationsFor(
+                            settings = settings,
+                            islamicCalendarHasContent = calendarSlideRows.isNotEmpty(),
+                            quranVerseHasContent = quranRefs.isNotEmpty()
+                        )
+                        val rotationPlan = SlideshowRotationBuilder.build(activeSlides, builtInRegistrations)
 
-                        val slidePrayerTimes = getPrayerTimesDay(slideSettings, slideNowZoned)
-
-                        // Check strike at the start of this slide
-                        val startStrike = evaluateStrike(slidePrayerTimes, slideNow, slideSettings.showStrikeHighlight)
-
-                        if (startStrike != null) {
-                            _interruptedActivePrayer.value = startStrike
-                            _slideState.value = SlideState.PrayerSchedule(slideSettings.scheduleDurationSeconds.coerceAtLeast(10))
-                            break
-                        }
-
-                        val slideDuration = when (item) {
-                            is RotationSlideItem.Announcement -> {
-                                val dur = item.slide.durationSeconds.coerceAtLeast(3)
-                                _slideState.value = SlideState.AnnouncementImage(
-                                    slideIndex = index,
-                                    slide = item.slide,
-                                    durationSeconds = dur
-                                )
-                                dur
-                            }
-                            is RotationSlideItem.BuiltIn -> {
-                                when (item.id) {
-                                    BuiltInSlideId.ISLAMIC_CALENDAR -> {
-                                        val freshRows = IslamicCalendarSlideRows.compute(
-                                            today = slideNowZoned.toLocalDate(),
-                                            enabledIds = slideSettings.enabledIslamicEventIds,
-                                            adjustmentDays = slideSettings.hijriOffsetDays
+                        val wallSlots = buildList {
+                            add(WallClockSlot(slotId = "schedule", durationSeconds = scheduleDuration))
+                            for (item in rotationPlan.runtimeItems) {
+                                when (item) {
+                                    is RotationSlideItem.Announcement -> add(
+                                        WallClockSlot(
+                                            slotId = "announcement:${item.slide.id}",
+                                            durationSeconds = item.slide.durationSeconds.coerceAtLeast(3)
                                         )
-                                        if (freshRows.isEmpty()) continue
-                                        val dur = slideSettings.islamicCalendarSlideDurationSeconds.coerceIn(10, 60)
-                                        _slideState.value = SlideState.IslamicCalendar(
-                                            rows = freshRows,
-                                            durationSeconds = dur
+                                    )
+                                    is RotationSlideItem.BuiltIn -> when (item.id) {
+                                        BuiltInSlideId.ISLAMIC_CALENDAR -> add(
+                                            WallClockSlot(
+                                                slotId = "builtin:ISLAMIC_CALENDAR",
+                                                durationSeconds = settings.islamicCalendarSlideDurationSeconds.coerceIn(10, 60)
+                                            )
                                         )
-                                        dur
-                                    }
-                                    BuiltInSlideId.QURAN_VERSE -> {
-                                        val refs = quranRepository.allReferences()
-                                        if (refs.isEmpty()) continue
-                                        val bag = QuranShuffleBag.deserialize(slideSettings.quranShuffleBagState, refs)
-                                        val draw = bag.next(refs) ?: continue
-                                        val (chosenRef, nextBag) = draw
-                                        settingsRepository.setQuranShuffleBagState(nextBag.serialize())
-                                        val verse = quranRepository.getVerse(chosenRef, slideSettings.appLanguage) ?: continue
-                                        val dur = QuranDurationCalculator.resolveDurationSeconds(
-                                            configuredDurationSeconds = slideSettings.quranVerseDurationSeconds,
-                                            arabicText = verse.arabicText,
-                                            translationText = verse.translationText,
-                                            showTranslation = slideSettings.quranShowTranslation
+                                        BuiltInSlideId.QURAN_VERSE -> add(
+                                            WallClockSlot(
+                                                slotId = "builtin:QURAN_VERSE",
+                                                durationSeconds = WallClockSlideshowScheduler.resolveQuranSlotDurationSeconds(
+                                                    settings.quranVerseDurationSeconds
+                                                )
+                                            )
                                         )
-                                        skipCurrentQuranRequested = false
-                                        _slideState.value = SlideState.QuranVerse(
-                                            verse = verse,
-                                            showTranslation = slideSettings.quranShowTranslation,
-                                            durationSeconds = dur
-                                        )
-                                        dur
                                     }
                                 }
                             }
                         }
 
-                        // Wait for slideDuration with silent-screen, overflow-skip, and exact-strike interruption check
-                        var interrupted = false
-                        for (sec in 0 until slideDuration) {
-                            delay(1000)
-                            if (skipCurrentQuranRequested && _slideState.value is SlideState.QuranVerse) {
-                                skipCurrentQuranRequested = false
-                                break
-                            }
-                            val tickSettings = settingsState.value
-                            val tickZone = runCatching { ZoneId.of(tickSettings.zoneId) }.getOrDefault(ZoneId.systemDefault())
-                            val tickNowZoned = ZonedDateTime.now(tickZone)
-                            val tickSilent = evaluateSilentScreen(tickSettings, tickNowZoned)
-                            if (tickSilent != null) {
-                                _interruptedActivePrayer.value = null
-                                _slideState.value = SlideState.SilentScreen(tickSilent.kind)
-                                interrupted = true
-                                break
-                            }
-                            val strike = evaluateStrike(slidePrayerTimes, tickNowZoned.toLocalTime(), tickSettings.showStrikeHighlight)
+                        val resolution = WallClockSlideshowScheduler.resolve(
+                            epochSeconds = nowZoned.toEpochSecond(),
+                            slots = wallSlots
+                        )
 
-                            if (strike != null) {
-                                // Silent Exact-Time Interruption: Cancel slide immediately and return to schedule
-                                _interruptedActivePrayer.value = strike
-                                _slideState.value = SlideState.PrayerSchedule(tickSettings.scheduleDurationSeconds.coerceAtLeast(10))
-                                interrupted = true
-                                break
+                        if (resolution == null || resolution.slotIndex == 0) {
+                            activeQuranSlotKey = null
+                            activeQuranSlide = null
+                            _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
+                        } else {
+                            val rotationIndex = resolution.slotIndex - 1
+                            when (val item = rotationPlan.runtimeItems.getOrNull(rotationIndex)) {
+                                is RotationSlideItem.Announcement -> {
+                                    activeQuranSlotKey = null
+                                    activeQuranSlide = null
+                                    _slideState.value = SlideState.AnnouncementImage(
+                                        slideIndex = rotationIndex,
+                                        slide = item.slide,
+                                        durationSeconds = resolution.durationSeconds
+                                    )
+                                }
+                                is RotationSlideItem.BuiltIn -> when (item.id) {
+                                    BuiltInSlideId.ISLAMIC_CALENDAR -> {
+                                        activeQuranSlotKey = null
+                                        activeQuranSlide = null
+                                        _slideState.value = if (calendarSlideRows.isNotEmpty()) {
+                                            SlideState.IslamicCalendar(
+                                                rows = calendarSlideRows,
+                                                durationSeconds = resolution.durationSeconds
+                                            )
+                                        } else {
+                                            SlideState.PrayerSchedule(scheduleDuration)
+                                        }
+                                    }
+                                    BuiltInSlideId.QURAN_VERSE -> {
+                                        val slotKey = Triple(
+                                            resolution.cycleIndex,
+                                            resolution.slotIndex,
+                                            settings.appLanguage.name to settings.quranShowTranslation
+                                        )
+                                        if (activeQuranSlotKey != slotKey || skipCurrentQuranRequested || activeQuranSlide == null) {
+                                            skipCurrentQuranRequested = false
+                                            val bag = QuranShuffleBag.deserialize(settings.quranShuffleBagState, quranRefs)
+                                            val draw = bag.next(quranRefs)
+                                            if (draw != null) {
+                                                val (chosenRef, nextBag) = draw
+                                                settingsRepository.setQuranShuffleBagState(nextBag.serialize())
+                                                val verse = quranRepository.getVerse(chosenRef, settings.appLanguage)
+                                                activeQuranSlide = verse?.let {
+                                                    SlideState.QuranVerse(
+                                                        verse = it,
+                                                        showTranslation = settings.quranShowTranslation,
+                                                        durationSeconds = resolution.durationSeconds
+                                                    )
+                                                }
+                                                activeQuranSlotKey = slotKey
+                                            } else {
+                                                activeQuranSlide = null
+                                                activeQuranSlotKey = null
+                                            }
+                                        }
+                                        _slideState.value = activeQuranSlide ?: SlideState.PrayerSchedule(scheduleDuration)
+                                    }
+                                }
+                                null -> {
+                                    activeQuranSlotKey = null
+                                    activeQuranSlide = null
+                                    _slideState.value = SlideState.PrayerSchedule(scheduleDuration)
+                                }
                             }
-                        }
-
-                        if (interrupted) {
-                            break
                         }
                     }
                 }
+
+                // Sleep aligned to the next wall-clock second boundary so NTP-synced TVs flip together
+                val delayMs = (1000L - (System.currentTimeMillis() % 1000L)).coerceIn(100L, 1000L)
+                delay(delayMs)
             }
         }
     }

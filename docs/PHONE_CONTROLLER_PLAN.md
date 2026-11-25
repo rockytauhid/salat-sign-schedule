@@ -62,10 +62,10 @@ The TV-hosted web Phone Controller in `:app-salatsign` is the primary remote adm
 
 ---
 
-## Phase 4: Leader/Follower Sync per Room
+## Phase 4: Wall-Clock Multi-TV Slide Sync *(Complete — Decision D25)*
 
-- Per-room-group leader announces `"slide N, switch at time T"` over the signed TV-to-TV channel; followers estimate clock offset via ping-pong and fall back to local timers if messages stop.
-- Seeded Quran verse selection (`date + slot + configVersion`) keeps both room TVs showing the exact same verse.
+- [x] Replaced Leader/Follower network heartbeats with pure offline wall-clock slot resolution (`WallClockSlideshowScheduler`: `epochSeconds % totalCycleSeconds`) in `MosqueSlideshowViewModel`. All TVs with synced config transition Prayer Schedule, announcements, and built-in slides within ~1 second via Android NTP clocks with zero LAN chatter, zero leader-election failure modes, and immediate re-alignment after Silent Screen or prayer-strike windows.
+- [x] Quran verse selection remains intentionally local per TV (`QuranShuffleBag`) using a fixed wall-clock slot width (`25s` when Auto is selected, or configured `10–90s`), so per-TV verse differences or overflow skips never drift slide transitions across TVs.
 
 ---
 
