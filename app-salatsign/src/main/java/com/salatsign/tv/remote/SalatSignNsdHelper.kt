@@ -24,14 +24,23 @@ class SalatSignNsdHelper(private val context: Context) {
     private var registrationListener: NsdManager.RegistrationListener? = null
     private var isRegistered = false
 
-    fun register(port: Int = ApiConstants.DEFAULT_HTTP_PORT) {
+    fun register(
+        port: Int = ApiConstants.DEFAULT_HTTP_PORT,
+        deviceId: String = "",
+        deviceName: String = "",
+        roomGroup: String = ""
+    ) {
         if (isRegistered) return
         try {
             val manager = context.getSystemService(Context.NSD_SERVICE) as? NsdManager ?: return
             val serviceInfo = NsdServiceInfo().apply {
-                serviceName = SERVICE_NAME
+                serviceName = if (deviceName.isNotBlank()) "SalatSign-${deviceName.take(24)}" else SERVICE_NAME
                 serviceType = ApiConstants.MDNS_SERVICE_TYPE
                 this.port = port
+                setAttribute("api", ApiConstants.API_VERSION.toString())
+                if (deviceId.isNotBlank()) setAttribute("id", deviceId)
+                if (deviceName.isNotBlank()) setAttribute("name", deviceName)
+                if (roomGroup.isNotBlank()) setAttribute("group", roomGroup)
             }
             val listener = object : NsdManager.RegistrationListener {
                 override fun onServiceRegistered(info: NsdServiceInfo) {

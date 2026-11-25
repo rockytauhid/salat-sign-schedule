@@ -138,6 +138,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val SCREENSAVER_QURAN_ENABLED = booleanPreferencesKey("screensaver_quran_enabled")
         val SCREENSAVER_SCHEDULE_DURATION_SECONDS = intPreferencesKey("screensaver_schedule_duration_seconds")
         val SCREENSAVER_CALENDAR_DURATION_SECONDS = intPreferencesKey("screensaver_calendar_duration_seconds")
+
+        // TV Identity & Multi-TV Sync Metadata (SalatSign Phase 0)
+        val DEVICE_ID = stringPreferencesKey("device_id")
+        val DEVICE_NAME = stringPreferencesKey("device_name")
+        val ROOM_GROUP = stringPreferencesKey("room_group")
+        val CONFIG_VERSION = longPreferencesKey("config_version")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -354,7 +360,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 screensaverCalendarDurationSeconds = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(
                     preferences[PreferencesKeys.SCREENSAVER_CALENDAR_DURATION_SECONDS]
                         ?: com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_CALENDAR_DURATION_SECONDS
-                )
+                ),
+                deviceId = preferences[PreferencesKeys.DEVICE_ID] ?: "",
+                deviceName = preferences[PreferencesKeys.DEVICE_NAME] ?: "",
+                roomGroup = preferences[PreferencesKeys.ROOM_GROUP] ?: "",
+                configVersion = (preferences[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
             )
         }
 
@@ -839,6 +849,47 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val clamped = com.salatsign.tv.engine.ScreensaverDefaults.clampDuration(seconds)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.SCREENSAVER_CALENDAR_DURATION_SECONDS] = clamped
+        }
+    }
+
+    override suspend fun ensureDeviceId(): String {
+        var resolved = ""
+        context.dataStore.edit { prefs ->
+            val existing = prefs[PreferencesKeys.DEVICE_ID]?.trim().orEmpty()
+            if (existing.isNotEmpty()) {
+                resolved = existing
+            } else {
+                val created = java.util.UUID.randomUUID().toString()
+                prefs[PreferencesKeys.DEVICE_ID] = created
+                resolved = created
+            }
+        }
+        return resolved
+    }
+
+    override suspend fun setDeviceIdentity(name: String, roomGroup: String) {
+        val cleanName = name.trim().take(48)
+        val cleanGroup = roomGroup.trim().take(48)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.DEVICE_NAME] = cleanName
+            prefs[PreferencesKeys.ROOM_GROUP] = cleanGroup
+        }
+    }
+
+    override suspend fun bumpConfigVersion(): Long {
+        var nextVersion = 1L
+        context.dataStore.edit { prefs ->
+            val current = (prefs[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
+            nextVersion = current + 1L
+            prefs[PreferencesKeys.CONFIG_VERSION] = nextVersion
+        }
+        return nextVersion
+    }
+
+    override suspend fun setConfigVersion(version: Long) {
+        val clamped = version.coerceAtLeast(1L)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.CONFIG_VERSION] = clamped
         }
     }
 }

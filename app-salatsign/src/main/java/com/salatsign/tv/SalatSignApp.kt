@@ -19,8 +19,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 /**
  * SalatSign (Mosque Digital Signage) Application.
@@ -60,21 +62,34 @@ class SalatSignApp : Application() {
             slideImageImporter = ImageImporter(slideImagesDir),
             logoImageImporter = ImageImporter(logoImagesDir),
             port = ApiConstants.DEFAULT_HTTP_PORT,
-            appVersionName = BuildConfig.VERSION_NAME
+            appVersionName = BuildConfig.VERSION_NAME,
+            webAssetProvider = {
+                assets.open("phone_controller/index.html").use { it.readBytes() }
+            }
         )
         nsdHelper = SalatSignNsdHelper(this)
 
-        // Ensure mosque mode is always active and migrate any legacy slides on startup
+        // Ensure mosque mode, stable TV device ID, and any legacy slide migration on startup
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
             settingsRepository.setMosqueMode(true)
+            settingsRepository.ensureDeviceId()
         }
     }
 
     fun setPhoneControllerEnabled(enabled: Boolean) {
         if (enabled) {
             if (localServer.start()) {
-                nsdHelper.register(localServer.port)
+                CoroutineScope(Dispatchers.IO).launch {
+                    val deviceId = settingsRepository.ensureDeviceId()
+                    val s = settingsRepository.appSettingsFlow.first()
+                    nsdHelper.register(
+                        port = localServer.port,
+                        deviceId = deviceId,
+                        deviceName = s.deviceName,
+                        roomGroup = s.roomGroup
+                    )
+                }
                 val ip = LocalNetworkUtils.getLocalIpv4Address()
                 _phoneControllerUrl.value = ip?.let { "http://$it:${localServer.port}" }
             }

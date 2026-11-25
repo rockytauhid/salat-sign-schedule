@@ -1,19 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors
-
-package com.salatsign.tv.remote
-
-/**
- * Self-contained, offline mobile-first web UI served directly from SalatSign TV over LAN.
- * Matches the TV Settings Hub categories for Day-to-Day Mosque Administration:
- * Slides (with 6-slot budget, edit/toggle/delete, Islamic Calendar & Quran Verse slides),
- * Friday Jumu'ah (intuitive time pickers + add/remove sittings) & Iqamah,
- * Silent Screen (manual + Jumu'ah + daily schedules), and Mosque Branding & Display.
- */
-object PhoneControllerHtml {
-
-    fun renderHtml(): String = """
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -1054,5 +1039,3 @@ if (token) {
 </script>
 </body>
 </html>
-    """.trimIndent()
-}

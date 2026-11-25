@@ -5,16 +5,42 @@ package com.salatsign.tv.remote
 
 import android.util.Log
 import com.salatsign.tv.data.api.ApiConstants
+import com.salatsign.tv.data.api.ApiErrorResponse
+import com.salatsign.tv.data.api.AuthRequest
+import com.salatsign.tv.data.api.AuthResponse
+import com.salatsign.tv.data.api.CreateSlideResponse
+import com.salatsign.tv.data.api.CreateTextSlideRequest
+import com.salatsign.tv.data.api.DailySilentPrayerDto
+import com.salatsign.tv.data.api.DeleteSlideResponse
+import com.salatsign.tv.data.api.FullConfigResponse
+import com.salatsign.tv.data.api.FullConfigWriteRequest
+import com.salatsign.tv.data.api.LogoUploadResponse
+import com.salatsign.tv.data.api.LogoutResponse
+import com.salatsign.tv.data.api.ManualSilentResponse
+import com.salatsign.tv.data.api.ManualSilentStartRequest
+import com.salatsign.tv.data.api.PatchSlideRequest
+import com.salatsign.tv.data.api.PatchSlideResponse
+import com.salatsign.tv.data.api.PhoneControllerJson
+import com.salatsign.tv.data.api.SettingsPatchRequest
+import com.salatsign.tv.data.api.SettingsResponse
+import com.salatsign.tv.data.api.SlideDto
+import com.salatsign.tv.data.api.SlideLineDto
+import com.salatsign.tv.data.api.SlidesResponse
+import com.salatsign.tv.data.api.StatusResponse
 import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.importing.ImageTargetType
 import com.salatsign.tv.data.model.AnnouncementSlide
+import com.salatsign.tv.data.model.AppLanguage
+import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerSilentConfig
 import com.salatsign.tv.data.model.SilentAnchor
+import com.salatsign.tv.data.model.SlideFontSize
 import com.salatsign.tv.data.model.SlideTextAlign
+import com.salatsign.tv.data.model.SlideTextLine
 import com.salatsign.tv.data.model.SlideType
 import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
@@ -38,6 +64,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
@@ -63,7 +90,8 @@ data class HttpResponse(
     val statusCode: Int,
     val statusText: String,
     val contentType: String = "application/json; charset=utf-8",
-    val body: ByteArray = ByteArray(0)
+    val body: ByteArray = ByteArray(0),
+    val etag: String? = null
 )
 
 private sealed interface ReadRequestOutcome {
@@ -74,14 +102,17 @@ private sealed interface ReadRequestOutcome {
 
 /**
  * Offline-first local LAN HTTP server for SalatSign remote administration.
- * Uses pure Kotlin + java.net.ServerSocket (zero third-party HTTP dependencies, API 26+).
+ * Uses pure Kotlin + java.net.ServerSocket (zero third-party HTTP dependencies, API 26+)
+ * and typed kotlinx.serialization DTOs from :core.
  *
  * Security hardening:
- * - Serialized auth path (Mutex) + per-IP rate limiting + persisted PBKDF2 lockout.
+ * - Serialized auth path (Mutex) + per-IP rate limiting + isolated remote PBKDF2 lockout.
  * - Remote login refused while the TV is still on the default 0000 PIN.
- * - Bounded concurrent connections, request lines, header counts, and pre-auth body size (2 KB).
- * - Host header validation against local IP / localhost / .local (mitigates DNS rebinding).
- * - Strict CSP / X-Frame-Options / X-Content-Type-Options headers on all responses.
+ * - Automatic transparent upgrade of legacy 10k PBKDF2 PIN hashes on successful login.
+ * - Bounded concurrent connections (global + per-IP), request lines, headers, deadlines, and body sizes.
+ * - Host header validation against all active local IPv4s / localhost / .local (mitigates DNS rebinding).
+ * - Strict CSP / X-Frame-Options / X-Content-Type-Options / Referrer-Policy headers on all responses.
+ * - Optimistic concurrency via ETag / If-Match (412 Precondition Failed) and idempotent slide UUID writes.
  */
 class SalatSignLocalServer(
     private val settingsRepository: ISettingsRepository,
@@ -99,6 +130,7 @@ class SalatSignLocalServer(
             addAll(LocalNetworkUtils.getAllLocalIpv4Addresses())
         }
     },
+    private val webAssetProvider: () -> ByteArray = defaultJvmWebAssetProvider,
     private val maxConcurrentConnections: Int = MAX_CONCURRENT_CONNECTIONS,
     private val maxConnectionsPerIp: Int = MAX_CONNECTIONS_PER_IP,
     private val headerDeadlineMillis: Long = HEADER_DEADLINE_MILLIS,
@@ -115,12 +147,22 @@ class SalatSignLocalServer(
         private const val MAX_HEADERS = 64
         private const val MAX_CONCURRENT_CONNECTIONS = 16
         private const val MAX_CONNECTIONS_PER_IP = 4
-        private const val HEADER_DEADLINE_MILLIS = 10_000L             // 10s overall deadline for headers
-        private const val JSON_BODY_DEADLINE_MILLIS = 30_000L          // 30s overall deadline for JSON bodies
-        private const val UPLOAD_BODY_DEADLINE_MILLIS = 120_000L       // 120s overall deadline for image/logo uploads
-        private const val SESSION_TTL_MILLIS = 30 * 60 * 1000L         // 30 minutes
-        private const val RATE_LIMIT_WINDOW_MILLIS = 60_000L           // 1 minute
+        private const val HEADER_DEADLINE_MILLIS = 10_000L
+        private const val JSON_BODY_DEADLINE_MILLIS = 30_000L
+        private const val UPLOAD_BODY_DEADLINE_MILLIS = 120_000L
+        private const val SESSION_TTL_MILLIS = 30 * 60 * 1000L
+        private const val RATE_LIMIT_WINDOW_MILLIS = 60_000L
         private const val RATE_LIMIT_MAX_AUTH_PER_IP = 15
+
+        private val defaultJvmWebAssetProvider: () -> ByteArray = {
+            val candidates = listOf(
+                File("src/main/assets/phone_controller/index.html"),
+                File("app-salatsign/src/main/assets/phone_controller/index.html")
+            )
+            val found = candidates.firstOrNull { it.exists() && it.isFile }
+            found?.readBytes()
+                ?: "<!DOCTYPE html><html><body>SalatSign Remote</body></html>".toByteArray(StandardCharsets.UTF_8)
+        }
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -216,7 +258,7 @@ class SalatSignLocalServer(
                     s.soTimeout = 2_000
                     writeHttpResponse(
                         s.getOutputStream(),
-                        jsonResponse(503, "Service Unavailable", mapOf("error" to errorCode, "message" to message))
+                        errorResponse(503, "Service Unavailable", errorCode, message)
                     )
                 }
             }
@@ -246,16 +288,16 @@ class SalatSignLocalServer(
                     val req = outcome.request
                     val hostHeader = req.headers["host"]
                     if (hostHeader == null || !isValidHostHeader(hostHeader)) {
-                        jsonResponse(403, "Forbidden", mapOf("error" to "invalid_host", "message" to "Host header not allowed"))
+                        errorResponse(403, "Forbidden", "invalid_host", "Host header not allowed")
                     } else {
                         try {
                             handleRequest(req)
                         } catch (e: IllegalArgumentException) {
                             Log.w(TAG, "Bad request on ${req.method} ${req.path}", e)
-                            jsonResponse(400, "Bad Request", mapOf("error" to "bad_request", "message" to "Malformed request payload"))
+                            errorResponse(400, "Bad Request", "bad_request", "Malformed request payload")
                         } catch (e: Exception) {
                             Log.w(TAG, "Unhandled error processing ${req.method} ${req.path}", e)
-                            jsonResponse(500, "Internal Server Error", mapOf("error" to "internal_error", "message" to "Internal server error"))
+                            errorResponse(500, "Internal Server Error", "internal_error", "Internal server error")
                         }
                     }
                 }
@@ -280,10 +322,9 @@ class SalatSignLocalServer(
     }
 
     internal suspend fun handleRequest(req: HttpRequest): HttpResponse {
-        // Validate Host header when present (also covers unit tests passing Host)
         req.headers["host"]?.let { host ->
             if (!isValidHostHeader(host)) {
-                return jsonResponse(403, "Forbidden", mapOf("error" to "invalid_host", "message" to "Host header not allowed"))
+                return errorResponse(403, "Forbidden", "invalid_host", "Host header not allowed")
             }
         }
 
@@ -300,45 +341,53 @@ class SalatSignLocalServer(
                 statusCode = 200,
                 statusText = "OK",
                 contentType = "text/html; charset=utf-8",
-                body = PhoneControllerHtml.renderHtml().toByteArray(StandardCharsets.UTF_8)
+                body = webAssetProvider()
             )
         }
 
         if (method == "GET" && path == "/api/v1/status") {
+            val deviceId = settingsRepository.ensureDeviceId()
             val settings = settingsRepository.appSettingsFlow.first()
-            return jsonResponse(
+            return typedJsonResponse(
                 200, "OK",
-                mapOf(
-                    "app" to "SalatSign",
-                    "apiVersion" to ApiConstants.API_VERSION,
-                    "version" to appVersionName,
-                    "port" to port,
-                    "pinConfigured" to settings.hasCustomPin
-                )
+                StatusResponse(
+                    app = "SalatSign",
+                    apiVersion = ApiConstants.API_VERSION,
+                    version = appVersionName,
+                    port = port,
+                    pinConfigured = settings.hasCustomPin,
+                    deviceId = deviceId,
+                    deviceName = settings.deviceName,
+                    roomGroup = settings.roomGroup,
+                    configVersion = settings.configVersion
+                ),
+                etag = "\"${settings.configVersion}\""
             )
         }
 
         if (method == "POST" && path == "/api/v1/auth") {
             if (req.body.size > MAX_PRE_AUTH_BODY_BYTES) {
-                return jsonResponse(413, "Payload Too Large", mapOf("error" to "payload_too_large", "message" to "Request body exceeds limit"))
+                return errorResponse(413, "Payload Too Large", "payload_too_large", "Request body exceeds limit")
             }
             return try {
                 handleAuth(req)
             } catch (_: IllegalArgumentException) {
-                jsonResponse(400, "Bad Request", mapOf("error" to "invalid_json", "message" to "Malformed JSON payload"))
+                errorResponse(400, "Bad Request", "invalid_json", "Malformed JSON payload")
             }
         }
 
         // All remaining /api/v1/* endpoints require valid bearer token
         val bearerToken = extractValidBearerToken(req.headers)
-            ?: return jsonResponse(401, "Unauthorized", mapOf("error" to "unauthorized", "message" to "Valid admin session required"))
+            ?: return errorResponse(401, "Unauthorized", "unauthorized", "Valid admin session required")
 
         return try {
             when {
                 method == "POST" && path == "/api/v1/logout" -> {
                     sessions.remove(bearerToken)
-                    jsonResponse(200, "OK", mapOf("loggedOut" to true))
+                    typedJsonResponse(200, "OK", LogoutResponse(loggedOut = true))
                 }
+                method == "GET" && path == "/api/v1/config" -> handleGetFullConfig()
+                method == "PUT" && path == "/api/v1/config" -> handlePutFullConfig(req)
                 method == "GET" && path == "/api/v1/settings" -> handleGetSettings()
                 method == "PATCH" && path == "/api/v1/settings" -> handlePatchSettings(req)
                 method == "POST" && path == "/api/v1/silent/start" -> handleStartManualSilent(req)
@@ -346,6 +395,10 @@ class SalatSignLocalServer(
                 method == "GET" && path == "/api/v1/slides" -> handleGetSlides()
                 method == "POST" && path == "/api/v1/slides/text" -> handleAddTextSlide(req)
                 method == "POST" && path == "/api/v1/slides/image" -> handleAddImageSlide(req)
+                method == "PUT" && path.startsWith("/api/v1/slides/") -> {
+                    val id = URLDecoder.decode(path.removePrefix("/api/v1/slides/"), "UTF-8")
+                    handlePutSlide(id, req)
+                }
                 method == "PATCH" && path.startsWith("/api/v1/slides/") -> {
                     val id = URLDecoder.decode(path.removePrefix("/api/v1/slides/"), "UTF-8")
                     handlePatchSlide(id, req)
@@ -355,11 +408,30 @@ class SalatSignLocalServer(
                     handleDeleteSlide(id)
                 }
                 method == "POST" && path == "/api/v1/logo" -> handleUploadLogo(req)
-                else -> jsonResponse(404, "Not Found", mapOf("error" to "not_found", "message" to "Unknown endpoint"))
+                else -> errorResponse(404, "Not Found", "not_found", "Unknown endpoint")
             }
         } catch (_: IllegalArgumentException) {
-            jsonResponse(400, "Bad Request", mapOf("error" to "invalid_json", "message" to "Malformed JSON payload"))
+            errorResponse(400, "Bad Request", "invalid_json", "Malformed JSON payload")
         }
+    }
+
+    private fun checkIfMatch(req: HttpRequest, currentConfigVersion: Long): HttpResponse? {
+        val raw = req.headers["if-match"]?.trim() ?: return null
+        if (raw == "*") return null
+        val cleaned = raw.removePrefix("W/").removePrefix("w/").trim().trim('"')
+        val expected = cleaned.toLongOrNull()
+        if (expected == null || expected != currentConfigVersion) {
+            return typedJsonResponse(
+                412, "Precondition Failed",
+                ApiErrorResponse(
+                    error = "precondition_failed",
+                    message = "Config version mismatch (expected $currentConfigVersion)",
+                    currentConfigVersion = currentConfigVersion
+                ),
+                etag = "\"$currentConfigVersion\""
+            )
+        }
+        return null
     }
 
     private suspend fun handleAuth(req: HttpRequest): HttpResponse = authMutex.withLock {
@@ -370,29 +442,26 @@ class SalatSignLocalServer(
         val attempts = authAttemptsByIp.computeIfAbsent(req.remoteAddress) { mutableListOf() }
         attempts.removeAll { now - it > RATE_LIMIT_WINDOW_MILLIS }
         if (attempts.size >= RATE_LIMIT_MAX_AUTH_PER_IP) {
-            return jsonResponse(
+            return errorResponse(
                 429, "Too Many Requests",
-                mapOf("error" to "rate_limited", "message" to "Too many login attempts from this device. Try again in a minute.")
+                "rate_limited",
+                "Too many login attempts from this device. Try again in a minute."
             )
         }
         attempts.add(now)
 
         val settings = settingsRepository.appSettingsFlow.first()
-        // Review 2.1: Refuse remote LAN login while the TV still has the default 0000 PIN
         if (!settings.hasCustomPin) {
-            return jsonResponse(
+            return errorResponse(
                 403, "Forbidden",
-                mapOf(
-                    "error" to "default_pin_blocked",
-                    "message" to "Remote login is disabled while using the default PIN. Set a custom Admin PIN on the TV first (Settings → PIN & Remote)."
-                )
+                "default_pin_blocked",
+                "Remote login is disabled while using the default PIN. Set a custom Admin PIN on the TV first (Settings → PIN & Remote)."
             )
         }
 
-        val bodyMap = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
-        val pin = bodyMap["pin"]?.toString() ?: ""
+        val authReq = PhoneControllerJson.decode<AuthRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val pin = authReq.pin
 
-        // Review 3.1: Use isolated remote lockout counters so LAN guesses never lock out the TV admin dialog.
         val result = PinHasher.verifyPin(
             enteredPin = pin,
             hasCustomPin = settings.hasCustomPin,
@@ -414,36 +483,36 @@ class SalatSignLocalServer(
                 secureRandom.nextBytes(tokenBytes)
                 val token = PinHasher.bytesToHex(tokenBytes)
                 sessions[token] = now + SESSION_TTL_MILLIS
-                jsonResponse(200, "OK", mapOf("token" to token, "expiresInSeconds" to (SESSION_TTL_MILLIS / 1000L)))
+                typedJsonResponse(200, "OK", AuthResponse(token = token, expiresInSeconds = SESSION_TTL_MILLIS / 1000L))
             }
             is PinVerifyResult.Incorrect -> {
                 val lockout = PinHasher.calculateLockout(remoteFailedAttempts, now)
                 remoteFailedAttempts = lockout.newFailedAttempts
                 remoteLockedUntilEpochMillis = lockout.lockedUntilEpochMillis
-                jsonResponse(
+                typedJsonResponse(
                     401, "Unauthorized",
-                    mapOf(
-                        "error" to "invalid_pin",
-                        "attemptsLeft" to result.attemptsLeftBeforeLockout,
-                        "message" to "Incorrect PIN (${result.attemptsLeftBeforeLockout} attempts remaining)"
+                    ApiErrorResponse(
+                        error = "invalid_pin",
+                        message = "Incorrect PIN (${result.attemptsLeftBeforeLockout} attempts remaining)",
+                        attemptsLeft = result.attemptsLeftBeforeLockout
                     )
                 )
             }
             is PinVerifyResult.LockedOut -> {
-                jsonResponse(
+                typedJsonResponse(
                     429, "Too Many Requests",
-                    mapOf(
-                        "error" to "locked_out",
-                        "remainingSeconds" to result.remainingSeconds,
-                        "message" to "Remote login locked. Try again in ${result.remainingSeconds} seconds."
+                    ApiErrorResponse(
+                        error = "locked_out",
+                        message = "Remote login locked. Try again in ${result.remainingSeconds} seconds.",
+                        remainingSeconds = result.remainingSeconds
                     )
                 )
             }
             is PinVerifyResult.InvalidFormat -> {
-                jsonResponse(400, "Bad Request", mapOf("error" to "invalid_format", "message" to "PIN must be 4–8 digits"))
+                errorResponse(400, "Bad Request", "invalid_format", "PIN must be 4–8 digits")
             }
             is PinVerifyResult.ResetRequired -> {
-                jsonResponse(423, "Locked", mapOf("error" to "reset_required", "message" to "PIN storage corrupted. Clear app data on TV."))
+                errorResponse(423, "Locked", "reset_required", "PIN storage corrupted. Clear app data on TV.")
             }
         }
     }
@@ -477,98 +546,200 @@ class SalatSignLocalServer(
         return token
     }
 
-    private suspend fun handleGetSettings(): HttpResponse {
-        val s = settingsRepository.appSettingsFlow.first()
+    private fun buildSettingsDto(s: AppSettings, deviceId: String): SettingsResponse {
         val now = nowMillisProvider()
         val manualUntil = s.silentScreen.manualSilentUntilEpochMillis
         val manualActive = manualUntil > now
         val dailySilentMap = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA).associate { p ->
             val cfg = s.silentScreen.dailyPrayers[p] ?: PrayerSilentConfig()
-            p.name to mapOf(
-                "enabled" to cfg.enabled,
-                "anchor" to cfg.anchor.name,
-                "leadMinutes" to cfg.leadMinutes,
-                "durationMinutes" to cfg.durationMinutes
+            p.name to DailySilentPrayerDto(
+                enabled = cfg.enabled,
+                anchor = cfg.anchor.name,
+                leadMinutes = cfg.leadMinutes,
+                durationMinutes = cfg.durationMinutes
             )
         }
-        return jsonResponse(
-            200, "OK",
-            mapOf(
-                "mosqueName" to s.mosqueName,
-                "mosqueSubtitle" to s.mosqueSubtitle,
-                "mosqueLogoUri" to s.mosqueLogoUri,
-                "mosqueIconPreset" to s.mosqueIconPreset.name,
-                "mosqueFontPreset" to s.mosqueFontPreset.name,
-                "appLanguage" to s.appLanguage.name,
-                "cityName" to s.cityName,
-                "zoneId" to s.zoneId,
-                "calculationMethodName" to s.calculationMethodName,
-                "madhab" to s.madhab,
-                "themeMode" to s.themeMode.name,
-                "scheduleDurationSeconds" to s.scheduleDurationSeconds,
-                "hijriOffsetDays" to s.hijriOffsetDays,
-                "hijriChangeAtMidnight" to s.hijriChangeAtMidnight,
-                "is24HourFormat" to s.is24HourFormat,
-                "showArabicPrayerNames" to s.showArabicPrayerNames,
-                "showStrikeHighlight" to s.showStrikeHighlight,
-                "jumuahMode" to s.jumuahMode.name,
-                "jumuahTimes" to s.jumuahTimes,
-                "iqamahSubuh" to s.iqamahSubuh,
-                "iqamahZuhur" to s.iqamahZuhur,
-                "iqamahAshr" to s.iqamahAshr,
-                "iqamahMagrib" to s.iqamahMagrib,
-                "iqamahIsya" to s.iqamahIsya,
-                "islamicCalendarSlideEnabled" to s.islamicCalendarSlideEnabled,
-                "islamicCalendarSlideDurationSeconds" to s.islamicCalendarSlideDurationSeconds,
-                "quranVerseEnabled" to s.quranVerseEnabled,
-                "quranShowTranslation" to s.quranShowTranslation,
-                "quranVerseDurationSeconds" to s.quranVerseDurationSeconds,
-                "silentJumuahEnabled" to s.silentScreen.jumuahEnabled,
-                "silentJumuahLeadMinutes" to s.silentScreen.jumuahLeadMinutes,
-                "silentJumuahDurationMinutes" to s.silentScreen.jumuahDurationMinutes,
-                "silentDailyPrayers" to dailySilentMap,
-                "manualSilentUntilEpochMillis" to if (manualActive) manualUntil else 0L,
-                "manualSilentActive" to manualActive,
-                "manualSilentRemainingMinutes" to if (manualActive) (((manualUntil - now) + 59_999L) / 60_000L) else 0L
-            )
+        return SettingsResponse(
+            deviceId = deviceId,
+            deviceName = s.deviceName,
+            roomGroup = s.roomGroup,
+            configVersion = s.configVersion,
+            mosqueName = s.mosqueName,
+            mosqueSubtitle = s.mosqueSubtitle,
+            mosqueLogoUri = s.mosqueLogoUri,
+            mosqueIconPreset = s.mosqueIconPreset.name,
+            mosqueFontPreset = s.mosqueFontPreset.name,
+            appLanguage = s.appLanguage.name,
+            cityName = s.cityName,
+            zoneId = s.zoneId,
+            calculationMethodName = s.calculationMethodName,
+            madhab = s.madhab,
+            themeMode = s.themeMode.name,
+            scheduleDurationSeconds = s.scheduleDurationSeconds,
+            hijriOffsetDays = s.hijriOffsetDays,
+            hijriChangeAtMidnight = s.hijriChangeAtMidnight,
+            is24HourFormat = s.is24HourFormat,
+            showArabicPrayerNames = s.showArabicPrayerNames,
+            showStrikeHighlight = s.showStrikeHighlight,
+            jumuahMode = s.jumuahMode.name,
+            jumuahTimes = s.jumuahTimes,
+            iqamahSubuh = s.iqamahSubuh,
+            iqamahZuhur = s.iqamahZuhur,
+            iqamahAshr = s.iqamahAshr,
+            iqamahMagrib = s.iqamahMagrib,
+            iqamahIsya = s.iqamahIsya,
+            islamicCalendarSlideEnabled = s.islamicCalendarSlideEnabled,
+            islamicCalendarSlideDurationSeconds = s.islamicCalendarSlideDurationSeconds,
+            quranVerseEnabled = s.quranVerseEnabled,
+            quranShowTranslation = s.quranShowTranslation,
+            quranVerseDurationSeconds = s.quranVerseDurationSeconds,
+            silentJumuahEnabled = s.silentScreen.jumuahEnabled,
+            silentJumuahLeadMinutes = s.silentScreen.jumuahLeadMinutes,
+            silentJumuahDurationMinutes = s.silentScreen.jumuahDurationMinutes,
+            silentDailyPrayers = dailySilentMap,
+            manualSilentUntilEpochMillis = if (manualActive) manualUntil else 0L,
+            manualSilentActive = manualActive,
+            manualSilentRemainingMinutes = if (manualActive) (((manualUntil - now) + 59_999L) / 60_000L) else 0L
         )
     }
 
+    private fun slideToDto(slide: AnnouncementSlide): SlideDto = SlideDto(
+        id = slide.id,
+        type = slide.type.name,
+        title = slide.title,
+        body = slide.body,
+        lines = slide.effectiveLines().map { line ->
+            SlideLineDto(text = line.text, align = line.align.name, fontSize = line.fontSize.name)
+        },
+        imageFile = slide.imageFile,
+        durationSeconds = slide.durationSeconds,
+        enabled = slide.enabled,
+        textAlign = slide.textAlign.name,
+        sortOrder = slide.sortOrder
+    )
+
+    private suspend fun handleGetFullConfig(): HttpResponse {
+        val deviceId = settingsRepository.ensureDeviceId()
+        val s = settingsRepository.appSettingsFlow.first()
+        val slides = contentRepository.slidesFlow.value.slides.map(::slideToDto)
+        return typedJsonResponse(
+            200, "OK",
+            FullConfigResponse(
+                apiVersion = ApiConstants.API_VERSION,
+                configVersion = s.configVersion,
+                deviceId = deviceId,
+                deviceName = s.deviceName,
+                roomGroup = s.roomGroup,
+                settings = buildSettingsDto(s, deviceId),
+                slides = slides
+            ),
+            etag = "\"${s.configVersion}\""
+        )
+    }
+
+    private suspend fun handlePutFullConfig(req: HttpRequest): HttpResponse {
+        val current = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, current.configVersion)?.let { return it }
+
+        val writeReq = PhoneControllerJson.decode<FullConfigWriteRequest>(req.body.toString(StandardCharsets.UTF_8))
+
+        writeReq.settings?.let { patch ->
+            applySettingsPatch(patch, current, bumpVersion = false)?.let { return it }
+        }
+
+        writeReq.slides?.let { incomingSlides ->
+            val currentSettings = settingsRepository.appSettingsFlow.first()
+            val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(currentSettings).count { it.enabled }
+            val enabledAnnouncements = incomingSlides.count { it.enabled }
+            if (SlideBudget.usedSlots(enabledAnnouncements, enabledBuiltIns) > SlideBudget.MAX_ROTATION_SLIDES) {
+                return errorResponse(
+                    409, "Conflict",
+                    "slide_limit_reached",
+                    "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
+                )
+            }
+            val mapped = incomingSlides.mapIndexed { idx, dto ->
+                val slideType = runCatching { SlideType.valueOf(dto.type.uppercase(Locale.ROOT)) }.getOrDefault(SlideType.TEXT)
+                val parsedLines = parseSlideLineDtos(dto.lines)
+                val textBody = if (parsedLines.isNotEmpty()) parsedLines.joinToString("\n") { it.text } else dto.body.trim()
+                val align = runCatching { SlideTextAlign.valueOf(dto.textAlign.uppercase(Locale.ROOT)) }.getOrNull()
+                    ?: parsedLines.firstOrNull()?.align
+                    ?: SlideTextAlign.CENTER
+                AnnouncementSlide(
+                    id = dto.id.trim().ifEmpty { "slide_${UUID.randomUUID()}" },
+                    type = slideType,
+                    title = dto.title.trim(),
+                    body = if (slideType == SlideType.TEXT) textBody else dto.body,
+                    lines = if (slideType == SlideType.TEXT) parsedLines else emptyList(),
+                    imageFile = dto.imageFile,
+                    durationSeconds = dto.durationSeconds.coerceIn(3, 120),
+                    enabled = dto.enabled,
+                    textAlign = align,
+                    sortOrder = idx
+                )
+            }
+            val rev = contentRepository.slidesFlow.value.revision
+            val res = contentRepository.replaceAll(rev, mapped)
+            if (res.isFailure) {
+                return errorResponse(400, "Bad Request", "replace_failed", res.exceptionOrNull()?.message ?: "Failed to replace slides")
+            }
+        }
+
+        settingsRepository.bumpConfigVersion()
+        return handleGetFullConfig()
+    }
+
+    private suspend fun handleGetSettings(): HttpResponse {
+        val deviceId = settingsRepository.ensureDeviceId()
+        val s = settingsRepository.appSettingsFlow.first()
+        return typedJsonResponse(200, "OK", buildSettingsDto(s, deviceId), etag = "\"${s.configVersion}\"")
+    }
+
     private suspend fun handleStartManualSilent(req: HttpRequest): HttpResponse {
-        val body = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
-        val durationMinutes = ((body["durationMinutes"] as? Number)?.toInt() ?: 15).coerceIn(1, 120)
+        val body = PhoneControllerJson.decode<ManualSilentStartRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val durationMinutes = body.durationMinutes.coerceIn(1, 120)
         val until = nowMillisProvider() + durationMinutes * 60_000L
         settingsRepository.setManualSilentUntil(until)
-        return jsonResponse(
+        return typedJsonResponse(
             200, "OK",
-            mapOf(
-                "manualSilentActive" to true,
-                "manualSilentUntilEpochMillis" to until,
-                "durationMinutes" to durationMinutes,
-                "manualSilentRemainingMinutes" to durationMinutes
+            ManualSilentResponse(
+                manualSilentActive = true,
+                manualSilentUntilEpochMillis = until,
+                manualSilentRemainingMinutes = durationMinutes.toLong(),
+                durationMinutes = durationMinutes
             )
         )
     }
 
     private suspend fun handleStopManualSilent(): HttpResponse {
         settingsRepository.setManualSilentUntil(0L)
-        return jsonResponse(
+        return typedJsonResponse(
             200, "OK",
-            mapOf(
-                "manualSilentActive" to false,
-                "manualSilentUntilEpochMillis" to 0L,
-                "manualSilentRemainingMinutes" to 0
+            ManualSilentResponse(
+                manualSilentActive = false,
+                manualSilentUntilEpochMillis = 0L,
+                manualSilentRemainingMinutes = 0L
             )
         )
     }
 
     private suspend fun handlePatchSettings(req: HttpRequest): HttpResponse {
-        val patch = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
         val current = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, current.configVersion)?.let { return it }
 
+        val patch = PhoneControllerJson.decode<SettingsPatchRequest>(req.body.toString(StandardCharsets.UTF_8))
+        applySettingsPatch(patch, current, bumpVersion = true)?.let { return it }
+        return handleGetSettings()
+    }
+
+    private suspend fun applySettingsPatch(
+        patch: SettingsPatchRequest,
+        current: AppSettings,
+        bumpVersion: Boolean
+    ): HttpResponse? {
         // Enforce 6-slide rotation budget if enabling built-in slides via PATCH
-        val wantCalEnabled = patch["islamicCalendarSlideEnabled"] as? Boolean
-        val wantQuranEnabled = patch["quranVerseEnabled"] as? Boolean
+        val wantCalEnabled = patch.islamicCalendarSlideEnabled
+        val wantQuranEnabled = patch.quranVerseEnabled
         if (wantCalEnabled == true || wantQuranEnabled == true) {
             val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
             val nextCal = wantCalEnabled ?: current.islamicCalendarSlideEnabled
@@ -578,121 +749,108 @@ class SalatSignLocalServer(
             if (nextBuiltIns > currentBuiltIns &&
                 SlideBudget.usedSlots(enabledAnnouncements, nextBuiltIns) > SlideBudget.MAX_ROTATION_SLIDES
             ) {
-                return jsonResponse(
+                return errorResponse(
                     409, "Conflict",
-                    mapOf(
-                        "error" to "slide_limit_reached",
-                        "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
-                    )
+                    "slide_limit_reached",
+                    "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
                 )
             }
         }
 
-        val newName = (patch["mosqueName"] as? String)?.trim() ?: current.mosqueName
-        val newSubtitle = (patch["mosqueSubtitle"] as? String) ?: current.mosqueSubtitle
-        if (patch.containsKey("mosqueName") && newName.isBlank()) {
-            return jsonResponse(
-                400, "Bad Request",
-                mapOf("error" to "mosque_name_required", "message" to "Mosque name cannot be empty.")
+        if (patch.deviceName != null || patch.roomGroup != null) {
+            settingsRepository.setDeviceIdentity(
+                name = patch.deviceName ?: current.deviceName,
+                roomGroup = patch.roomGroup ?: current.roomGroup
             )
         }
-        if (patch.containsKey("mosqueName") || patch.containsKey("mosqueSubtitle")) {
+
+        val patchedMosqueName = patch.mosqueName
+        if (patchedMosqueName != null && patchedMosqueName.trim().isBlank()) {
+            return errorResponse(400, "Bad Request", "mosque_name_required", "Mosque name cannot be empty.")
+        }
+        if (patchedMosqueName != null || patch.mosqueSubtitle != null) {
+            val newName = patchedMosqueName?.trim() ?: current.mosqueName
+            val newSubtitle = patch.mosqueSubtitle ?: current.mosqueSubtitle
             settingsRepository.updateMosqueBranding(newName, newSubtitle, current.mosqueLogoUri)
         }
-        (patch["appLanguage"] as? String)?.let { raw ->
-            runCatching { com.salatsign.tv.data.model.AppLanguage.valueOf(raw.uppercase(Locale.ROOT)) }
+        patch.appLanguage?.let { raw ->
+            runCatching { AppLanguage.valueOf(raw.uppercase(Locale.ROOT)) }
                 .getOrNull()
-                ?.takeIf { it in com.salatsign.tv.data.model.AppLanguage.ShippedLanguages }
+                ?.takeIf { it in AppLanguage.ShippedLanguages }
                 ?.let { settingsRepository.setAppLanguage(it) }
         }
-        (patch["mosqueIconPreset"] as? String)?.let { raw ->
+        patch.mosqueIconPreset?.let { raw ->
             runCatching { MosqueIconPreset.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()?.let {
                 settingsRepository.setMosqueIconPreset(it)
             }
         }
-        (patch["mosqueFontPreset"] as? String)?.let { raw ->
+        patch.mosqueFontPreset?.let { raw ->
             runCatching { MosqueFontPreset.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()?.let {
                 settingsRepository.setMosqueFontPreset(it)
             }
         }
-        (patch["themeMode"] as? String)?.let { raw ->
+        patch.themeMode?.let { raw ->
             runCatching { ThemeMode.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()?.let {
                 settingsRepository.setThemeMode(it)
             }
         }
-        (patch["scheduleDurationSeconds"] as? Number)?.toInt()?.let {
-            settingsRepository.updateScheduleDuration(it.coerceIn(10, 600))
-        }
-        (patch["hijriOffsetDays"] as? Number)?.toInt()?.let {
-            settingsRepository.updateHijriOffset(it.coerceIn(-2, 2))
-        }
-        (patch["hijriChangeAtMidnight"] as? Boolean)?.let {
-            settingsRepository.setHijriChangeAtMidnight(it)
-        }
-        (patch["is24HourFormat"] as? Boolean)?.let {
-            settingsRepository.set24HourFormat(it)
-        }
-        (patch["showArabicPrayerNames"] as? Boolean)?.let {
-            settingsRepository.setShowArabicPrayerNames(it)
-        }
-        (patch["showStrikeHighlight"] as? Boolean)?.let {
-            settingsRepository.setShowStrikeHighlight(it)
-        }
-        (patch["jumuahMode"] as? String)?.let { raw ->
+        patch.scheduleDurationSeconds?.let { settingsRepository.updateScheduleDuration(it.coerceIn(10, 600)) }
+        patch.hijriOffsetDays?.let { settingsRepository.updateHijriOffset(it.coerceIn(-2, 2)) }
+        patch.hijriChangeAtMidnight?.let { settingsRepository.setHijriChangeAtMidnight(it) }
+        patch.is24HourFormat?.let { settingsRepository.set24HourFormat(it) }
+        patch.showArabicPrayerNames?.let { settingsRepository.setShowArabicPrayerNames(it) }
+        patch.showStrikeHighlight?.let { settingsRepository.setShowStrikeHighlight(it) }
+        patch.jumuahMode?.let { raw ->
             runCatching { JumuahMode.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()?.let {
                 settingsRepository.setJumuahMode(it)
             }
         }
-        (patch["jumuahTimes"] as? List<*>)?.let { rawList ->
-            val cleaned = rawList.mapNotNull { it?.toString()?.trim()?.takeIf(String::isNotEmpty) }.take(3)
+        patch.jumuahTimes?.let { rawList ->
+            val cleaned = rawList.map { it.trim() }.filter(String::isNotEmpty).take(3)
             if (cleaned.isNotEmpty()) {
                 settingsRepository.setJumuahTimes(cleaned)
             }
         }
-        (patch["iqamahSubuh"] as? Number)?.toInt()?.let { settingsRepository.setIqamahOffset(Prayer.SUBUH, it.coerceIn(0, 60)) }
-        (patch["iqamahZuhur"] as? Number)?.toInt()?.let { settingsRepository.setIqamahOffset(Prayer.ZUHUR, it.coerceIn(0, 60)) }
-        (patch["iqamahAshr"] as? Number)?.toInt()?.let { settingsRepository.setIqamahOffset(Prayer.ASHR, it.coerceIn(0, 60)) }
-        (patch["iqamahMagrib"] as? Number)?.toInt()?.let { settingsRepository.setIqamahOffset(Prayer.MAGRIB, it.coerceIn(0, 60)) }
-        (patch["iqamahIsya"] as? Number)?.toInt()?.let { settingsRepository.setIqamahOffset(Prayer.ISYA, it.coerceIn(0, 60)) }
+        patch.iqamahSubuh?.let { settingsRepository.setIqamahOffset(Prayer.SUBUH, it.coerceIn(0, 60)) }
+        patch.iqamahZuhur?.let { settingsRepository.setIqamahOffset(Prayer.ZUHUR, it.coerceIn(0, 60)) }
+        patch.iqamahAshr?.let { settingsRepository.setIqamahOffset(Prayer.ASHR, it.coerceIn(0, 60)) }
+        patch.iqamahMagrib?.let { settingsRepository.setIqamahOffset(Prayer.MAGRIB, it.coerceIn(0, 60)) }
+        patch.iqamahIsya?.let { settingsRepository.setIqamahOffset(Prayer.ISYA, it.coerceIn(0, 60)) }
 
         wantCalEnabled?.let { settingsRepository.setIslamicCalendarSlideEnabled(it) }
-        (patch["islamicCalendarSlideDurationSeconds"] as? Number)?.toInt()?.let {
+        patch.islamicCalendarSlideDurationSeconds?.let {
             settingsRepository.setIslamicCalendarSlideDurationSeconds(it.coerceIn(10, 60))
         }
         wantQuranEnabled?.let { settingsRepository.setQuranVerseEnabled(it) }
-        (patch["quranShowTranslation"] as? Boolean)?.let {
-            settingsRepository.setQuranShowTranslation(it)
-        }
-        (patch["quranVerseDurationSeconds"] as? Number)?.toInt()?.let {
+        patch.quranShowTranslation?.let { settingsRepository.setQuranShowTranslation(it) }
+        patch.quranVerseDurationSeconds?.let {
             settingsRepository.setQuranVerseDurationSeconds(if (it <= 0) 0 else it.coerceIn(15, 60))
         }
 
-        (patch["silentJumuahEnabled"] as? Boolean)?.let { settingsRepository.setSilentJumuahEnabled(it) }
-        (patch["silentJumuahLeadMinutes"] as? Number)?.toInt()?.let {
-            settingsRepository.setSilentJumuahLeadMinutes(it.coerceIn(0, 15))
-        }
-        (patch["silentJumuahDurationMinutes"] as? Number)?.toInt()?.let {
-            settingsRepository.setSilentJumuahDurationMinutes(it.coerceIn(30, 90))
-        }
-        (patch["silentDailyPrayers"] as? Map<*, *>)?.let { rawMap ->
-            for ((k, v) in rawMap) {
-                val prayer = runCatching { Prayer.valueOf(k.toString().uppercase(Locale.ROOT)) }.getOrNull() ?: continue
-                val cfgMap = v as? Map<*, *> ?: continue
+        patch.silentJumuahEnabled?.let { settingsRepository.setSilentJumuahEnabled(it) }
+        patch.silentJumuahLeadMinutes?.let { settingsRepository.setSilentJumuahLeadMinutes(it.coerceIn(0, 15)) }
+        patch.silentJumuahDurationMinutes?.let { settingsRepository.setSilentJumuahDurationMinutes(it.coerceIn(30, 90)) }
+        patch.silentDailyPrayers?.let { rawMap ->
+            for ((k, dto) in rawMap) {
+                val prayer = runCatching { Prayer.valueOf(k.uppercase(Locale.ROOT)) }.getOrNull() ?: continue
                 val existing = current.silentScreen.dailyPrayers[prayer] ?: PrayerSilentConfig()
-                val anchor = (cfgMap["anchor"] as? String)?.let {
+                val anchor = dto.anchor?.let {
                     runCatching { SilentAnchor.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
                 } ?: existing.anchor
                 val updated = PrayerSilentConfig(
-                    enabled = (cfgMap["enabled"] as? Boolean) ?: existing.enabled,
+                    enabled = dto.enabled ?: existing.enabled,
                     anchor = anchor,
-                    leadMinutes = ((cfgMap["leadMinutes"] as? Number)?.toInt() ?: existing.leadMinutes).coerceIn(0, 10),
-                    durationMinutes = ((cfgMap["durationMinutes"] as? Number)?.toInt() ?: existing.durationMinutes).coerceIn(5, 45)
+                    leadMinutes = (dto.leadMinutes ?: existing.leadMinutes).coerceIn(0, 10),
+                    durationMinutes = (dto.durationMinutes ?: existing.durationMinutes).coerceIn(5, 45)
                 )
                 settingsRepository.setSilentDailyPrayerConfig(prayer, updated)
             }
         }
 
-        return handleGetSettings()
+        if (bumpVersion) {
+            settingsRepository.bumpConfigVersion()
+        }
+        return null
     }
 
     private suspend fun handleGetSlides(): HttpResponse {
@@ -700,78 +858,160 @@ class SalatSignLocalServer(
         val settings = settingsRepository.appSettingsFlow.first()
         val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
         val enabledAnnouncements = container.slides.count { it.enabled }
-        val slides = container.slides.map { slide ->
-            mapOf(
-                "id" to slide.id,
-                "type" to slide.type.name,
-                "title" to slide.title,
-                "body" to slide.body,
-                "lines" to slide.effectiveLines().map { line ->
-                    mapOf("text" to line.text, "align" to line.align.name, "fontSize" to line.fontSize.name)
-                },
-                "imageFile" to slide.imageFile,
-                "durationSeconds" to slide.durationSeconds,
-                "enabled" to slide.enabled,
-                "textAlign" to slide.textAlign.name,
-                "sortOrder" to slide.sortOrder
-            )
-        }
-        return jsonResponse(
+        return typedJsonResponse(
             200, "OK",
-            mapOf(
-                "revision" to container.revision,
-                "usedSlots" to SlideBudget.usedSlots(enabledAnnouncements, enabledBuiltIns),
-                "maxRotationSlides" to SlideBudget.MAX_ROTATION_SLIDES,
-                "slides" to slides
-            )
+            SlidesResponse(
+                revision = container.revision,
+                configVersion = settings.configVersion,
+                usedSlots = SlideBudget.usedSlots(enabledAnnouncements, enabledBuiltIns),
+                maxRotationSlides = SlideBudget.MAX_ROTATION_SLIDES,
+                slides = container.slides.map(::slideToDto)
+            ),
+            etag = "\"${settings.configVersion}\""
         )
     }
 
-    private fun parseSlideLines(raw: Any?): List<com.salatsign.tv.data.model.SlideTextLine> {
-        val list = raw as? List<*> ?: return emptyList()
-        return list.take(10).mapNotNull { entry ->
-            val map = entry as? Map<*, *> ?: return@mapNotNull null
-            val text = (map["text"] as? String)?.replace("\n", " ")?.trimEnd()?.take(100) ?: ""
+    private fun parseSlideLineDtos(raw: List<SlideLineDto>?): List<SlideTextLine> {
+        if (raw.isNullOrEmpty()) return emptyList()
+        return raw.take(10).mapNotNull { entry ->
+            val text = entry.text.replace("\n", " ").trimEnd().take(100)
             if (text.isBlank()) return@mapNotNull null
-            val align = (map["align"] as? String)?.let {
-                runCatching { SlideTextAlign.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
-            } ?: SlideTextAlign.CENTER
-            val fontSize = (map["fontSize"] as? String)?.let {
-                runCatching { com.salatsign.tv.data.model.SlideFontSize.valueOf(it.uppercase(Locale.ROOT)) }.getOrNull()
-            } ?: com.salatsign.tv.data.model.SlideFontSize.MEDIUM
-            com.salatsign.tv.data.model.SlideTextLine(text = text, align = align, fontSize = fontSize)
+            val align = runCatching { SlideTextAlign.valueOf(entry.align.uppercase(Locale.ROOT)) }.getOrDefault(SlideTextAlign.CENTER)
+            val fontSize = runCatching { SlideFontSize.valueOf(entry.fontSize.uppercase(Locale.ROOT)) }.getOrDefault(SlideFontSize.MEDIUM)
+            SlideTextLine(text = text, align = align, fontSize = fontSize)
         }
     }
 
     private suspend fun handleAddTextSlide(req: HttpRequest): HttpResponse {
-        val body = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
-        val title = (body["title"] as? String)?.trim().orEmpty()
-        val parsedLines = parseSlideLines(body["lines"])
-        val rawText = (body["body"] as? String)?.trim().orEmpty()
+        val settings = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, settings.configVersion)?.let { return it }
+
+        val body = PhoneControllerJson.decode<CreateTextSlideRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val requestedId = body.id?.trim()?.takeIf { it.isNotEmpty() && it.length <= 80 }
+        return upsertTextSlide(
+            slideId = requestedId ?: "slide_${UUID.randomUUID()}",
+            titleRaw = body.title,
+            bodyRaw = body.body,
+            linesRaw = body.lines,
+            durationRaw = body.durationSeconds,
+            enabledRaw = body.enabled,
+            textAlignRaw = body.textAlign,
+            settings = settings,
+            isExplicitPut = false
+        )
+    }
+
+    private suspend fun handlePutSlide(slideId: String, req: HttpRequest): HttpResponse {
+        if (slideId.isBlank() || slideId.length > 80) {
+            return errorResponse(400, "Bad Request", "invalid_id", "Slide ID must be 1–80 characters")
+        }
+        val settings = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, settings.configVersion)?.let { return it }
+
+        val body = PhoneControllerJson.decode<CreateTextSlideRequest>(req.body.toString(StandardCharsets.UTF_8))
+        return upsertTextSlide(
+            slideId = slideId,
+            titleRaw = body.title,
+            bodyRaw = body.body,
+            linesRaw = body.lines,
+            durationRaw = body.durationSeconds,
+            enabledRaw = body.enabled,
+            textAlignRaw = body.textAlign,
+            settings = settings,
+            isExplicitPut = true
+        )
+    }
+
+    private suspend fun upsertTextSlide(
+        slideId: String,
+        titleRaw: String,
+        bodyRaw: String,
+        linesRaw: List<SlideLineDto>?,
+        durationRaw: Int?,
+        enabledRaw: Boolean?,
+        textAlignRaw: String?,
+        settings: AppSettings,
+        isExplicitPut: Boolean
+    ): HttpResponse {
+        val title = titleRaw.trim()
+        val parsedLines = parseSlideLineDtos(linesRaw)
+        val rawText = bodyRaw.trim()
         val text = if (parsedLines.isNotEmpty()) parsedLines.joinToString("\n") { it.text } else rawText
         if (title.isEmpty() && text.isEmpty()) {
-            return jsonResponse(400, "Bad Request", mapOf("error" to "empty_slide", "message" to "Slide title or body is required"))
+            return errorResponse(400, "Bad Request", "empty_slide", "Slide title or body is required")
         }
-        val enabled = (body["enabled"] as? Boolean) ?: true
-        val settings = settingsRepository.appSettingsFlow.first()
+
+        val existingSlides = contentRepository.slidesFlow.value.slides
+        val existing = existingSlides.firstOrNull { it.id == slideId }
+        val enabled = enabledRaw ?: existing?.enabled ?: true
         val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
-        val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
-        if (enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
-            return jsonResponse(
-                409, "Conflict",
-                mapOf(
-                    "error" to "slide_limit_reached",
-                    "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
+        val enabledAnnouncements = existingSlides.count { it.enabled }
+
+        if (existing != null) {
+            if (enabled && !existing.enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
+                return errorResponse(
+                    409, "Conflict",
+                    "slide_limit_reached",
+                    "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
                 )
+            }
+            val duration = (durationRaw ?: existing.durationSeconds).coerceIn(3, 120)
+            val textAlign = textAlignRaw?.let { raw ->
+                runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
+            } ?: parsedLines.firstOrNull()?.align ?: existing.textAlign
+            val updated = existing.copy(
+                title = title,
+                body = text,
+                lines = parsedLines,
+                durationSeconds = duration,
+                enabled = enabled,
+                textAlign = textAlign
+            )
+            // Idempotent no-op if identical on retry (avoids unnecessary configVersion bump)
+            if (!isExplicitPut && updated == existing) {
+                return typedJsonResponse(
+                    200, "OK",
+                    CreateSlideResponse(
+                        id = existing.id,
+                        enabled = existing.enabled,
+                        slideCount = existingSlides.size,
+                        configVersion = settings.configVersion
+                    ),
+                    etag = "\"${settings.configVersion}\""
+                )
+            }
+            val res = contentRepository.updateSlide(updated)
+            return if (res.isSuccess) {
+                val nextVersion = settingsRepository.bumpConfigVersion()
+                typedJsonResponse(
+                    200, "OK",
+                    CreateSlideResponse(
+                        id = updated.id,
+                        enabled = updated.enabled,
+                        slideCount = res.getOrThrow().slides.size,
+                        configVersion = nextVersion
+                    ),
+                    etag = "\"$nextVersion\""
+                )
+            } else {
+                errorResponse(400, "Bad Request", "update_failed", res.exceptionOrNull()?.message ?: "Failed to update slide")
+            }
+        }
+
+        if (enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
+            return errorResponse(
+                409, "Conflict",
+                "slide_limit_reached",
+                "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
             )
         }
-        val duration = ((body["durationSeconds"] as? Number)?.toInt() ?: 15).coerceIn(3, 120)
-        val textAlign = (body["textAlign"] as? String)?.let { raw ->
+        val duration = (durationRaw ?: 15).coerceIn(3, 120)
+        val textAlign = textAlignRaw?.let { raw ->
             runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
         } ?: parsedLines.firstOrNull()?.align ?: SlideTextAlign.CENTER
-        val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
+        val nextOrder = (existingSlides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
-            id = "slide_${UUID.randomUUID()}",
+            id = slideId,
             type = SlideType.TEXT,
             title = title,
             body = text,
@@ -783,38 +1023,64 @@ class SalatSignLocalServer(
         )
         val result = contentRepository.addSlide(slide)
         return if (result.isSuccess) {
-            jsonResponse(201, "Created", mapOf("id" to slide.id, "enabled" to slide.enabled, "slideCount" to result.getOrThrow().slides.size))
+            val nextVersion = settingsRepository.bumpConfigVersion()
+            typedJsonResponse(
+                201, "Created",
+                CreateSlideResponse(
+                    id = slide.id,
+                    enabled = slide.enabled,
+                    slideCount = result.getOrThrow().slides.size,
+                    configVersion = nextVersion
+                ),
+                etag = "\"$nextVersion\""
+            )
         } else {
-            jsonResponse(400, "Bad Request", mapOf("error" to "add_failed", "message" to (result.exceptionOrNull()?.message ?: "Failed to add slide")))
+            errorResponse(400, "Bad Request", "add_failed", result.exceptionOrNull()?.message ?: "Failed to add slide")
         }
     }
 
     private suspend fun handleAddImageSlide(req: HttpRequest): HttpResponse {
+        val settings = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, settings.configVersion)?.let { return it }
+
         if (req.body.isEmpty()) {
-            return jsonResponse(400, "Bad Request", mapOf("error" to "empty_image", "message" to "Image payload is empty"))
+            return errorResponse(400, "Bad Request", "empty_image", "Image payload is empty")
         }
         val enabled = req.queryParams["enabled"]?.equals("false", ignoreCase = true)?.not() ?: true
-        val settings = settingsRepository.appSettingsFlow.first()
         val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
         val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
         if (enabled && !SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
-            return jsonResponse(
+            return errorResponse(
                 409, "Conflict",
-                mapOf(
-                    "error" to "slide_limit_reached",
-                    "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
-                )
+                "slide_limit_reached",
+                "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
             )
+        }
+        val requestedId = req.queryParams["id"]?.trim()?.takeIf { it.isNotEmpty() && it.length <= 80 }
+        if (requestedId != null) {
+            val existing = contentRepository.slidesFlow.value.slides.firstOrNull { it.id == requestedId }
+            if (existing != null) {
+                return typedJsonResponse(
+                    200, "OK",
+                    CreateSlideResponse(
+                        id = existing.id,
+                        enabled = existing.enabled,
+                        imageFile = existing.imageFile,
+                        configVersion = settings.configVersion
+                    ),
+                    etag = "\"${settings.configVersion}\""
+                )
+            }
         }
         val title = req.queryParams["title"]?.takeIf { it.isNotBlank() } ?: "Poster"
         val duration = (req.queryParams["duration"]?.toIntOrNull() ?: 15).coerceIn(3, 120)
         val imported = slideImageImporter.importImage(req.body, ImageTargetType.SLIDE)
         val processed = imported.getOrElse { err ->
-            return jsonResponse(400, "Bad Request", mapOf("error" to "image_invalid", "message" to (err.message ?: "Invalid image")))
+            return errorResponse(400, "Bad Request", "image_invalid", err.message ?: "Invalid image")
         }
         val nextOrder = (contentRepository.slidesFlow.value.slides.maxOfOrNull { it.sortOrder } ?: -1) + 1
         val slide = AnnouncementSlide(
-            id = "slide_${UUID.randomUUID()}",
+            id = requestedId ?: "slide_${UUID.randomUUID()}",
             type = SlideType.IMAGE,
             title = title,
             imageFile = processed.relativeFileName,
@@ -824,41 +1090,51 @@ class SalatSignLocalServer(
         )
         val added = contentRepository.addSlide(slide)
         return if (added.isSuccess) {
-            jsonResponse(201, "Created", mapOf("id" to slide.id, "enabled" to slide.enabled, "imageFile" to processed.relativeFileName))
+            val nextVersion = settingsRepository.bumpConfigVersion()
+            typedJsonResponse(
+                201, "Created",
+                CreateSlideResponse(
+                    id = slide.id,
+                    enabled = slide.enabled,
+                    imageFile = processed.relativeFileName,
+                    configVersion = nextVersion
+                ),
+                etag = "\"$nextVersion\""
+            )
         } else {
-            jsonResponse(400, "Bad Request", mapOf("error" to "add_failed", "message" to (added.exceptionOrNull()?.message ?: "Failed to add slide")))
+            errorResponse(400, "Bad Request", "add_failed", added.exceptionOrNull()?.message ?: "Failed to add slide")
         }
     }
 
     private suspend fun handlePatchSlide(slideId: String, req: HttpRequest): HttpResponse {
+        val settings = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, settings.configVersion)?.let { return it }
+
         val current = contentRepository.slidesFlow.value.slides.firstOrNull { it.id == slideId }
-            ?: return jsonResponse(404, "Not Found", mapOf("error" to "not_found", "message" to "Slide not found"))
-        val patch = SimpleJson.parseObject(req.body.toString(StandardCharsets.UTF_8))
-        val targetEnabled = (patch["enabled"] as? Boolean) ?: current.enabled
+            ?: return errorResponse(404, "Not Found", "not_found", "Slide not found")
+        val patch = PhoneControllerJson.decode<PatchSlideRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val targetEnabled = patch.enabled ?: current.enabled
         if (targetEnabled && !current.enabled) {
-            val settings = settingsRepository.appSettingsFlow.first()
             val enabledBuiltIns = BuiltInSlideRegistry.registrationsFor(settings).count { it.enabled }
             val enabledAnnouncements = contentRepository.slidesFlow.value.slides.count { it.enabled }
             if (!SlideBudget.canEnableOrAddAnnouncement(enabledAnnouncements, enabledBuiltIns)) {
-                return jsonResponse(
+                return errorResponse(
                     409, "Conflict",
-                    mapOf(
-                        "error" to "slide_limit_reached",
-                        "message" to "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
-                    )
+                    "slide_limit_reached",
+                    "The slideshow is limited to 6 slides, including built-in slides. Disable or remove a slide first."
                 )
             }
         }
-        val targetTitle = (patch["title"] as? String)?.trim() ?: current.title
-        val hasLinesPatch = patch.containsKey("lines")
-        val targetLines = if (hasLinesPatch) parseSlideLines(patch["lines"]) else current.lines
+        val targetTitle = patch.title?.trim() ?: current.title
+        val hasLinesPatch = patch.lines != null
+        val targetLines = if (hasLinesPatch) parseSlideLineDtos(patch.lines) else current.lines
         val targetBody = if (hasLinesPatch) {
             targetLines.joinToString("\n") { it.text }
         } else {
-            (patch["body"] as? String)?.trim() ?: current.body
+            patch.body?.trim() ?: current.body
         }
-        val targetDuration = ((patch["durationSeconds"] as? Number)?.toInt() ?: current.durationSeconds).coerceIn(3, 120)
-        val targetAlign = (patch["textAlign"] as? String)?.let { raw ->
+        val targetDuration = (patch.durationSeconds ?: current.durationSeconds).coerceIn(3, 120)
+        val targetAlign = patch.textAlign?.let { raw ->
             runCatching { SlideTextAlign.valueOf(raw.uppercase(Locale.ROOT)) }.getOrNull()
         } ?: targetLines.firstOrNull()?.align ?: current.textAlign
         val updated = current.copy(
@@ -871,53 +1147,82 @@ class SalatSignLocalServer(
         )
         val res = contentRepository.updateSlide(updated)
         return if (res.isSuccess) {
-            jsonResponse(
+            val nextVersion = settingsRepository.bumpConfigVersion()
+            typedJsonResponse(
                 200, "OK",
-                mapOf(
-                    "id" to updated.id,
-                    "title" to updated.title,
-                    "body" to updated.body,
-                    "durationSeconds" to updated.durationSeconds,
-                    "enabled" to updated.enabled
-                )
+                PatchSlideResponse(
+                    id = updated.id,
+                    title = updated.title,
+                    body = updated.body,
+                    durationSeconds = updated.durationSeconds,
+                    enabled = updated.enabled,
+                    configVersion = nextVersion
+                ),
+                etag = "\"$nextVersion\""
             )
         } else {
-            jsonResponse(400, "Bad Request", mapOf("error" to "update_failed", "message" to (res.exceptionOrNull()?.message ?: "Failed to update slide")))
+            errorResponse(400, "Bad Request", "update_failed", res.exceptionOrNull()?.message ?: "Failed to update slide")
         }
     }
 
     private suspend fun handleDeleteSlide(slideId: String): HttpResponse {
         if (slideId.isBlank()) {
-            return jsonResponse(400, "Bad Request", mapOf("error" to "missing_id", "message" to "Slide ID is required"))
+            return errorResponse(400, "Bad Request", "missing_id", "Slide ID is required")
         }
         val result = contentRepository.deleteSlide(slideId)
         return if (result.isSuccess) {
-            jsonResponse(200, "OK", mapOf("deleted" to slideId, "slideCount" to result.getOrThrow().slides.size))
+            val nextVersion = settingsRepository.bumpConfigVersion()
+            typedJsonResponse(
+                200, "OK",
+                DeleteSlideResponse(
+                    deleted = slideId,
+                    slideCount = result.getOrThrow().slides.size,
+                    configVersion = nextVersion
+                ),
+                etag = "\"$nextVersion\""
+            )
         } else {
-            jsonResponse(400, "Bad Request", mapOf("error" to "delete_failed", "message" to (result.exceptionOrNull()?.message ?: "Failed to delete slide")))
+            errorResponse(400, "Bad Request", "delete_failed", result.exceptionOrNull()?.message ?: "Failed to delete slide")
         }
     }
 
     private suspend fun handleUploadLogo(req: HttpRequest): HttpResponse {
+        val current = settingsRepository.appSettingsFlow.first()
+        checkIfMatch(req, current.configVersion)?.let { return it }
+
         if (req.body.isEmpty()) {
-            return jsonResponse(400, "Bad Request", mapOf("error" to "empty_logo", "message" to "Logo image payload is empty"))
+            return errorResponse(400, "Bad Request", "empty_logo", "Logo image payload is empty")
         }
         val processed = logoImageImporter.importImage(req.body, ImageTargetType.LOGO).getOrElse { err ->
-            return jsonResponse(400, "Bad Request", mapOf("error" to "logo_invalid", "message" to (err.message ?: "Invalid logo image")))
+            return errorResponse(400, "Bad Request", "logo_invalid", err.message ?: "Invalid logo image")
         }
-        val current = settingsRepository.appSettingsFlow.first()
         settingsRepository.setMosqueIconPreset(MosqueIconPreset.CUSTOM)
         settingsRepository.updateMosqueBranding(current.mosqueName, current.mosqueSubtitle, processed.relativeFileName)
-        return jsonResponse(200, "OK", mapOf("logoFile" to processed.relativeFileName))
+        val nextVersion = settingsRepository.bumpConfigVersion()
+        return typedJsonResponse(
+            200, "OK",
+            LogoUploadResponse(logoFile = processed.relativeFileName, configVersion = nextVersion),
+            etag = "\"$nextVersion\""
+        )
     }
 
-    private fun jsonResponse(code: Int, text: String, payload: Map<String, Any?>): HttpResponse {
+    private inline fun <reified T> typedJsonResponse(
+        code: Int,
+        text: String,
+        payload: T,
+        etag: String? = null
+    ): HttpResponse {
         return HttpResponse(
             statusCode = code,
             statusText = text,
             contentType = "application/json; charset=utf-8",
-            body = SimpleJson.toJson(payload).toByteArray(StandardCharsets.UTF_8)
+            body = PhoneControllerJson.encode(payload).toByteArray(StandardCharsets.UTF_8),
+            etag = etag
         )
+    }
+
+    private fun errorResponse(code: Int, text: String, error: String, message: String): HttpResponse {
+        return typedJsonResponse(code, text, ApiErrorResponse(error = error, message = message))
     }
 
     private fun readHttpRequest(socket: Socket, input: InputStream, remoteIp: String): ReadRequestOutcome {
@@ -933,29 +1238,21 @@ class SalatSignLocalServer(
 
         return try {
             if (!applyRemainingTimeout(headerDeadline)) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(408, "Request Timeout", "request_timeout", "Request headers timed out"))
             }
             val requestLine = readBoundedLine(buffered, MAX_REQUEST_LINE_BYTES, headerDeadline) {
                 applyRemainingTimeout(headerDeadline)
             } ?: return ReadRequestOutcome.Closed
             if (requestLine == LINE_TIMED_OUT) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(408, "Request Timeout", "request_timeout", "Request headers timed out"))
             }
             if (requestLine == LINE_TOO_LONG) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(414, "URI Too Long", mapOf("error" to "uri_too_long", "message" to "Request line too long"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(414, "URI Too Long", "uri_too_long", "Request line too long"))
             }
 
             val parts = requestLine.trim().split(" ")
             if (parts.size < 2) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(400, "Bad Request", mapOf("error" to "bad_request", "message" to "Invalid HTTP request line"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(400, "Bad Request", "bad_request", "Invalid HTTP request line"))
             }
 
             val method = parts[0]
@@ -983,21 +1280,15 @@ class SalatSignLocalServer(
                     applyRemainingTimeout(headerDeadline)
                 } ?: break
                 if (line == LINE_TIMED_OUT) {
-                    return ReadRequestOutcome.Error(
-                        jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request headers timed out"))
-                    )
+                    return ReadRequestOutcome.Error(errorResponse(408, "Request Timeout", "request_timeout", "Request headers timed out"))
                 }
                 if (line == LINE_TOO_LONG) {
-                    return ReadRequestOutcome.Error(
-                        jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "header_too_large", "message" to "Header line too large"))
-                    )
+                    return ReadRequestOutcome.Error(errorResponse(431, "Request Header Fields Too Large", "header_too_large", "Header line too large"))
                 }
                 if (line.isEmpty()) break
                 headerCount++
                 if (headerCount > MAX_HEADERS) {
-                    return ReadRequestOutcome.Error(
-                        jsonResponse(431, "Request Header Fields Too Large", mapOf("error" to "too_many_headers", "message" to "Too many headers"))
-                    )
+                    return ReadRequestOutcome.Error(errorResponse(431, "Request Header Fields Too Large", "too_many_headers", "Too many headers"))
                 }
                 val colon = line.indexOf(':')
                 if (colon > 0) {
@@ -1009,14 +1300,12 @@ class SalatSignLocalServer(
             val contentLengthRaw = headers["content-length"]
             val contentLength = if (contentLengthRaw != null) {
                 contentLengthRaw.toIntOrNull() ?: return ReadRequestOutcome.Error(
-                    jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Invalid Content-Length"))
+                    errorResponse(400, "Bad Request", "invalid_content_length", "Invalid Content-Length")
                 )
             } else 0
 
             if (contentLength < 0) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(400, "Bad Request", mapOf("error" to "invalid_content_length", "message" to "Negative Content-Length"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(400, "Bad Request", "invalid_content_length", "Negative Content-Length"))
             }
 
             val isAuthed = extractValidBearerToken(headers) != null
@@ -1027,9 +1316,7 @@ class SalatSignLocalServer(
                 else -> MAX_JSON_BODY_BYTES
             }
             if (contentLength > maxAllowedBytes) {
-                return ReadRequestOutcome.Error(
-                    jsonResponse(413, "Payload Too Large", mapOf("error" to "payload_too_large", "message" to "Request body exceeds limit"))
-                )
+                return ReadRequestOutcome.Error(errorResponse(413, "Payload Too Large", "payload_too_large", "Request body exceeds limit"))
             }
 
             val body = if (contentLength > 0) {
@@ -1039,18 +1326,14 @@ class SalatSignLocalServer(
                 var offset = 0
                 while (offset < contentLength) {
                     if (!applyRemainingTimeout(bodyDeadline)) {
-                        return ReadRequestOutcome.Error(
-                            jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request body timed out"))
-                        )
+                        return ReadRequestOutcome.Error(errorResponse(408, "Request Timeout", "request_timeout", "Request body timed out"))
                     }
                     val read = buffered.read(buf, offset, contentLength - offset)
                     if (read <= 0) break
                     offset += read
                 }
                 if (offset < contentLength) {
-                    return ReadRequestOutcome.Error(
-                        jsonResponse(400, "Bad Request", mapOf("error" to "truncated_body", "message" to "Request body shorter than Content-Length"))
-                    )
+                    return ReadRequestOutcome.Error(errorResponse(400, "Bad Request", "truncated_body", "Request body shorter than Content-Length"))
                 }
                 buf
             } else {
@@ -1068,9 +1351,7 @@ class SalatSignLocalServer(
                 )
             )
         } catch (_: SocketTimeoutException) {
-            ReadRequestOutcome.Error(
-                jsonResponse(408, "Request Timeout", mapOf("error" to "request_timeout", "message" to "Request timed out"))
-            )
+            ReadRequestOutcome.Error(errorResponse(408, "Request Timeout", "request_timeout", "Request timed out"))
         }
     }
 
@@ -1114,6 +1395,7 @@ class SalatSignLocalServer(
             append("HTTP/1.1 ${response.statusCode} ${response.statusText}\r\n")
             append("Content-Type: ${response.contentType}\r\n")
             append("Content-Length: ${response.body.size}\r\n")
+            response.etag?.let { append("ETag: $it\r\n") }
             append("Cache-Control: no-store\r\n")
             append("X-Content-Type-Options: nosniff\r\n")
             append("X-Frame-Options: DENY\r\n")

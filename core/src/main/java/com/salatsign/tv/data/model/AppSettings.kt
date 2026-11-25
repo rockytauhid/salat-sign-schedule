@@ -274,7 +274,12 @@ data class AppSettings(
     val screensaverCalendarEnabled: Boolean = true,
     val screensaverQuranEnabled: Boolean = true,
     val screensaverScheduleDurationSeconds: Int = com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_SCHEDULE_DURATION_SECONDS,
-    val screensaverCalendarDurationSeconds: Int = com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_CALENDAR_DURATION_SECONDS
+    val screensaverCalendarDurationSeconds: Int = com.salatsign.tv.engine.ScreensaverDefaults.DEFAULT_CALENDAR_DURATION_SECONDS,
+    // TV Identity & Multi-TV Sync Metadata (SalatSign Phone Controller Phase 0)
+    val deviceId: String = "",
+    val deviceName: String = "",
+    val roomGroup: String = "",
+    val configVersion: Long = 1L
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

@@ -3,6 +3,12 @@
 
 package com.salatsign.tv.remote
 
+import com.salatsign.tv.data.api.ApiErrorResponse
+import com.salatsign.tv.data.api.AuthResponse
+import com.salatsign.tv.data.api.CreateSlideResponse
+import com.salatsign.tv.data.api.FullConfigResponse
+import com.salatsign.tv.data.api.PhoneControllerJson
+import com.salatsign.tv.data.api.StatusResponse
 import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AnnouncementSlide
@@ -163,6 +169,24 @@ class SalatSignLocalServerTest {
         override suspend fun setScreensaverCalendarDurationSeconds(seconds: Int) {
             state.value = state.value.copy(screensaverCalendarDurationSeconds = seconds)
         }
+        override suspend fun ensureDeviceId(): String {
+            val existing = state.value.deviceId
+            if (existing.isNotBlank()) return existing
+            val created = "tv-test-uuid-0001"
+            state.value = state.value.copy(deviceId = created)
+            return created
+        }
+        override suspend fun setDeviceIdentity(name: String, roomGroup: String) {
+            state.value = state.value.copy(deviceName = name.trim(), roomGroup = roomGroup.trim())
+        }
+        override suspend fun bumpConfigVersion(): Long {
+            val next = state.value.configVersion + 1L
+            state.value = state.value.copy(configVersion = next)
+            return next
+        }
+        override suspend fun setConfigVersion(version: Long) {
+            state.value = state.value.copy(configVersion = version.coerceAtLeast(1L))
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {
@@ -239,7 +263,7 @@ class SalatSignLocalServerTest {
             HttpRequest("POST", "/api/v1/auth", body = """{"pin":"$pin"}""".toByteArray())
         )
         assertEquals(200, authResp.statusCode)
-        val token = SimpleJson.parseObject(authResp.body.toString(StandardCharsets.UTF_8))["token"] as String
+        val token = PhoneControllerJson.decode<AuthResponse>(authResp.body.toString(StandardCharsets.UTF_8)).token
         return mapOf("authorization" to "Bearer $token")
     }
 
@@ -254,12 +278,15 @@ class SalatSignLocalServerTest {
 
         val statusResp = server.handleRequest(HttpRequest("GET", "/api/v1/status"))
         assertEquals(200, statusResp.statusCode)
-        val json = SimpleJson.parseObject(statusResp.body.toString(StandardCharsets.UTF_8))
-        assertEquals("SalatSign", json["app"])
-        assertEquals(1L, json["apiVersion"])
-        assertEquals(true, json["pinConfigured"])
-        assertNull(json["mosqueName"])
-        assertNull(json["cityName"])
+        val rawBody = statusResp.body.toString(StandardCharsets.UTF_8)
+        val status = PhoneControllerJson.decode<StatusResponse>(rawBody)
+        assertEquals("SalatSign", status.app)
+        assertEquals(1, status.apiVersion)
+        assertEquals(true, status.pinConfigured)
+        assertTrue(status.deviceId.isNotBlank())
+        assertEquals(1L, status.configVersion)
+        assertFalse(rawBody.contains("mosqueName"))
+        assertFalse(rawBody.contains("cityName"))
     }
 
     @Test
@@ -269,8 +296,8 @@ class SalatSignLocalServerTest {
             HttpRequest("POST", "/api/v1/auth", body = """{"pin":"0000"}""".toByteArray())
         )
         assertEquals(403, resp.statusCode)
-        val json = SimpleJson.parseObject(resp.body.toString(StandardCharsets.UTF_8))
-        assertEquals("default_pin_blocked", json["error"])
+        val err = PhoneControllerJson.decode<ApiErrorResponse>(resp.body.toString(StandardCharsets.UTF_8))
+        assertEquals("default_pin_blocked", err.error)
     }
 
     @Test
@@ -312,7 +339,7 @@ class SalatSignLocalServerTest {
         )
         assertEquals(200, ok.statusCode)
         assertEquals(0, server.currentRemoteFailedAttempts)
-        val token = SimpleJson.parseObject(ok.body.toString(StandardCharsets.UTF_8))["token"] as? String
+        val token = PhoneControllerJson.decode<AuthResponse>(ok.body.toString(StandardCharsets.UTF_8)).token
         assertNotNull(token)
 
         // Logout immediately revokes token
@@ -398,7 +425,7 @@ class SalatSignLocalServerTest {
             )
         )
         assertEquals(201, addResp.statusCode)
-        val slideId = SimpleJson.parseObject(addResp.body.toString(StandardCharsets.UTF_8))["id"] as String
+        val slideId = PhoneControllerJson.decode<CreateSlideResponse>(addResp.body.toString(StandardCharsets.UTF_8)).id
         assertEquals(1, contentRepo.slidesFlow.value.slides.size)
 
         // Edit slide title, body, and duration
@@ -462,7 +489,7 @@ class SalatSignLocalServerTest {
             )
             assertEquals(201, r.statusCode)
             if (idx == 0) {
-                firstSlideId = SimpleJson.parseObject(r.body.toString(StandardCharsets.UTF_8))["id"] as String
+                firstSlideId = PhoneControllerJson.decode<CreateSlideResponse>(r.body.toString(StandardCharsets.UTF_8)).id
             }
         }
 
@@ -479,7 +506,7 @@ class SalatSignLocalServerTest {
             HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = """{"title":"S7","body":"B7","enabled":false}""".toByteArray())
         )
         assertEquals(201, seventhDisabled.statusCode)
-        val seventhId = SimpleJson.parseObject(seventhDisabled.body.toString(StandardCharsets.UTF_8))["id"] as String
+        val seventhId = PhoneControllerJson.decode<CreateSlideResponse>(seventhDisabled.body.toString(StandardCharsets.UTF_8)).id
         assertEquals(7, contentRepo.slidesFlow.value.slides.size)
 
         // Trying to enable 7th while 6 are enabled -> refused (409)
@@ -513,9 +540,9 @@ class SalatSignLocalServerTest {
             assertEquals("DENY", conn.getHeaderField("X-Frame-Options"))
             assertNotNull(conn.getHeaderField("Content-Security-Policy"))
             val body = conn.inputStream.bufferedReader().readText()
-            val json = SimpleJson.parseObject(body)
-            assertEquals("SalatSign", json["app"])
-            assertEquals(freePort.toLong(), json["port"])
+            val status = PhoneControllerJson.decode<StatusResponse>(body)
+            assertEquals("SalatSign", status.app)
+            assertEquals(freePort, status.port)
         } finally {
             server.stop()
         }
@@ -624,5 +651,88 @@ class SalatSignLocalServerTest {
             settingsRepo.current.pinHashHex.startsWith("v2:${PinHasher.CURRENT_ITERATIONS}:")
         )
         assertFalse(PinHasher.needsRehash(true, settingsRepo.current.pinHashHex))
+    }
+
+    @Test
+    fun phase0_fullConfigIfMatchAndIdempotentClientUuidSlides() = runBlocking {
+        val (server, settingsRepo, contentRepo) = createServer()
+        val authHeaders = authenticate(server)
+
+        // 1. GET /api/v1/config returns device identity, configVersion, and ETag
+        val initialCfgResp = server.handleRequest(HttpRequest("GET", "/api/v1/config", headers = authHeaders))
+        assertEquals(200, initialCfgResp.statusCode)
+        assertEquals("\"1\"", initialCfgResp.etag)
+        val initialCfg = PhoneControllerJson.decode<FullConfigResponse>(initialCfgResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals(1L, initialCfg.configVersion)
+        assertTrue(initialCfg.deviceId.isNotBlank())
+
+        // 2. Stale If-Match returns 412 Precondition Failed
+        val stalePatch = server.handleRequest(
+            HttpRequest(
+                method = "PATCH",
+                path = "/api/v1/settings",
+                headers = authHeaders + ("if-match" to "\"999\""),
+                body = """{"deviceName":"Upstairs Left","roomGroup":"Upstairs"}""".toByteArray()
+            )
+        )
+        assertEquals(412, stalePatch.statusCode)
+        assertEquals("", settingsRepo.current.deviceName)
+
+        // 3. Matching If-Match succeeds and bumps configVersion to 2
+        val goodPatch = server.handleRequest(
+            HttpRequest(
+                method = "PATCH",
+                path = "/api/v1/settings",
+                headers = authHeaders + ("if-match" to "\"1\""),
+                body = """{"deviceName":"Upstairs Left","roomGroup":"Upstairs","mosqueName":"Masjid Al-Huda"}""".toByteArray()
+            )
+        )
+        assertEquals(200, goodPatch.statusCode)
+        assertEquals("\"2\"", goodPatch.etag)
+        assertEquals("Upstairs Left", settingsRepo.current.deviceName)
+        assertEquals("Upstairs", settingsRepo.current.roomGroup)
+        assertEquals(2L, settingsRepo.current.configVersion)
+
+        // 4. Client-supplied UUID on POST /api/v1/slides/text is idempotent on retry (no duplicate created)
+        val clientUuid = "client-slide-uuid-1234"
+        val slidePayload = """{"id":"$clientUuid","title":"Friday Khutbah","body":"1:00 PM sharp","durationSeconds":20}""".toByteArray()
+        val firstPost = server.handleRequest(HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = slidePayload))
+        assertEquals(201, firstPost.statusCode)
+        assertEquals(1, contentRepo.slidesFlow.value.slides.size)
+        assertEquals(3L, settingsRepo.current.configVersion)
+
+        val retryPost = server.handleRequest(HttpRequest("POST", "/api/v1/slides/text", headers = authHeaders, body = slidePayload))
+        assertEquals(200, retryPost.statusCode)
+        assertEquals(1, contentRepo.slidesFlow.value.slides.size)
+        assertEquals(3L, settingsRepo.current.configVersion) // no-op retry does not spuriously bump version
+
+        // 5. PUT /api/v1/slides/{id} upserts cleanly
+        val putResp = server.handleRequest(
+            HttpRequest(
+                method = "PUT",
+                path = "/api/v1/slides/$clientUuid",
+                headers = authHeaders + ("if-match" to "\"3\""),
+                body = """{"title":"Friday Khutbah Updated","body":"1:15 PM","durationSeconds":25}""".toByteArray()
+            )
+        )
+        assertEquals(200, putResp.statusCode)
+        assertEquals("Friday Khutbah Updated", contentRepo.slidesFlow.value.slides.first().title)
+        assertEquals(4L, settingsRepo.current.configVersion)
+
+        // 6. PUT /api/v1/config replaces settings & slides atomically with If-Match
+        val putConfig = server.handleRequest(
+            HttpRequest(
+                method = "PUT",
+                path = "/api/v1/config",
+                headers = authHeaders + ("if-match" to "\"4\""),
+                body = """{"settings":{"mosqueName":"Masjid Al-Noor"},"slides":[{"id":"s-1","type":"TEXT","title":"Welcome","body":"Assalamu alaikum","durationSeconds":15,"enabled":true}]}""".toByteArray()
+            )
+        )
+        assertEquals(200, putConfig.statusCode)
+        val updatedCfg = PhoneControllerJson.decode<FullConfigResponse>(putConfig.body.toString(StandardCharsets.UTF_8))
+        assertEquals(5L, updatedCfg.configVersion)
+        assertEquals("Masjid Al-Noor", updatedCfg.settings.mosqueName)
+        assertEquals(1, updatedCfg.slides.size)
+        assertEquals("s-1", updatedCfg.slides.first().id)
     }
 }
