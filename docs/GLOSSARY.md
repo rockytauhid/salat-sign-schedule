@@ -40,12 +40,12 @@ This glossary documents standard Islamic and application terminology used across
 
 ---
 
-## 3. Calendar & Modes
+## 3. Calendar & Apps
 
 | Concept | English (en-AU) | Indonesian (id) | Arabic (ar) |
 |---------|-----------------|-----------------|-------------|
 | Hijri Era | AH (Anno Hegirae) | H (Hijriyah) | هـ (هجرية) |
-| Home Mode | Home Mode (Personal) | Mode Rumah (Personal) | الوضع المنزلي (شخصي) |
-| Mosque Mode | Mosque Mode (Digital Signage) | Mode Masjid (Digital Signage) | وضع المسجد (شاشات رقمية) |
+| SalatSchedule | SalatSchedule (Home TV Prayer Times) | SalatSchedule (Jadwal Shalat TV Rumah) | SalatSchedule (مواقيت الصلاة للتلفاز المنزلي) |
+| SalatSign | SalatSign (Mosque Digital Signage) | SalatSign (Papan Digital Masjid) | SalatSign (شاشات المسجد الرقمية) |
 | Digital Signage | Digital Signage | Digital Signage | شاشات رقمية |
-| Strike Banner | Exact-Time Visual Highlight Strike | Highlight Visual Tepat Waktu Shalat | وميض وتنبيه بصري عند وقت الصلاة |
+| Strike Banner | Prayer-Time Alert Banner | Banner Peringatan Waktu Shalat | تنبيه وقت الصلاة المرئي |

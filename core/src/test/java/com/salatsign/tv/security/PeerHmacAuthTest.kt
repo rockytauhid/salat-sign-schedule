@@ -113,11 +113,13 @@ class PeerHmacAuthTest {
         val clientKp = PeerJoinCrypto.generateEphemeralKeyPair()
         val clientPub = PeerJoinCrypto.encodePublicKey(clientKp)
 
-        // R5-2: Wrong proof fails, valid proof succeeds without sending code in cleartext
-        assertTrue(mgr.redeemByProof("tv-join", clientPub, "0".repeat(64), "192.168.4.55") is JoinCodeRedeemResult.InvalidCode)
-        val validProof = PeerJoinCrypto.computeJoinCodeProof(active.code, "tv-join", clientPub)
-        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55") is JoinCodeRedeemResult.Success)
-        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55") is JoinCodeRedeemResult.NoActiveCode)
+        // R5-2 + R6-3: Proof binds deviceId, ephemeral key, AND identityPublicKeyBase64 (tampered identity key fails!)
+        val idPub = PeerJoinCrypto.encodePublicKey(PeerJoinCrypto.generateEphemeralKeyPair())
+        val evilIdPub = PeerJoinCrypto.encodePublicKey(PeerJoinCrypto.generateEphemeralKeyPair())
+        val validProof = PeerJoinCrypto.computeJoinCodeProof(active.code, "tv-join", clientPub, idPub)
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55", evilIdPub) is JoinCodeRedeemResult.InvalidCode)
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55", idPub) is JoinCodeRedeemResult.Success)
+        assertTrue(mgr.redeemByProof("tv-join", clientPub, validProof, "192.168.4.55", idPub) is JoinCodeRedeemResult.NoActiveCode)
 
         // R5-1: ECIES rotation envelope can ONLY be decrypted by the intended peer's private key (not a removed TV)
         val goodPeerKp = PeerJoinCrypto.generateEphemeralKeyPair()

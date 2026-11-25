@@ -88,14 +88,14 @@ This document tracks test cases that require real Android TV hardware or emulato
 
 ## MT-3.1: Admin PIN, Lockout Protection & Inactivity Auto-Dismiss
 
-**Objective:** Verify that Mosque Mode gates settings access behind a secure PBKDF2-hashed PIN, locks out brute-force attempts with exponential backoff (persisted across restarts), and automatically dismisses settings after 2 minutes of TV inactivity.
+**Objective:** Verify that SalatSign gates settings access behind a secure PBKDF2-hashed PIN, locks out brute-force attempts with exponential backoff (persisted across restarts), and automatically dismisses settings after 2 minutes of TV inactivity.
 
 ### Test Setup
 - Device: Android TV running API 26+ (e.g. Sony Bravia or Emulator).
-- SalatSign configured in Mosque Mode.
+- SalatSign installed with setup completed.
 
 ### Test Procedure A: PIN Verification & Change
-1. Launch SalatSign in Mosque Mode.
+1. Launch SalatSign.
 2. Press `MENU` or hold `DPAD_CENTER` for 3 seconds to request Settings.
 3. Verify the `PinDialog` appears with masked dots (`● ● ● ●`) and D-pad numeric keypad (1..9, CLEAR, 0, OK).
 4. Enter default PIN `0000` using the D-pad keypad or remote number buttons -> Settings screen opens.
@@ -118,7 +118,7 @@ This document tracks test cases that require real Android TV hardware or emulato
 7. Enter correct PIN -> **Verify:** Failed attempts counter resets to 0.
 
 ### Test Procedure C: 2-Minute Inactivity Auto-Dismiss
-1. Open Settings in Mosque Mode.
+1. Open Settings in SalatSign.
 2. Place the remote control down and leave untouched.
 3. **Verify:** After exactly 2 minutes (120 seconds), Settings automatically closes and returns to the Mosque digital signage slideshow.
 
@@ -126,11 +126,11 @@ This document tracks test cases that require real Android TV hardware or emulato
 
 ## MT-3.2: Reliable Admin Gesture & Kiosk Key Handling
 
-**Objective:** Verify that the 3-second `DPAD_CENTER` hold gesture works reliably on remotes that do not send repeated `ACTION_DOWN` events, `KEYCODE_MENU` directly opens settings, and `KEYCODE_BACK` is intercepted in Mosque Mode to prevent accidental exit from the public kiosk display.
+**Objective:** Verify that the 3-second `DPAD_CENTER` hold gesture works reliably on remotes that do not send repeated `ACTION_DOWN` events, `KEYCODE_MENU` directly opens settings, and `KEYCODE_BACK` is intercepted in SalatSign to prevent accidental exit from the public kiosk display.
 
 ### Test Setup
 - Device: Android TV with standard remote control or `adb shell input keyevent`.
-- SalatSign running in Mosque Mode with setup completed.
+- SalatSign running with setup completed.
 
 ### Test Procedure A: 3-Second Hold Gesture (No Repeat Dependency)
 1. While Mosque digital signage is displaying, press and hold `DPAD_CENTER` (or `adb shell input keyevent --longpress 23`).
@@ -164,8 +164,8 @@ This document tracks test cases that require real Android TV hardware or emulato
    - On API 26+, `ContextCompat.startForegroundService()` must be followed by `Service.startForeground()` within ~5 seconds.
    - `AdhanPlaybackService.onStartCommand()` immediately calls `createNotificationChannel()` and `startForeground()` prior to preparing `MediaPlayer`.
 4. **Mandatory Notification Channels:**
-   - In Home Mode, `channel_adhan_playback` and `channel_prayer_reminder` are created before posting alerts or notifications.
-   - In Mosque Mode (silent default), notification channels are not created and no notifications are dispatched.
+   - In SalatSchedule, `channel_adhan_playback` and `channel_prayer_reminder` are created before posting alerts or notifications.
+   - In SalatSign (strictly silent), notification channels are not created and no notifications are dispatched.
 5. **Direct External Storage Access (No Scoped Storage on API 26):**
    - Direct file paths under `/storage/...` (e.g., USB drive mounts) work directly with `READ_EXTERNAL_STORAGE` (`android:maxSdkVersion="32"`). No Scoped Storage restrictions exist on Android 8.0.
 6. **2016 Hardware Resource Constraints:**

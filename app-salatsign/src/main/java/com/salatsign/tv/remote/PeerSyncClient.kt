@@ -43,6 +43,37 @@ class PeerSyncClient(
     companion object {
         private const val TAG = "PeerSyncClient"
         private const val MAX_JSON_RESPONSE_BYTES = 512 * 1024
+
+        /**
+         * Review 6 R6-1: Maps a peer's [PeerSyncAckResponse] to [PeerDeliveryStatusDto].
+         * An equal-version peer with zero missing assets is treated as delivered & in sync.
+         */
+        internal fun mapSyncAckToDeliveryStatus(
+            peer: PeerTvRecord,
+            ack: PeerSyncAckResponse,
+            pushedConfigVersion: Long
+        ): PeerDeliveryStatusDto {
+            val alreadyInSync = ack.configVersion == pushedConfigVersion && ack.missingAssets.isEmpty()
+            val st = when {
+                ack.missingAssets.isNotEmpty() -> "missing_assets"
+                ack.adopted || alreadyInSync -> "delivered"
+                else -> "not_adopted"
+            }
+            val msg = when {
+                ack.missingAssets.isNotEmpty() -> "Missing ${ack.missingAssets.size} image(s)"
+                st == "not_adopted" -> "Peer at v${ack.configVersion}"
+                else -> null
+            }
+            return PeerDeliveryStatusDto(
+                deviceId = peer.deviceId,
+                deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
+                status = st,
+                message = msg,
+                configVersion = ack.configVersion,
+                adopted = ack.adopted || alreadyInSync,
+                missingAssets = ack.missingAssets
+            )
+        }
     }
 
     /**
@@ -62,11 +93,12 @@ class PeerSyncClient(
             }
             val clientKeyPair = PeerJoinCrypto.generateEphemeralKeyPair()
             val clientPubB64 = PeerJoinCrypto.encodePublicKey(clientKeyPair)
-            // Review 5 R5-2: Prove knowledge of join code via PBKDF2-HMAC proof without sending code in cleartext
+            // Review 5 R5-2 + Review 6 R6-3: Prove knowledge of join code bound to deviceId, ephemeral key, AND identity key
             val codeProof = PeerJoinCrypto.computeJoinCodeProof(
                 normalizedJoinCode = normalizedCode,
                 deviceId = selfPeer.deviceId,
-                clientPublicKeyBase64 = clientPubB64
+                clientPublicKeyBase64 = clientPubB64,
+                identityPublicKeyBase64 = selfPeer.publicKeyBase64
             )
             val req = PeerJoinRequest(
                 codeProofHex = codeProof,
@@ -167,7 +199,14 @@ class PeerSyncClient(
         val body = PhoneControllerJson.encode(payload).toByteArray(StandardCharsets.UTF_8)
         peers.map { peer ->
             async(Dispatchers.IO) {
-                sendSignedPost(peer, "/api/v1/peer/sync", body, groupSecretHex, selfDeviceId, parseSyncAck = true)
+                sendSignedPost(
+                    peer = peer,
+                    path = "/api/v1/peer/sync",
+                    body = body,
+                    groupSecretHex = groupSecretHex,
+                    selfDeviceId = selfDeviceId,
+                    pushedConfigVersion = payload.configVersion
+                )
             }
         }.awaitAll()
     }
@@ -365,7 +404,7 @@ class PeerSyncClient(
         body: ByteArray,
         groupSecretHex: String,
         selfDeviceId: String,
-        parseSyncAck: Boolean = false
+        pushedConfigVersion: Long? = null
     ): PeerDeliveryStatusDto {
         return try {
             val ts = nowMillisProvider()
@@ -405,8 +444,9 @@ class PeerSyncClient(
                             status = "failed",
                             message = "Unauthenticated peer response"
                         )
-                    } else if (parseSyncAck) {
-                        // Review 5 R5-3: Report actual post-apply adoption and missing assets from peer
+                    } else if (pushedConfigVersion != null) {
+                        // Review 5 R5-3 + Review 6 R6-1: Report actual post-apply adoption and treat
+                        // equal-version peers with zero missing assets as delivered & in sync.
                         val ack = runCatching {
                             PhoneControllerJson.decode<PeerSyncAckResponse>(respBytes.toString(StandardCharsets.UTF_8))
                         }.getOrNull()
@@ -417,25 +457,7 @@ class PeerSyncClient(
                                 status = "delivered"
                             )
                         } else {
-                            val st = when {
-                                ack.missingAssets.isNotEmpty() -> "missing_assets"
-                                !ack.adopted -> "not_adopted"
-                                else -> "delivered"
-                            }
-                            val msg = when {
-                                ack.missingAssets.isNotEmpty() -> "Missing ${ack.missingAssets.size} image(s)"
-                                !ack.adopted -> "Peer at v${ack.configVersion}"
-                                else -> null
-                            }
-                            PeerDeliveryStatusDto(
-                                deviceId = peer.deviceId,
-                                deviceName = peer.deviceName.ifBlank { peer.lastKnownHost },
-                                status = st,
-                                message = msg,
-                                configVersion = ack.configVersion,
-                                adopted = ack.adopted,
-                                missingAssets = ack.missingAssets
-                            )
+                            mapSyncAckToDeliveryStatus(peer, ack, pushedConfigVersion)
                         }
                     } else {
                         PeerDeliveryStatusDto(

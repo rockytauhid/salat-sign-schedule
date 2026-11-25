@@ -22,26 +22,32 @@ SalatSign is a dedicated, strictly silent, offline-first Android TV digital sign
 
 Key Features:
 
-1. 100% Offline Astronomical Prayer Engine
-Accurately computes the five daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) using trusted astronomical calculations with full daylight saving (DST) handling and Australian city presets first. No internet connection is required.
+1. Offline Astronomical Prayer Engine & Dual Calendar
+Accurately computes the five daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) and Sunrise with full daylight saving (DST) handling, configurable Hijri offsets (-2 to +2 days), and Australian city presets first. Core prayer calculations and slideshows work 100% offline.
 
 2. Mosque-Specific Scheduling (Jumu'ah & Iqamah)
-• Custom Jumu'ah Sittings: Configure 1 to 3 Friday sittings using fixed wall-clock times or minutes after Dhuhr, with automatic 53-Friday DST validation and a clear "Zuhr begins …" secondary display.
+• Custom Jumu'ah Sittings: Configure 1 to 3 Friday sittings using fixed wall-clock times or minutes after Dhuhr, with automatic 53-Friday DST validation.
 • Iqamah Display: Configure per-prayer Iqamah delays (minutes after Adhan) shown clearly alongside prayer times.
 
 3. Complete White-Label Branding
-Automatically displays your custom Mosque Name, Subtitle/Tagline, and custom Mosque Logo (imported from USB or local TV storage) with zero distracting app watermarks.
+Displays your custom Mosque Name, Subtitle/Tagline, and custom Mosque Logo (imported from USB/TV storage or uploaded via the Phone Controller) with zero distracting app watermarks.
 
-4. Automated Announcement Slideshow
-Rotates smoothly between the full-screen prayer schedule and announcement slides (event flyers, donation QR codes, community notices).
+4. Automated Announcement, QR Code & Built-In Slideshow
+• Rotates smoothly between the Prayer Schedule and up to 6 active slides: formatted text announcements, inline offline QR codes (qrc: lines for donations/Wi-Fi/registration), image posters, built-in Islamic Calendar events, and 63 curated offline Quran verses (Arabic + English/Indonesian).
+• Multi-TV Wall-Clock Sync keeps multiple screens in the same mosque transitioning slides in step with zero network chatter.
 
-5. Strictly Silent Exact-Time Visual Strike
-SalatSign never plays audio or displays system notification popups. When prayer time (or a Jumu'ah sitting) strikes during an announcement slide, the slideshow pauses immediately and returns to the schedule with a 5-minute glowing visual highlight.
+5. Strictly Silent Exact-Time Banner, Silent Screen & Urgent Notice
+• Prayer-Time Alert Banner: Pauses slides for 5 minutes when prayer time arrives with a glowing visual highlight and Surah An-Nisa' 4:103.
+• Silent Screen: Calm near-black screen ("Jumu'ah in progress" / "Prayer in progress") with burn-in pixel shift during prayer windows or manual 15/30/45-minute overrides.
+• Urgent Notice: High-contrast full-screen visual alert with automatic expiry countdown that yields to Silent Screen during active prayer.
 
-6. Kiosk Protection & Admin PIN
-• Always-On Display: Keeps the TV screen continuously awake (FLAG_KEEP_SCREEN_ON).
-• Hidden Admin Access: Press the Menu button or hold the D-pad Center (OK) button for 3 seconds to open Settings.
-• Admin PIN Protection: Settings are protected by a salted PBKDF2 PIN with progressive lockout protection.
+6. Browser-Based Local Phone Controller & Multi-TV Groups
+• Manage slides, Jumu'ah, Iqamah, Silent Screen, and Urgent Notices from any phone or laptop browser on the mosque Wi-Fi—no companion app to install.
+• QR/code device pairing with Manage & Notify roles, instant revocation, and signed TV-to-TV group sync.
+
+7. Kiosk Protection & Admin PIN
+• Keeps the TV screen awake (FLAG_KEEP_SCREEN_ON) with optional Always-On boot launch.
+• Hidden Admin Access (Menu key or 3-second OK hold) protected by a PBKDF2-hashed Admin PIN with progressive lockout and 2-minute inactivity auto-close.
 
 Built for 10-foot viewing with overscan-safe margins and full D-pad remote control navigation.
 ```
@@ -55,10 +61,17 @@ Built for 10-foot viewing with overscan-safe margins and full D-pad remote contr
 | **App Icon** | `512 x 512 px` | 32-bit PNG | Square, no rounded corners. |
 | **Feature Graphic** | `1024 x 500 px` | JPG / 24-bit PNG | Highlight SalatSign emerald mosque signage branding. |
 | **TV Banner** | `1280 x 720 px` | JPG / 24-bit PNG | **Mandatory for Android TV** (`16:9`). |
-| **TV Screenshots** | `1920 x 1080 px` | PNG / JPG | Mosque schedule, Jumu'ah sittings, announcement slide, and Admin Settings. |
+| **TV Screenshots** | `1920 x 1080 px` | PNG / JPG | Reuse `docs/screenshots/salatsign/01-main-schedule.png` through `09-urgent-notice.png` (main schedule, PIN dialog, settings, Islamic calendar, Quran verse, donation QR image/text, announcement, urgent notice). |
 
 ---
 
-## 3. Privacy Policy Summary
+## 3. Privacy Policy Summary & Play Data Safety
 
-**SalatSign** (`com.salatsign.tv`) operates 100% offline for all prayer calculations, calendar conversions, and digital signage slideshows. It collects **zero** personal data, analytics, telemetry, or location tracking. All settings, logos, and announcement images remain strictly in app-private storage on the television.
+**SalatSign** (`com.salatsign.tv`) performs all prayer time calculations, Hijri calendar conversions, Quran verse rendering, and signage slideshows **100% offline** on the TV. It collects **zero** personal data, analytics, telemetry, ads, or cloud tracking, and never transmits data to external servers.
+
+The `INTERNET` permission is declared solely for the optional **Local Phone Controller** and **Multi-TV Group Sync**, which serve a local web interface and signed peer-to-peer sync strictly over your local mosque Wi-Fi/LAN. All settings, logos, announcement images, and hashed pairing tokens remain strictly in app-private storage on the television.
+
+**Google Play Data Safety Answers:**
+- **Does your app collect or share any of the required user data types?** `No`
+- **Is all of the user data collected by your app encrypted in transit?** N/A (no user data is collected or transmitted off the local network)
+- **Can users request that data be deleted?** N/A (all configuration lives locally on the TV and is erased via Android TV App Storage → Clear Data)

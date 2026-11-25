@@ -342,7 +342,9 @@ async function removePeerAndRotate(deviceId, label) {
   showMsg(res.ok ? 'Removed TV and rotated group secret.' : (res.data.message || 'Remove failed.'), res.ok);
   const delEl = document.getElementById('pushDeliveries');
   if (delEl && res.ok && Array.isArray(res.data.deliveries) && res.data.deliveries.length) {
-    delEl.textContent = 'Key rotation: ' + formatDeliveries(res.data.deliveries);
+    const anyFailed = res.data.deliveries.some(d => d.status !== 'delivered');
+    delEl.textContent = 'Key rotation: ' + formatDeliveries(res.data.deliveries) +
+      (anyFailed ? ' — Unreachable TVs will be retried automatically, or re-join them manually.' : '');
   }
   if (res.ok) await loadNoticeAndPeers();
 }

@@ -110,13 +110,14 @@ object PeerJoinCrypto {
     }
 
     /**
-     * Review 5 R5-2: Proves knowledge of [normalizedJoinCode] bound to [deviceId] and
-     * [clientPublicKeyBase64] without sending the join code in cleartext.
+     * Review 5 R5-2 + Review 6 R6-3: Proves knowledge of [normalizedJoinCode] bound to [deviceId],
+     * [clientPublicKeyBase64], and [identityPublicKeyBase64] without sending the join code in cleartext.
      */
     fun computeJoinCodeProof(
         normalizedJoinCode: String,
         deviceId: String,
-        clientPublicKeyBase64: String
+        clientPublicKeyBase64: String,
+        identityPublicKeyBase64: String = ""
     ): String {
         val proofKey = pbkdf2Sha256(
             password = normalizedJoinCode,
@@ -124,7 +125,7 @@ object PeerJoinCrypto {
         )
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(proofKey, "HmacSHA256"))
-        val msg = "join:$deviceId:$clientPublicKeyBase64".toByteArray(StandardCharsets.UTF_8)
+        val msg = "join:$deviceId:$clientPublicKeyBase64:$identityPublicKeyBase64".toByteArray(StandardCharsets.UTF_8)
         return PinHasher.bytesToHex(mac.doFinal(msg))
     }
 
@@ -578,7 +579,8 @@ class GroupJoinManager(
         deviceId: String,
         clientPublicKeyBase64: String,
         codeProofHex: String,
-        remoteIp: String = "unknown"
+        remoteIp: String = "unknown",
+        identityPublicKeyBase64: String = ""
     ): JoinCodeRedeemResult {
         val cleanedProof = codeProofHex.trim().lowercase()
         return redeemInternal(remoteIp) { expectedCode ->
@@ -588,7 +590,8 @@ class GroupJoinManager(
                 val expectedProof = PeerJoinCrypto.computeJoinCodeProof(
                     normalizedJoinCode = expectedCode,
                     deviceId = deviceId,
-                    clientPublicKeyBase64 = clientPublicKeyBase64
+                    clientPublicKeyBase64 = clientPublicKeyBase64,
+                    identityPublicKeyBase64 = identityPublicKeyBase64
                 )
                 MessageDigest.isEqual(
                     cleanedProof.toByteArray(StandardCharsets.US_ASCII),

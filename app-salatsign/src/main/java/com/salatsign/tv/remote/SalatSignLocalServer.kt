@@ -229,6 +229,14 @@ class SalatSignLocalServer(
     private val peerHealthById = ConcurrentHashMap<String, PeerHealthDto>()
     // Review 5 R5-4: Cache slide image SHA-256 by (length, lastModified) to avoid repeated disk hashing
     private val slideSha256Cache = ConcurrentHashMap<String, Triple<Long, Long, String>>()
+    // Review 6 R6-4: Short retry queue for undelivered ECIES secret rotations (retried during periodic sync)
+    private data class PendingRotation(
+        val peer: PeerTvRecord,
+        val payload: PeerSecretRotatePayload,
+        val oldGroupSecretHex: String,
+        val attempts: Int = 1
+    )
+    private val pendingRotationsByPeerId = ConcurrentHashMap<String, PendingRotation>()
 
     private sealed interface AuthContext {
         val role: RemoteRole
@@ -778,13 +786,14 @@ class SalatSignLocalServer(
         if (joinReq.clientPublicKeyBase64.isBlank()) {
             return errorResponse(400, "Bad Request", "missing_public_key", "ECDH public key is required for secure group join")
         }
-        // Review 5 R5-2: Verify PBKDF2-HMAC proof of knowledge without transmitting the join code in cleartext
+        // Review 5 R5-2 + Review 6 R6-3: Verify PBKDF2-HMAC proof bound to deviceId, ephemeral key, and identity key
         val normalizedCode = when (
             val res = groupJoinManager.redeemByProof(
                 deviceId = joinReq.deviceId.trim(),
                 clientPublicKeyBase64 = joinReq.clientPublicKeyBase64.trim(),
                 codeProofHex = joinReq.codeProofHex,
-                remoteIp = req.remoteAddress
+                remoteIp = req.remoteAddress,
+                identityPublicKeyBase64 = joinReq.identityPublicKeyBase64.trim()
             )
         ) {
             is JoinCodeRedeemResult.Success -> res.normalizedCode
@@ -943,22 +952,41 @@ class SalatSignLocalServer(
         val allRemaining = remainingPeers + self
 
         val deliveries = if (oldSecret.isNotBlank() && remainingPeers.isNotEmpty()) {
+            val rotatePayload = PeerSecretRotatePayload(
+                newGroupSecretHex = newSecret,
+                removedDeviceId = targetId,
+                peers = allRemaining
+            )
             peerSyncClient.rotateSecretOnPeers(
                 peers = remainingPeers,
-                payload = PeerSecretRotatePayload(
-                    newGroupSecretHex = newSecret,
-                    removedDeviceId = targetId,
-                    peers = allRemaining
-                ),
+                payload = rotatePayload,
                 oldGroupSecretHex = oldSecret,
                 selfDeviceId = self.deviceId
-            )
+            ).also { results ->
+                // Review 6 R6-4: Queue unreachable peers for short retry during periodic sync
+                for (r in results) {
+                    if (r.status == "delivered") {
+                        pendingRotationsByPeerId.remove(r.deviceId)
+                    } else {
+                        val failedPeer = remainingPeers.firstOrNull { it.deviceId == r.deviceId }
+                        if (failedPeer != null && failedPeer.publicKeyBase64.isNotBlank()) {
+                            pendingRotationsByPeerId[r.deviceId] = PendingRotation(
+                                peer = failedPeer,
+                                payload = rotatePayload,
+                                oldGroupSecretHex = oldSecret,
+                                attempts = 1
+                            )
+                        }
+                    }
+                }
+            }
         } else {
             emptyList()
         }
         settingsRepository.setPeerTvs(remainingPeers)
         settingsRepository.setGroupSecretHex(if (remainingPeers.isEmpty()) "" else newSecret)
         peerHealthById.remove(targetId)
+        pendingRotationsByPeerId.remove(targetId)
         val refreshed = settingsRepository.appSettingsFlow.first()
         return handleGetPeers(refreshed, deliveries = deliveries)
     }
@@ -1149,15 +1177,14 @@ class SalatSignLocalServer(
             syncPairedHashCache(settingsRepository.appSettingsFlow.first())
         }
 
-        // 2. Merge peer list (excluding self), preserving known EC public keys
+        // 2. Merge peer list (excluding self) — Review 6 R6-2: pin non-blank EC public keys on first sight!
         if (incoming.peers.isNotEmpty()) {
             val peerMap = current.peerTvs.associateBy { it.deviceId }.toMutableMap()
             for (p in incoming.peers) {
                 if (p.deviceId.isNotBlank() && p.deviceId != selfId) {
                     val prev = peerMap[p.deviceId]
-                    peerMap[p.deviceId] = p.copy(
-                        publicKeyBase64 = p.publicKeyBase64.ifBlank { prev?.publicKeyBase64.orEmpty() }
-                    )
+                    val pinnedKey = prev?.publicKeyBase64?.takeIf { it.isNotBlank() } ?: p.publicKeyBase64
+                    peerMap[p.deviceId] = p.copy(publicKeyBase64 = pinnedKey)
                 }
             }
             settingsRepository.setPeerTvs(peerMap.values.toList())
@@ -1290,6 +1317,24 @@ class SalatSignLocalServer(
         val settings = settingsRepository.appSettingsFlow.first()
         if (settings.groupSecretHex.isBlank() || settings.peerTvs.isEmpty()) return
         val selfId = settingsRepository.ensureDeviceId()
+
+        // Review 6 R6-4: Retry any pending secret rotations for previously-offline peers (max 6 attempts)
+        if (pendingRotationsByPeerId.isNotEmpty()) {
+            for ((peerId, pending) in pendingRotationsByPeerId.entries.toList()) {
+                val res = peerSyncClient.rotateSecretOnPeers(
+                    peers = listOf(pending.peer),
+                    payload = pending.payload,
+                    oldGroupSecretHex = pending.oldGroupSecretHex,
+                    selfDeviceId = selfId
+                ).firstOrNull()
+                if (res?.status == "delivered" || pending.attempts >= 6) {
+                    pendingRotationsByPeerId.remove(peerId)
+                } else {
+                    pendingRotationsByPeerId[peerId] = pending.copy(attempts = pending.attempts + 1)
+                }
+            }
+        }
+
         val targetSlideDir = slideImagesDir
 
         for (peer in settings.peerTvs) {

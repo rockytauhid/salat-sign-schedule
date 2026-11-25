@@ -952,7 +952,9 @@ class SalatSignLocalServerTest {
         val clientPubB64 = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(clientKp)
         val identityKp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
         val identityPubB64 = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(identityKp)
-        val codeProofHex = com.salatsign.tv.security.PeerJoinCrypto.computeJoinCodeProof(joinCode, "tv-downstairs-1", clientPubB64)
+        val codeProofHex = com.salatsign.tv.security.PeerJoinCrypto.computeJoinCodeProof(
+            joinCode, "tv-downstairs-1", clientPubB64, identityPubB64
+        )
         val peerJoinResp = server.handleRequest(
             HttpRequest(
                 method = "POST",
@@ -1114,6 +1116,34 @@ class SalatSignLocalServerTest {
         )
         assertEquals(200, rotResp.statusCode)
         assertEquals(rotatedSecret, settingsRepo.current.groupSecretHex)
+
+        // Review 6 R6-2: Peer list sync MUST NOT overwrite an already-pinned EC public key
+        val evilKeySwapPayload = syncPayload.copy(
+            configVersion = 99L,
+            peers = listOf(
+                com.salatsign.tv.security.PeerTvRecord(
+                    deviceId = "tv-downstairs-1",
+                    deviceName = "Downstairs Left",
+                    roomGroup = "Downstairs",
+                    lastKnownHost = "192.168.4.40",
+                    port = 8088,
+                    publicKeyBase64 = "EVIL_SUBSTITUTED_PUBLIC_KEY"
+                )
+            )
+        )
+        server.applyIncomingPeerSync(evilKeySwapPayload, settingsRepo.current)
+        val pinnedPeer = settingsRepo.current.peerTvs.first { it.deviceId == "tv-downstairs-1" }
+        assertEquals(identityPubB64, pinnedPeer.publicKeyBase64)
+
+        // Review 6 R6-1: Equal-version ack with zero missing assets maps to delivered (in sync)
+        val equalAck = PeerSyncAckResponse(configVersion = 99L, adopted = false, missingAssets = emptyList())
+        val equalDelivery = PeerSyncClient.mapSyncAckToDeliveryStatus(pinnedPeer, equalAck, pushedConfigVersion = 99L)
+        assertEquals("delivered", equalDelivery.status)
+        assertEquals(true, equalDelivery.adopted)
+
+        val missingAssetAck = PeerSyncAckResponse(configVersion = 98L, adopted = false, missingAssets = listOf("poster.jpg"))
+        val missingDelivery = PeerSyncClient.mapSyncAckToDeliveryStatus(pinnedPeer, missingAssetAck, pushedConfigVersion = 99L)
+        assertEquals("missing_assets", missingDelivery.status)
 
         // Review 5 R5-5: Signed /peer/leave removes leaving peer from peerTvs
         val leaveNonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()

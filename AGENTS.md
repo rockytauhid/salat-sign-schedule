@@ -47,3 +47,5 @@ Always consult `PRODUCT_SPEC.md`, `docs/DECISIONS.md` (especially `D18`), and th
 6. **Phone Controller Parity (`:app-salatsign` TV Settings ↔ Web Phone Controller):**
    - The TV-hosted web Phone Controller (`assets/phone_controller/` + `SalatSignLocalServer.kt` + typed `:core` API DTOs) is the **primary remote admin UI** (there is no separate native companion app).
    - Whenever a setting, validation rule, default value, or day-to-day Mosque admin control is added, renamed, reordered, or changed in `:app-salatsign` TV Settings (`MosqueSettingsScreen`, `MosqueSettingsPanes`, `SharedSettingsPanes`, `AddTextSlideDialog`, `ImageSlideEditorDialog`), update the web Phone Controller assets, `:core` API models, and `SalatSignLocalServer.kt` in the same change so they stay 100% in sync.
+7. **Documentation & Screenshot Sync:**
+   - Whenever a user-visible feature, setting, or screen layout changes in either **SalatSign** or **SalatSchedule**, update `README.md`, the relevant `STORE_LISTING.md`, and affected screenshots under `docs/screenshots/` so public documentation never drifts from the shipped apps.
