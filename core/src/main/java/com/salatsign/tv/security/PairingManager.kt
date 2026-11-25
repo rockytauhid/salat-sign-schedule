@@ -78,6 +78,7 @@ class PairingManager(
     companion object {
         const val DEFAULT_CODE_TTL_MILLIS: Long = 120_000L // 2 minutes
         const val MAX_WRONG_CODES_PER_IP: Int = 5
+        const val MAX_GLOBAL_WRONG_CODES_PER_CODE: Int = 10
         private const val BASE_LOCKOUT_SECONDS: Int = 30
         private const val MAX_LOCKOUT_SECONDS: Int = 15 * 60
         private const val IP_ENTRY_STALE_MILLIS: Long = 30 * 60 * 1000L
@@ -125,6 +126,7 @@ class PairingManager(
     private val secureRandom = SecureRandom()
     private val lock = Any()
     private var activeCode: ActivePairingCode? = null
+    private var globalWrongCodesForActive: Int = 0
     private val failuresByIp = ConcurrentHashMap<String, IpFailState>()
 
     fun generatePairingCode(role: RemoteRole = RemoteRole.MANAGE): ActivePairingCode = synchronized(lock) {
@@ -138,6 +140,7 @@ class PairingManager(
             expiresAtEpochMillis = now + codeTtlMillis
         )
         activeCode = created
+        globalWrongCodesForActive = 0
         created
     }
 
@@ -145,6 +148,7 @@ class PairingManager(
         val current = activeCode ?: return null
         if (nowMillisProvider() > current.expiresAtEpochMillis) {
             activeCode = null
+            globalWrongCodesForActive = 0
             return null
         }
         current
@@ -152,6 +156,7 @@ class PairingManager(
 
     fun cancelPairingCode() = synchronized(lock) {
         activeCode = null
+        globalWrongCodesForActive = 0
     }
 
     fun redeemCode(
@@ -192,11 +197,18 @@ class PairingManager(
                 lockedUntilEpochMillis = lockedUntil,
                 lastAttemptEpochMillis = now
             )
+            // Review 4 M1: Global cap across all source IPs invalidates the active code
+            globalWrongCodesForActive++
+            if (globalWrongCodesForActive >= MAX_GLOBAL_WRONG_CODES_PER_CODE) {
+                activeCode = null
+                globalWrongCodesForActive = 0
+            }
             return PairRedeemResult.InvalidCode
         }
 
         // Valid single-use code: consume immediately and clear this IP's failure state
         activeCode = null
+        globalWrongCodesForActive = 0
         failuresByIp.remove(ipKey)
 
         val tokenBytes = ByteArray(32)

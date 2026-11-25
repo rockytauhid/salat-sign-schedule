@@ -93,8 +93,7 @@ data class StatusResponse(
     val roomGroup: String,
     val configVersion: Long,
     val pairedDeviceCount: Int = 0,
-    val lanPinLoginEnabled: Boolean = true,
-    val pairingActive: Boolean = false
+    val lanPinLoginEnabled: Boolean = true
 )
 
 @Serializable
@@ -266,6 +265,7 @@ data class SlideDto(
     val body: String,
     val lines: List<SlideLineDto> = emptyList(),
     val imageFile: String? = null,
+    val imageSha256: String? = null,
     val durationSeconds: Int,
     val enabled: Boolean,
     val textAlign: String = "CENTER",
@@ -360,13 +360,21 @@ data class PeerJoinRequest(
     val deviceName: String = "",
     val roomGroup: String = "",
     val host: String = "",
-    val port: Int = ApiConstants.DEFAULT_HTTP_PORT
+    val port: Int = ApiConstants.DEFAULT_HTTP_PORT,
+    val clientPublicKeyBase64: String = ""
+)
+
+@Serializable
+data class PeerJoinSecretPayload(
+    val groupSecretHex: String,
+    val peers: List<com.salatsign.tv.security.PeerTvRecord>
 )
 
 @Serializable
 data class PeerJoinResponse(
-    val groupSecretHex: String,
-    val peers: List<com.salatsign.tv.security.PeerTvRecord>
+    val serverPublicKeyBase64: String,
+    val ivBase64: String,
+    val ciphertextBase64: String
 )
 
 @Serializable
@@ -383,11 +391,35 @@ data class BrowserPeerJoinRequest(
 )
 
 @Serializable
+data class BrowserRemovePeerRequest(
+    val deviceId: String = ""
+)
+
+@Serializable
+data class PeerSecretRotateRequest(
+    val newGroupSecretHex: String,
+    val removedDeviceId: String = "",
+    val peers: List<com.salatsign.tv.security.PeerTvRecord> = emptyList()
+)
+
+@Serializable
+data class PeerHealthDto(
+    val deviceId: String,
+    val reachable: Boolean = false,
+    val configVersion: Long? = null,
+    val inSync: Boolean = false,
+    val clockSkewSeconds: Long? = null,
+    val checkedAtEpochMillis: Long = 0L
+)
+
+@Serializable
 data class PeerListResponse(
     val self: com.salatsign.tv.security.PeerTvRecord,
     val peers: List<com.salatsign.tv.security.PeerTvRecord>,
     val roomGroups: List<String>,
-    val groupLinked: Boolean
+    val groupLinked: Boolean,
+    val configVersion: Long = 1L,
+    val peerHealth: List<PeerHealthDto> = emptyList()
 )
 
 @Serializable
@@ -401,9 +433,8 @@ data class PeerDeliveryStatusDto(
 @Serializable
 data class PeerSyncPayload(
     val originDeviceId: String,
-    val originHost: String = "",
-    val originPort: Int = ApiConstants.DEFAULT_HTTP_PORT,
     val configVersion: Long,
+    val serverTimeEpochMillis: Long = 0L,
     val settings: SettingsPatchRequest,
     val slides: List<SlideDto>,
     val pairedDevices: List<com.salatsign.tv.security.PairedDeviceRecord> = emptyList(),

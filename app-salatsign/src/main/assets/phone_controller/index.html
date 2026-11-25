@@ -4,54 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>SalatSign Remote Controller</title>
-<style>
-  :root {
-    --bg: #071912; --card: #0f2a1f; --card2: #143628; --border: #1e4d38;
-    --emerald: #10b981; --gold: #fbbf24; --text: #f3f4f6; --muted: #9ca3af; --danger: #ef4444;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 14px; }
-  .wrap { max-width: 600px; margin: 0 auto 40px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
-  h1 { margin: 0; font-size: 1.4rem; color: var(--text); }
-  h1 span { color: var(--gold); }
-  .sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; position: sticky; top: 0; background: var(--bg); padding: 6px 0; z-index: 5; }
-  .tab { margin: 0; padding: 10px 6px; border-radius: 10px; background: var(--card); color: var(--muted); border: 1px solid var(--border); font-weight: 700; font-size: 0.82rem; text-align: center; cursor: pointer; }
-  .tab.active { background: var(--card2); color: var(--emerald); border-color: var(--emerald); }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
-  .card h2 { margin: 0 0 10px; font-size: 1.02rem; color: var(--emerald); }
-  .card h3 { margin: 14px 0 6px; font-size: 0.92rem; color: var(--gold); }
-  label { display: block; font-size: 0.82rem; color: var(--muted); margin: 10px 0 4px; }
-  input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: #071912; color: var(--text); font-size: 0.96rem; }
-  textarea { min-height: 92px; resize: vertical; line-height: 1.4; }
-  button { width: 100%; margin-top: 12px; padding: 11px 14px; border: 0; border-radius: 10px; background: var(--emerald); color: #052014; font-weight: 700; font-size: 0.93rem; cursor: pointer; }
-  button.secondary { background: #1c3f30; color: var(--text); }
-  button.sm { width: auto; margin-top: 0; padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; }
-  button.danger { background: var(--danger); color: #fff; }
-  button.danger-full { background: var(--danger); color: #fff; width: 100%; margin-top: 10px; }
-  button.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .flex-gap { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
-  .pill.active { background: #7f1d1d; color: #fecaca; }
-  .pill.idle { background: #1c3f30; color: #a7f3d0; }
-  .pill.warn { background: #78350f; color: #fde68a; }
-  .item-box { padding: 10px 12px; border-radius: 10px; background: #071912; border: 1px solid var(--border); margin-top: 8px; }
-  .meta { font-size: 0.8rem; color: var(--muted); }
-  .sitting-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; align-items: center; margin-top: 8px; padding: 10px; border-radius: 10px; background: #071912; border: 1px solid var(--border); }
-  .iq-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 10px; background: #071912; border: 1px solid var(--border); margin-top: 7px; }
-  .iq-chips { display: flex; gap: 4px; flex-wrap: wrap; }
-  .chip { margin: 0; width: auto; padding: 5px 9px; font-size: 0.78rem; border-radius: 7px; background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 600; }
-  .chip.sel { background: var(--emerald); color: #052014; border-color: var(--emerald); }
-  .msg { padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.88rem; display: none; }
-  .msg.ok { display: block; background: #064e3b; color: #a7f3d0; }
-  .msg.err { display: block; background: #7f1d1d; color: #fecaca; }
-  .warn-box { padding: 10px 12px; border-radius: 10px; background: #78350f; color: #fde68a; font-size: 0.85rem; margin-bottom: 10px; }
-  .hidden { display: none; }
-</style>
+<link rel="stylesheet" href="/app.css" />
 </head>
 <body>
 <div class="wrap">
@@ -60,40 +13,40 @@
       <h1>Salat<span>Sign</span> Remote</h1>
       <div class="sub" id="statusLine">Local LAN Controller</div>
     </div>
-    <button id="logoutBtn" class="sm outline hidden" onclick="logout()">Sign Out</button>
+    <button id="logoutBtn" class="sm outline hidden" data-evt-click="0">Sign Out</button>
   </div>
   <div id="msg" class="msg"></div>
 
   <div id="loginCard" class="card">
     <h2>Pair This Device</h2>
-    <p class="sub" style="margin-bottom:10px">On the TV, open <strong>Settings → PIN &amp; Remote → Pair Phone</strong> and scan the QR code or enter the 6-digit code below.</p>
+    <p class="sub u-s1">On the TV, open <strong>Settings → PIN &amp; Remote → Pair Phone</strong> and scan the QR code or enter the 6-digit code below.</p>
     <label for="deviceNameInput">Device Name (optional)</label>
     <input id="deviceNameInput" type="text" maxlength="48" placeholder="e.g. Imam's Phone" />
     <label for="pairCodeInput">6-Digit Pairing Code</label>
     <input id="pairCodeInput" type="text" inputmode="numeric" maxlength="7" placeholder="123 456" />
-    <button onclick="pairWithCode()">Pair This Device</button>
+    <button data-evt-click="1">Pair This Device</button>
 
-    <div id="pinLoginSection" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-      <h3 style="margin-top:0">Or Sign In with Admin PIN</h3>
+    <div id="pinLoginSection" class="u-s2">
+      <h3 class="u-s3">Or Sign In with Admin PIN</h3>
       <div id="defaultPinNotice" class="warn-box hidden">
         Remote PIN login requires a custom Admin PIN. On the TV, open <strong>Settings → PIN &amp; Remote</strong> and change the default PIN first.
       </div>
       <label for="pinInput">Mosque Admin PIN (4–8 digits)</label>
       <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••" />
-      <button class="secondary" onclick="login()">Sign In with PIN</button>
+      <button class="secondary" data-evt-click="2">Sign In with PIN</button>
     </div>
-    <div id="pinDisabledNotice" class="sub hidden" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <div id="pinDisabledNotice" class="sub hidden u-s4">
       PIN login over LAN is disabled because this TV uses paired devices. Pair above from TV Settings.
     </div>
   </div>
 
   <div id="app" class="hidden">
     <div class="tabs">
-      <button class="tab active" id="tab-slides" onclick="openTab('slides')">Slides</button>
-      <button class="tab" id="tab-schedule" onclick="openTab('schedule')">Jumu'ah</button>
-      <button class="tab" id="tab-silent" onclick="openTab('silent')">Silent</button>
-      <button class="tab" id="tab-notice" onclick="openTab('notice')">Notice &amp; TVs</button>
-      <button class="tab" id="tab-branding" onclick="openTab('branding')">Display</button>
+      <button class="tab active" id="tab-slides" data-evt-click="3">Slides</button>
+      <button class="tab" id="tab-schedule" data-evt-click="4">Jumu'ah</button>
+      <button class="tab" id="tab-silent" data-evt-click="5">Silent</button>
+      <button class="tab" id="tab-notice" data-evt-click="6">Notice &amp; TVs</button>
+      <button class="tab" id="tab-branding" data-evt-click="7">Display</button>
     </div>
 
     <!-- TAB 1: SLIDES & BUILT-IN SLIDES -->
@@ -105,10 +58,10 @@
         </div>
         <label>Prayer Schedule Display Duration</label>
         <div class="flex-gap" id="schedDurChips">
-          <button class="chip" onclick="setSchedDur(30)">30s</button>
-          <button class="chip" onclick="setSchedDur(60)">60s</button>
-          <button class="chip" onclick="setSchedDur(90)">90s</button>
-          <button class="chip" onclick="setSchedDur(120)">120s</button>
+          <button class="chip" data-evt-click="8">30s</button>
+          <button class="chip" data-evt-click="9">60s</button>
+          <button class="chip" data-evt-click="10">90s</button>
+          <button class="chip" data-evt-click="11">120s</button>
         </div>
 
         <h3>Saved Slides</h3>
@@ -120,15 +73,15 @@
         <input id="editingSlideId" type="hidden" value="" />
         <label>Title</label>
         <input id="slideTitle" type="text" maxlength="80" placeholder="e.g. Friday Khutbah &amp; Community Dinner" />
-        <div class="flex-between" style="margin-top:10px">
-          <label style="margin:0">Message (up to 10 rows)</label>
+        <div class="flex-between u-s5">
+          <label class="u-s6">Message (up to 10 rows)</label>
           <div class="flex-gap">
-            <button type="button" class="sm secondary" onclick="addTextRow('', '')">+ Row</button>
-            <button type="button" class="sm secondary" onclick="addTextRow('• ', 'LEFT')">• Bullet</button>
-            <button type="button" class="sm secondary" onclick="addNumberedRow()">1. Number</button>
+            <button type="button" class="sm secondary" data-evt-click="12">+ Row</button>
+            <button type="button" class="sm secondary" data-evt-click="13">• Bullet</button>
+            <button type="button" class="sm secondary" data-evt-click="14">1. Number</button>
           </div>
         </div>
-        <div id="textRowsContainer" style="margin-top:8px"></div>
+        <div id="textRowsContainer" class="u-s7"></div>
         <label>Display Duration</label>
         <select id="slideDuration">
           <option value="10">10s</option>
@@ -139,8 +92,8 @@
           <option value="60">60s</option>
         </select>
         <div class="row">
-          <button id="saveTextSlideBtn" onclick="saveTextSlide()">Add Text Slide</button>
-          <button id="cancelEditBtn" class="secondary hidden" onclick="cancelEditSlide()">Cancel Edit</button>
+          <button id="saveTextSlideBtn" data-evt-click="15">Add Text Slide</button>
+          <button id="cancelEditBtn" class="secondary hidden" data-evt-click="16">Cancel Edit</button>
         </div>
       </div>
 
@@ -165,7 +118,7 @@
             <input id="slideImageFile" type="file" accept="image/*" />
           </div>
         </div>
-        <button class="secondary" onclick="uploadImageSlide()">Upload Image Slide</button>
+        <button class="secondary" data-evt-click="17">Upload Image Slide</button>
       </div>
 
       <div class="card">
@@ -186,7 +139,7 @@
             </select>
           </div>
         </div>
-        <div class="row3" style="margin-top:8px">
+        <div class="row3 u-s7">
           <div>
             <label>Quran Verse Slide</label>
             <select id="quranEnabled">
@@ -209,7 +162,7 @@
             </select>
           </div>
         </div>
-        <button onclick="saveBuiltInSlides()">Save Built-in Slides</button>
+        <button data-evt-click="18">Save Built-in Slides</button>
       </div>
     </div>
 
@@ -218,12 +171,12 @@
       <div class="card">
         <h2>Friday Jumu'ah Sittings</h2>
         <label>Calculation Mode</label>
-        <select id="jumuahMode" onchange="onJumuahModeChange()">
+        <select id="jumuahMode" data-evt-change="37">
           <option value="FIXED">Fixed Clock Time (e.g. 13:00)</option>
           <option value="AFTER_ZUHR">Minutes After Dhuhr (e.g. +45 min)</option>
         </select>
         <div id="sittingsContainer"></div>
-        <button id="addSittingBtn" class="secondary" onclick="addSitting()">+ Add Sitting (max 3)</button>
+        <button id="addSittingBtn" class="secondary" data-evt-click="19">+ Add Sitting (max 3)</button>
       </div>
 
       <div class="card">
@@ -250,7 +203,7 @@
             </select>
           </div>
         </div>
-        <button onclick="saveSchedule()">Save Jumu'ah, Iqamah &amp; Hijri</button>
+        <button data-evt-click="20">Save Jumu'ah, Iqamah &amp; Hijri</button>
       </div>
     </div>
 
@@ -261,11 +214,11 @@
         <div id="silentStatus" class="pill idle">Inactive</div>
         <div class="meta">Immediately show "Prayer in progress" on the TV (overrides schedule and slides).</div>
         <div class="row3">
-          <button onclick="startSilent(15)">Show 15 min</button>
-          <button onclick="startSilent(30)">Show 30 min</button>
-          <button onclick="startSilent(45)">Show 45 min</button>
+          <button data-evt-click="21">Show 15 min</button>
+          <button data-evt-click="22">Show 30 min</button>
+          <button data-evt-click="23">Show 45 min</button>
         </div>
-        <button id="stopSilentBtn" class="danger-full hidden" onclick="stopSilent()">Stop Silent Screen Now</button>
+        <button id="stopSilentBtn" class="danger-full hidden" data-evt-click="24">Stop Silent Screen Now</button>
       </div>
 
       <div class="card">
@@ -296,7 +249,7 @@
 
         <h3>Daily Prayers (Optional)</h3>
         <div id="dailySilentContainer"></div>
-        <button onclick="saveSilentSettings()">Save Silent Screen Schedule</button>
+        <button data-evt-click="25">Save Silent Screen Schedule</button>
       </div>
     </div>
 
@@ -366,11 +319,11 @@
           <option value="true">Active (5m highlight)</option>
           <option value="false">Disabled</option>
         </select>
-        <button onclick="saveBranding()">Save Branding &amp; Display</button>
+        <button data-evt-click="26">Save Branding &amp; Display</button>
 
         <h3>Custom Mosque Logo</h3>
         <input id="logoFile" type="file" accept="image/*" />
-        <button class="secondary" onclick="uploadLogo()">Upload Mosque Logo</button>
+        <button class="secondary" data-evt-click="27">Upload Mosque Logo</button>
       </div>
     </div>
 
@@ -381,11 +334,11 @@
           <h2>Urgent Notice</h2>
           <span id="noticeStatusPill" class="pill idle">None active</span>
         </div>
-        <p class="sub" style="margin-bottom:8px">Displays full-screen over schedule &amp; slides (yields to Silent Screen during prayer). Always expires automatically.</p>
-        <div class="flex-gap" style="margin-bottom:10px">
-          <button type="button" class="chip" onclick="useNoticePreset('Parking Notice','Please move the vehicle blocking the driveway.')">Driveway Blocked</button>
-          <button type="button" class="chip" onclick="useNoticePreset('Facility Notice','Wudu area is temporarily closed for cleaning.')">Wudu Closed</button>
-          <button type="button" class="chip" onclick="useNoticePreset('Safety Notice','Please keep all exits and walkways clear.')">Keep Clear</button>
+        <p class="sub u-s8">Displays full-screen over schedule &amp; slides (yields to Silent Screen during prayer). Always expires automatically.</p>
+        <div class="flex-gap u-s1">
+          <button type="button" class="chip" data-evt-click="28">Driveway Blocked</button>
+          <button type="button" class="chip" data-evt-click="29">Wudu Closed</button>
+          <button type="button" class="chip" data-evt-click="30">Keep Clear</button>
         </div>
         <label>Title</label>
         <input id="noticeTitle" type="text" maxlength="60" value="Urgent Notice" />
@@ -408,10 +361,10 @@
           </div>
         </div>
         <div class="row">
-          <button onclick="sendUrgentNotice()">Send Urgent Notice</button>
-          <button class="danger" onclick="clearUrgentNotice()">Clear Notice</button>
+          <button data-evt-click="31">Send Urgent Notice</button>
+          <button class="danger" data-evt-click="32">Clear Notice</button>
         </div>
-        <div id="noticeDeliveries" class="sub" style="margin-top:8px"></div>
+        <div id="noticeDeliveries" class="sub u-s7"></div>
       </div>
 
       <div class="card">
@@ -419,849 +372,29 @@
           <h2>Multi-TV Group</h2>
           <span id="peerCountPill" class="pill idle">1 TV</span>
         </div>
-        <div id="peersList" style="margin-top:8px"></div>
-        <button class="secondary" onclick="pushConfigToPeers()">Push Config &amp; Slides to All TVs</button>
-        <div id="pushDeliveries" class="sub" style="margin-top:8px"></div>
+        <div id="peersList" class="u-s7"></div>
+        <div class="row">
+          <button class="secondary" data-evt-click="33">Push Config &amp; Slides</button>
+          <button id="leaveGroupBtn" class="danger hidden" data-evt-click="34">Leave Group</button>
+        </div>
+        <div id="pushDeliveries" class="sub u-s7"></div>
 
         <h3>Link Another TV</h3>
-        <button class="outline" onclick="generateGroupJoinCode()">Generate 6-Digit Join Code on This TV</button>
-        <div id="groupJoinCodeBox" class="warn-box hidden" style="margin-top:10px"></div>
+        <p class="sub u-s8">Only link TVs on your trusted mosque LAN. The join code is single-use, encrypted with ECDH, and locks out after 5 wrong guesses.</p>
+        <button class="outline" data-evt-click="35">Generate 8-Char Join Code on This TV</button>
+        <div id="groupJoinCodeBox" class="warn-box hidden u-s5"></div>
 
-        <label>Or Join Another TV's Group (TV IP &amp; 6-Digit Code)</label>
+        <label>Or Join Another TV's Group (TV IP &amp; 8-Char Code)</label>
         <div class="row">
           <input id="joinHostInput" type="text" placeholder="e.g. 192.168.1.50" />
-          <input id="joinCodeInput" type="text" inputmode="numeric" maxlength="6" placeholder="123456" />
+          <input id="joinCodeInput" type="text" maxlength="8" placeholder="ABCD2345" />
         </div>
-        <button class="secondary" onclick="joinPeerGroup()">Join TV Group</button>
+        <button class="secondary" data-evt-click="36">Join TV Group</button>
       </div>
     </div>
   </div>
 </div>
 
-<script>
-let token = localStorage.getItem('salatsign_token') || sessionStorage.getItem('salatsign_token') || '';
-if (token && !localStorage.getItem('salatsign_token')) {
-  localStorage.setItem('salatsign_token', token);
-  sessionStorage.removeItem('salatsign_token');
-}
-function defaultDeviceName() {
-  const ua = navigator.userAgent || '';
-  if (/iPhone/i.test(ua)) return 'iPhone Browser';
-  if (/iPad/i.test(ua)) return 'iPad Browser';
-  if (/Android/i.test(ua)) return 'Android Phone';
-  if (/Mac/i.test(ua)) return 'Mac Browser';
-  if (/Windows/i.test(ua)) return 'Windows Browser';
-  return 'Phone Browser';
-}
-let cachedSlides = [];
-let currentSchedDur = 60;
-let jumuahSittings = ['13:00'];
-let iqamahValues = { SUBUH: 0, ZUHUR: 0, ASHR: 0, MAGRIB: 0, ISYA: 0 };
-let dailySilent = {};
-const PRAYERS = [
-  { key: 'SUBUH', label: 'Fajr' },
-  { key: 'ZUHUR', label: 'Dhuhr' },
-  { key: 'ASHR', label: 'Asr' },
-  { key: 'MAGRIB', label: 'Maghrib' },
-  { key: 'ISYA', label: 'Isha' }
-];
-
-function showMsg(text, ok) {
-  const el = document.getElementById('msg');
-  el.textContent = text;
-  el.className = 'msg ' + (ok ? 'ok' : 'err');
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function openTab(name) {
-  ['slides','schedule','silent','notice','branding'].forEach(t => {
-    document.getElementById('pane-' + t).classList.toggle('hidden', t !== name);
-    document.getElementById('tab-' + t).classList.toggle('active', t === name);
-  });
-}
-async function api(path, opts = {}) {
-  const headers = opts.headers || {};
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(path, { ...opts, headers });
-  const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && path !== '/api/v1/auth' && path !== '/api/v1/pair') {
-    token = '';
-    localStorage.removeItem('salatsign_token');
-    sessionStorage.removeItem('salatsign_token');
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('logoutBtn').classList.add('hidden');
-    document.getElementById('loginCard').classList.remove('hidden');
-    showMsg('Session expired or device revoked. Pair again from TV Settings.', false);
-  }
-  return { ok: res.ok, status: res.status, data };
-}
-async function loadStatus() {
-  const res = await api('/api/v1/status');
-  if (res.ok) {
-    const label = res.data.deviceName ? res.data.deviceName : 'SalatSign TV';
-    document.getElementById('statusLine').textContent = label + ' • v' + (res.data.version || '1.0');
-    document.getElementById('defaultPinNotice').classList.toggle('hidden', !!res.data.pinConfigured);
-    const pinAllowed = res.data.lanPinLoginEnabled !== false;
-    document.getElementById('pinLoginSection').classList.toggle('hidden', !pinAllowed);
-    document.getElementById('pinDisabledNotice').classList.toggle('hidden', pinAllowed);
-  }
-}
-async function pairWithCode(overrideCode) {
-  const raw = (overrideCode || document.getElementById('pairCodeInput').value || '').replace(/\D+/g, '');
-  if (raw.length !== 6) { showMsg('Enter the 6-digit pairing code shown on the TV.', false); return; }
-  const devName = (document.getElementById('deviceNameInput').value || '').trim() || defaultDeviceName();
-  const res = await api('/api/v1/pair', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: raw, deviceName: devName })
-  });
-  if (res.ok && res.data.token) {
-    token = res.data.token;
-    localStorage.setItem('salatsign_token', token);
-    document.getElementById('pairCodeInput').value = '';
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
-    showMsg('Paired as ' + (res.data.deviceName || devName) + ' (' + (res.data.role || 'MANAGE') + ').', true);
-    await loadAll();
-  } else {
-    showMsg(res.data.message || 'Pairing failed.', false);
-  }
-}
-async function login() {
-  const pin = document.getElementById('pinInput').value.trim();
-  const res = await api('/api/v1/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin })
-  });
-  if (res.ok && res.data.token) {
-    token = res.data.token;
-    localStorage.setItem('salatsign_token', token);
-    document.getElementById('pinInput').value = '';
-    document.getElementById('loginCard').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
-    showMsg('Connected to SalatSign TV.', true);
-    await loadAll();
-  } else {
-    showMsg(res.data.message || 'Authentication failed.', false);
-  }
-}
-async function logout() {
-  await api('/api/v1/logout', { method: 'POST' });
-  token = '';
-  localStorage.removeItem('salatsign_token');
-  sessionStorage.removeItem('salatsign_token');
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('logoutBtn').classList.add('hidden');
-  document.getElementById('loginCard').classList.remove('hidden');
-  showMsg('Signed out.', true);
-}
-async function loadAll() {
-  const s = await api('/api/v1/settings');
-  if (s.ok) {
-    const d = s.data;
-    document.getElementById('statusLine').textContent =
-      (d.mosqueName || 'SalatSign TV') + (d.cityName ? ' • ' + d.cityName : '');
-    document.getElementById('mosqueName').value = d.mosqueName || '';
-    document.getElementById('mosqueSubtitle').value = d.mosqueSubtitle || '';
-    document.getElementById('mosqueIconPreset').value = d.mosqueIconPreset || 'DOME_CRESCENT';
-    document.getElementById('mosqueFontPreset').value = d.mosqueFontPreset || 'MODERN_SANS';
-    document.getElementById('appLanguage').value = (d.appLanguage === 'ID') ? 'ID' : 'EN';
-    document.getElementById('themeMode').value = d.themeMode || 'ALWAYS_DARK';
-    document.getElementById('is24Hour').value = String(!!d.is24HourFormat);
-    document.getElementById('showArabic').value = String(d.showArabicPrayerNames !== false);
-    document.getElementById('showStrike').value = String(d.showStrikeHighlight !== false);
-    currentSchedDur = d.scheduleDurationSeconds || 60;
-    renderSchedDurChips();
-
-    document.getElementById('jumuahMode').value = d.jumuahMode || 'FIXED';
-    jumuahSittings = (d.jumuahTimes && d.jumuahTimes.length) ? d.jumuahTimes.slice(0, 3) : (d.jumuahMode === 'AFTER_ZUHR' ? ['45'] : ['13:00']);
-    renderSittings();
-
-    iqamahValues = {
-      SUBUH: d.iqamahSubuh || 0,
-      ZUHUR: d.iqamahZuhur || 0,
-      ASHR: d.iqamahAshr || 0,
-      MAGRIB: d.iqamahMagrib || 0,
-      ISYA: d.iqamahIsya || 0
-    };
-    renderIqamah();
-
-    document.getElementById('hijriOffset').value = String(d.hijriOffsetDays || 0);
-    document.getElementById('hijriMidnight').value = String(!!d.hijriChangeAtMidnight);
-
-    document.getElementById('calSlideEnabled').value = String(!!d.islamicCalendarSlideEnabled);
-    document.getElementById('calSlideDuration').value = String(d.islamicCalendarSlideDurationSeconds || 20);
-    document.getElementById('quranEnabled').value = String(!!d.quranVerseEnabled);
-    document.getElementById('quranTrans').value = String(d.quranShowTranslation !== false);
-    document.getElementById('quranDur').value = String(d.quranVerseDurationSeconds || 0);
-
-    document.getElementById('silentJumuahEnabled').value = String(d.silentJumuahEnabled !== false);
-    document.getElementById('silentJumuahLead').value = String(d.silentJumuahLeadMinutes ?? 5);
-    document.getElementById('silentJumuahDur').value = String(d.silentJumuahDurationMinutes || 45);
-    dailySilent = d.silentDailyPrayers || {};
-    renderDailySilent();
-    updateSilentUi(!!d.manualSilentActive, d.manualSilentRemainingMinutes || 0);
-  }
-  const sl = await api('/api/v1/slides');
-  if (sl.ok) {
-    cachedSlides = sl.data.slides || [];
-    const used = sl.data.usedSlots ?? 0;
-    const max = sl.data.maxRotationSlides ?? 6;
-    const b = document.getElementById('slideBudgetBadge');
-    b.textContent = used + ' / ' + max + ' active';
-    b.className = 'pill ' + (used >= max ? 'warn' : 'idle');
-    renderSlides(cachedSlides);
-  }
-  await loadNoticeAndPeers();
-}
-
-async function loadNoticeAndPeers() {
-  const n = await api('/api/v1/notices');
-  if (n.ok) {
-    const pill = document.getElementById('noticeStatusPill');
-    if (n.data.active && n.data.notice) {
-      pill.textContent = 'Active • ' + (n.data.remainingMinutes || 1) + 'm left';
-      pill.className = 'pill warn';
-    } else {
-      pill.textContent = 'None active';
-      pill.className = 'pill idle';
-    }
-  }
-  const p = await api('/api/v1/peers');
-  if (p.ok) {
-    const peers = p.data.peers || [];
-    const total = 1 + peers.length;
-    document.getElementById('peerCountPill').textContent = total + (total === 1 ? ' TV' : ' TVs');
-    const sel = document.getElementById('noticeTargetScope');
-    sel.innerHTML = '<option value="ALL">All TVs (' + total + ')</option>';
-    (p.data.roomGroups || []).forEach(g => {
-      sel.innerHTML += '<option value="ROOM:' + escapeHtml(g) + '">Room: ' + escapeHtml(g) + '</option>';
-    });
-    const listEl = document.getElementById('peersList');
-    let html = '<div class="slide-item"><strong>' + escapeHtml(p.data.self.deviceName || 'This TV') + ' (This TV)</strong><div class="slide-meta">' + escapeHtml(p.data.self.lastKnownHost || '') + (p.data.self.roomGroup ? ' • ' + escapeHtml(p.data.self.roomGroup) : '') + '</div></div>';
-    peers.forEach(peer => {
-      html += '<div class="slide-item"><strong>' + escapeHtml(peer.deviceName || peer.deviceId) + '</strong><div class="slide-meta">' + escapeHtml(peer.lastKnownHost + ':' + peer.port) + (peer.roomGroup ? ' • ' + escapeHtml(peer.roomGroup) : '') + '</div></div>';
-    });
-    listEl.innerHTML = html;
-  }
-}
-
-function useNoticePreset(title, msg) {
-  document.getElementById('noticeTitle').value = title;
-  document.getElementById('noticeMessage').value = msg;
-}
-
-function formatDeliveries(deliveries) {
-  if (!deliveries || !deliveries.length) return '';
-  return deliveries.map(d => (d.deviceName || d.deviceId) + ': ' + d.status + (d.message ? ' (' + d.message + ')' : '')).join(' | ');
-}
-
-async function sendUrgentNotice() {
-  const title = document.getElementById('noticeTitle').value.trim() || 'Urgent Notice';
-  const message = document.getElementById('noticeMessage').value.trim();
-  if (!message) { showMsg('Enter a notice message first.', false); return; }
-  const durationMinutes = parseInt(document.getElementById('noticeDuration').value, 10) || 10;
-  const scopeVal = document.getElementById('noticeTargetScope').value;
-  const payload = { title, message, durationMinutes, targetScope: scopeVal.startsWith('ROOM:') ? 'ROOM' : 'ALL' };
-  if (scopeVal.startsWith('ROOM:')) payload.targetRoomGroup = scopeVal.slice(5);
-  const res = await api('/api/v1/notices', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  showMsg(res.ok ? 'Urgent notice sent.' : (res.data.message || 'Send failed.'), res.ok);
-  document.getElementById('noticeDeliveries').textContent = res.ok ? formatDeliveries(res.data.deliveries) : '';
-  if (res.ok) await loadNoticeAndPeers();
-}
-
-async function clearUrgentNotice() {
-  const res = await api('/api/v1/notices', { method: 'DELETE' });
-  showMsg(res.ok ? 'Urgent notice cleared.' : (res.data.message || 'Clear failed.'), res.ok);
-  document.getElementById('noticeDeliveries').textContent = res.ok ? formatDeliveries(res.data.deliveries) : '';
-  if (res.ok) await loadNoticeAndPeers();
-}
-
-async function pushConfigToPeers() {
-  const res = await api('/api/v1/peers/push', { method: 'POST' });
-  showMsg(res.ok ? 'Config pushed to linked TVs.' : (res.data.message || 'Push failed.'), res.ok);
-  document.getElementById('pushDeliveries').textContent = res.ok ? (formatDeliveries(res.data.deliveries) || 'No peer TVs linked yet.') : '';
-}
-
-async function generateGroupJoinCode() {
-  const res = await api('/api/v1/peers/code', { method: 'POST' });
-  const box = document.getElementById('groupJoinCodeBox');
-  if (res.ok && res.data.code) {
-    box.textContent = 'Group Join Code (valid 3 min): ' + res.data.code + ' — enter this on another TV along with this TV\'s IP.';
-    box.classList.remove('hidden');
-  } else {
-    showMsg(res.data.message || 'Could not generate join code.', false);
-  }
-}
-
-async function joinPeerGroup() {
-  const host = document.getElementById('joinHostInput').value.trim();
-  const code = document.getElementById('joinCodeInput').value.replace(/\D+/g, '');
-  if (!host || code.length !== 6) { showMsg('Enter the other TV IP and 6-digit join code.', false); return; }
-  const res = await api('/api/v1/peers/join', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ host, port: 8088, code })
-  });
-  showMsg(res.ok ? 'Joined TV group!' : (res.data.message || 'Join failed.'), res.ok);
-  if (res.ok) {
-    document.getElementById('joinCodeInput').value = '';
-    await loadAll();
-  }
-}
-
-function renderSchedDurChips() {
-  const chips = document.querySelectorAll('#schedDurChips .chip');
-  [30, 60, 90, 120].forEach((val, idx) => {
-    if (chips[idx]) chips[idx].classList.toggle('sel', currentSchedDur === val);
-  });
-}
-async function setSchedDur(sec) {
-  currentSchedDur = sec;
-  renderSchedDurChips();
-  const res = await api('/api/v1/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ scheduleDurationSeconds: sec })
-  });
-  showMsg(res.ok ? 'Schedule duration set to ' + sec + 's.' : (res.data.message || 'Save failed.'), res.ok);
-}
-
-function insertBullet() {
-  const ta = document.getElementById('slideBody');
-  const prefix = (!ta.value || ta.value.endsWith('\n')) ? '• ' : '\n• ';
-  ta.value += prefix;
-  enforceBodyLines();
-  ta.focus();
-}
-function insertNumbered() {
-  const ta = document.getElementById('slideBody');
-  const nums = ta.value.split('\n').map(l => { const m = l.match(/^\s*(\d+)\./); return m ? parseInt(m[1], 10) : 0; });
-  const nextNum = Math.max(0, ...nums) + 1;
-  const prefix = (!ta.value || ta.value.endsWith('\n')) ? (nextNum + '. ') : ('\n' + nextNum + '. ');
-  ta.value += prefix;
-  enforceBodyLines();
-  ta.focus();
-}
-function enforceBodyLines() {
-  const ta = document.getElementById('slideBody');
-  const lines = ta.value.replace(/\r\n/g, '\n').split('\n');
-  if (lines.length > 6) {
-    ta.value = lines.slice(0, 6).join('\n');
-  }
-  const lineCount = ta.value ? ta.value.split('\n').length : 1;
-  document.getElementById('bodyCounter').textContent = lineCount + '/6 rows • ' + ta.value.length + '/400 chars';
-}
-
-function renderSlides(slides) {
-  const list = document.getElementById('slidesList');
-  if (!slides.length) {
-    list.innerHTML = '<div class="meta">No announcement slides yet.</div>';
-    return;
-  }
-  list.innerHTML = '';
-  slides.forEach((s, idx) => {
-    const box = document.createElement('div');
-    box.className = 'item-box';
-    const top = document.createElement('div');
-    top.className = 'flex-between';
-    const info = document.createElement('div');
-    info.innerHTML = '<strong>#' + (idx + 1) + ' ' + escapeHtml(s.title || '(Untitled)') + '</strong>' +
-      '<div class="meta">' + escapeHtml(s.type) + ' • ' + s.durationSeconds + 's • ' + (s.enabled ? 'Active' : 'Disabled') + '</div>';
-    const actions = document.createElement('div');
-    actions.className = 'flex-gap';
-
-    const editBtn = document.createElement('button');
-    editBtn.className = 'sm secondary';
-    editBtn.textContent = 'Edit';
-    editBtn.onclick = () => startEditSlide(s);
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'sm ' + (s.enabled ? 'outline' : '');
-    toggleBtn.textContent = s.enabled ? 'Disable' : 'Enable';
-    toggleBtn.onclick = () => toggleSlide(s);
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'sm danger';
-    delBtn.textContent = 'Delete';
-    delBtn.onclick = () => deleteSlide(s.id);
-
-    actions.appendChild(editBtn);
-    actions.appendChild(toggleBtn);
-    actions.appendChild(delBtn);
-    top.appendChild(info);
-    top.appendChild(actions);
-    box.appendChild(top);
-    list.appendChild(box);
-  });
-}
-
-let textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
-
-function renderTextRows() {
-  const c = document.getElementById('textRowsContainer');
-  if (!c) return;
-  c.innerHTML = '';
-  textRows.forEach((row, idx) => {
-    const wrap = document.createElement('div');
-    wrap.style.display = 'grid';
-    wrap.style.gridTemplateColumns = '1fr 84px 84px auto';
-    wrap.style.gap = '6px';
-    wrap.style.marginBottom = '6px';
-    wrap.style.alignItems = 'center';
-
-    const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.maxLength = 100;
-    inp.placeholder = 'Row ' + (idx + 1) + '...';
-    inp.value = row.text;
-    inp.style.marginTop = '0';
-    inp.oninput = (e) => { textRows[idx].text = e.target.value; };
-
-    const sel = document.createElement('select');
-    sel.style.marginTop = '0';
-    [['CENTER', 'Center'], ['LEFT', 'Left'], ['RIGHT', 'Right']].forEach(([v, l]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = l;
-      if (row.align === v) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.onchange = (e) => { textRows[idx].align = e.target.value; };
-
-    const sz = document.createElement('select');
-    sz.style.marginTop = '0';
-    [['SMALL', 'Small'], ['MEDIUM', 'Medium'], ['LARGE', 'Large']].forEach(([v, l]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = l;
-      if ((row.fontSize || 'MEDIUM') === v) o.selected = true;
-      sz.appendChild(o);
-    });
-    sz.onchange = (e) => { textRows[idx].fontSize = e.target.value; };
-
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'sm danger';
-    del.textContent = '✕';
-    del.style.marginTop = '0';
-    del.disabled = textRows.length <= 1;
-    del.onclick = () => {
-      if (textRows.length > 1) { textRows.splice(idx, 1); renderTextRows(); }
-    };
-
-    wrap.appendChild(inp);
-    wrap.appendChild(sel);
-    wrap.appendChild(sz);
-    wrap.appendChild(del);
-    c.appendChild(wrap);
-  });
-}
-
-function addTextRow(prefix, align) {
-  const targetAlign = align || (textRows.length ? textRows[textRows.length - 1].align : 'CENTER');
-  if (prefix && textRows.length && !textRows[textRows.length - 1].text.trim()) {
-    textRows[textRows.length - 1] = { text: prefix, align: targetAlign, fontSize: textRows[textRows.length - 1].fontSize || 'MEDIUM' };
-    renderTextRows();
-    return;
-  }
-  if (textRows.length >= 10) return;
-  textRows.push({ text: prefix || '', align: targetAlign, fontSize: 'MEDIUM' });
-  renderTextRows();
-}
-
-function addNumberedRow() {
-  let maxN = 0;
-  textRows.forEach(r => {
-    const m = r.text.match(/^\s*(\d+)\./);
-    if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
-  });
-  addTextRow((maxN + 1) + '. ', 'LEFT');
-}
-
-function startEditSlide(s) {
-  if (s.type === 'IMAGE') {
-    const newTitle = prompt('Edit Image Slide Title:', s.title || 'Poster');
-    if (newTitle === null) return;
-    const newDurStr = prompt('Display Duration in seconds (3–120):', String(s.durationSeconds || 15));
-    if (newDurStr === null) return;
-    const dur = Math.max(3, Math.min(120, parseInt(newDurStr, 10) || 15));
-    patchSlide(s.id, { title: newTitle.trim() || 'Poster', durationSeconds: dur });
-    return;
-  }
-  document.getElementById('editingSlideId').value = s.id;
-  document.getElementById('textFormHeading').textContent = 'Edit Text Announcement Slide';
-  document.getElementById('saveTextSlideBtn').textContent = 'Save Changes';
-  document.getElementById('cancelEditBtn').classList.remove('hidden');
-  document.getElementById('slideTitle').value = s.title || '';
-  if (Array.isArray(s.lines) && s.lines.length) {
-    textRows = s.lines.slice(0, 10).map(l => ({ text: l.text || '', align: l.align || 'CENTER', fontSize: l.fontSize || 'MEDIUM' }));
-  } else if (s.body) {
-    textRows = s.body.split('\n').slice(0, 10).map(t => ({ text: t, align: s.textAlign || 'CENTER', fontSize: 'MEDIUM' }));
-  } else {
-    textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
-  }
-  renderTextRows();
-  document.getElementById('slideDuration').value = String([10,15,20,30,45,60].includes(s.durationSeconds) ? s.durationSeconds : 15);
-  document.getElementById('slideTitle').scrollIntoView({ behavior: 'smooth' });
-}
-
-function cancelEditSlide() {
-  document.getElementById('editingSlideId').value = '';
-  document.getElementById('textFormHeading').textContent = 'Add Text Announcement Slide';
-  document.getElementById('saveTextSlideBtn').textContent = 'Add Text Slide';
-  document.getElementById('cancelEditBtn').classList.add('hidden');
-  document.getElementById('slideTitle').value = '';
-  textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
-  renderTextRows();
-  document.getElementById('slideDuration').value = '15';
-}
-
-async function saveTextSlide() {
-  const editId = document.getElementById('editingSlideId').value;
-  const title = document.getElementById('slideTitle').value.trim();
-  const cleanLines = textRows
-    .map(r => ({ text: (r.text || '').replace(/\n/g, ' ').trimEnd(), align: r.align || 'CENTER', fontSize: r.fontSize || 'MEDIUM' }))
-    .filter(r => r.text.trim().length > 0);
-  const body = cleanLines.map(r => r.text).join('\n');
-  const textAlign = cleanLines.length ? cleanLines[0].align : 'CENTER';
-  const durationSeconds = parseInt(document.getElementById('slideDuration').value, 10) || 15;
-  if (!title && !cleanLines.length) { showMsg('Enter a title or message first.', false); return; }
-  if (editId) {
-    await patchSlide(editId, { title, body, textAlign, lines: cleanLines, durationSeconds });
-    cancelEditSlide();
-    return;
-  }
-  const res = await api('/api/v1/slides/text', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, body, textAlign, lines: cleanLines, durationSeconds })
-  });
-  showMsg(res.ok ? 'Text slide added.' : (res.data.message || 'Failed to add slide.'), res.ok);
-  if (res.ok) { cancelEditSlide(); await loadAll(); }
-}
-
-async function patchSlide(id, payload) {
-  const res = await api('/api/v1/slides/' + encodeURIComponent(id), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  showMsg(res.ok ? 'Slide updated.' : (res.data.message || 'Update failed.'), res.ok);
-  if (res.ok) await loadAll();
-}
-
-async function toggleSlide(s) {
-  await patchSlide(s.id, { enabled: !s.enabled });
-}
-
-async function uploadImageSlide() {
-  const file = document.getElementById('slideImageFile').files[0];
-  if (!file) { showMsg('Choose an image file first.', false); return; }
-  const rawTitle = document.getElementById('imgSlideTitle').value.trim();
-  if (!rawTitle) { showMsg('Please enter a slide title before uploading.', false); return; }
-  const dur = parseInt(document.getElementById('imgSlideDuration').value, 10) || 15;
-  const title = encodeURIComponent(rawTitle);
-  const res = await api('/api/v1/slides/image?title=' + title + '&duration=' + dur, {
-    method: 'POST',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
-    body: file
-  });
-  showMsg(res.ok ? 'Image slide uploaded.' : (res.data.message || 'Upload failed.'), res.ok);
-  if (res.ok) {
-    document.getElementById('slideImageFile').value = '';
-    document.getElementById('imgSlideTitle').value = '';
-    await loadAll();
-  }
-}
-
-async function deleteSlide(id) {
-  const res = await api('/api/v1/slides/' + encodeURIComponent(id), { method: 'DELETE' });
-  showMsg(res.ok ? 'Slide deleted.' : (res.data.message || 'Delete failed.'), res.ok);
-  if (res.ok) await loadAll();
-}
-
-async function saveBuiltInSlides() {
-  const res = await api('/api/v1/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      islamicCalendarSlideEnabled: document.getElementById('calSlideEnabled').value === 'true',
-      islamicCalendarSlideDurationSeconds: parseInt(document.getElementById('calSlideDuration').value, 10) || 20,
-      quranVerseEnabled: document.getElementById('quranEnabled').value === 'true',
-      quranShowTranslation: document.getElementById('quranTrans').value === 'true',
-      quranVerseDurationSeconds: parseInt(document.getElementById('quranDur').value, 10) || 0
-    })
-  });
-  showMsg(res.ok ? 'Built-in slides saved.' : (res.data.message || 'Save failed.'), res.ok);
-  if (res.ok) await loadAll();
-}
-
-// --- INTUITIVE JUMU'AH SITTINGS ---
-function onJumuahModeChange() {
-  const mode = document.getElementById('jumuahMode').value;
-  jumuahSittings = mode === 'FIXED' ? ['13:00'] : ['45'];
-  renderSittings();
-}
-function renderSittings() {
-  const mode = document.getElementById('jumuahMode').value;
-  const container = document.getElementById('sittingsContainer');
-  container.innerHTML = '';
-  jumuahSittings.forEach((val, idx) => {
-    const row = document.createElement('div');
-    row.className = 'sitting-row';
-    const lbl = document.createElement('div');
-    lbl.innerHTML = '<strong>Sitting ' + (idx + 1) + '</strong>';
-    const ctrl = document.createElement('div');
-    if (mode === 'FIXED') {
-      const inp = document.createElement('input');
-      inp.type = 'time';
-      inp.value = /^\d{2}:\d{2}$/.test(val) ? val : '13:00';
-      inp.onchange = () => { jumuahSittings[idx] = inp.value || '13:00'; };
-      ctrl.appendChild(inp);
-    } else {
-      ctrl.className = 'flex-gap';
-      const minus = document.createElement('button');
-      minus.className = 'sm secondary';
-      minus.textContent = '-5m';
-      const num = document.createElement('span');
-      const mins = parseInt(val, 10) || 0;
-      num.textContent = '+' + mins + ' min after Dhuhr';
-      num.style.fontWeight = '700';
-      const plus = document.createElement('button');
-      plus.className = 'sm secondary';
-      plus.textContent = '+5m';
-      minus.onclick = () => { jumuahSittings[idx] = String(Math.max(0, (parseInt(jumuahSittings[idx], 10) || 0) - 5)); renderSittings(); };
-      plus.onclick = () => { jumuahSittings[idx] = String(Math.min(180, (parseInt(jumuahSittings[idx], 10) || 0) + 5)); renderSittings(); };
-      ctrl.appendChild(minus);
-      ctrl.appendChild(num);
-      ctrl.appendChild(plus);
-    }
-    row.appendChild(lbl);
-    row.appendChild(ctrl);
-    if (jumuahSittings.length > 1) {
-      const rm = document.createElement('button');
-      rm.className = 'sm danger';
-      rm.textContent = 'Remove';
-      rm.onclick = () => { jumuahSittings.splice(idx, 1); renderSittings(); };
-      row.appendChild(rm);
-    } else {
-      row.appendChild(document.createElement('div'));
-    }
-    container.appendChild(row);
-  });
-  document.getElementById('addSittingBtn').classList.toggle('hidden', jumuahSittings.length >= 3);
-}
-function addSitting() {
-  if (jumuahSittings.length >= 3) return;
-  const mode = document.getElementById('jumuahMode').value;
-  jumuahSittings.push(mode === 'FIXED' ? (jumuahSittings.length === 1 ? '13:45' : '14:15') : String(45 * (jumuahSittings.length + 1)));
-  renderSittings();
-}
-
-// --- INTUITIVE IQAMAH DELAYS (-5 / +5, 0..30m) ---
-function renderIqamah() {
-  const container = document.getElementById('iqamahContainer');
-  container.innerHTML = '';
-  PRAYERS.forEach(p => {
-    const val = Math.max(0, Math.min(30, iqamahValues[p.key] || 0));
-    const row = document.createElement('div');
-    row.className = 'iq-row';
-    const left = document.createElement('div');
-    left.innerHTML = '<strong>' + p.label + '</strong>';
-    const controls = document.createElement('div');
-    controls.className = 'iq-chips';
-    controls.style.alignItems = 'center';
-    const minus = document.createElement('button');
-    minus.className = 'chip';
-    minus.textContent = '-5';
-    minus.onclick = () => { iqamahValues[p.key] = Math.max(0, (iqamahValues[p.key] || 0) - 5); renderIqamah(); };
-    const valLabel = document.createElement('span');
-    valLabel.style.minWidth = '96px';
-    valLabel.style.textAlign = 'center';
-    valLabel.style.fontSize = '13px';
-    valLabel.style.fontWeight = '700';
-    valLabel.style.color = val > 0 ? '#10b981' : '#9ca3af';
-    valLabel.textContent = val === 0 ? 'Disabled (0m)' : '+' + val + ' min';
-    const plus = document.createElement('button');
-    plus.className = 'chip';
-    plus.textContent = '+5';
-    plus.onclick = () => { iqamahValues[p.key] = Math.min(30, (iqamahValues[p.key] || 0) + 5); renderIqamah(); };
-    controls.appendChild(minus);
-    controls.appendChild(valLabel);
-    controls.appendChild(plus);
-    row.appendChild(left);
-    row.appendChild(controls);
-    container.appendChild(row);
-  });
-}
-
-async function saveSchedule() {
-  const res = await api('/api/v1/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jumuahMode: document.getElementById('jumuahMode').value,
-      jumuahTimes: jumuahSittings,
-      iqamahSubuh: iqamahValues.SUBUH,
-      iqamahZuhur: iqamahValues.ZUHUR,
-      iqamahAshr: iqamahValues.ASHR,
-      iqamahMagrib: iqamahValues.MAGRIB,
-      iqamahIsya: iqamahValues.ISYA,
-      hijriOffsetDays: parseInt(document.getElementById('hijriOffset').value, 10) || 0,
-      hijriChangeAtMidnight: document.getElementById('hijriMidnight').value === 'true'
-    })
-  });
-  showMsg(res.ok ? 'Jumu\'ah, Iqamah & Hijri saved.' : (res.data.message || 'Save failed.'), res.ok);
-}
-
-// --- SILENT SCREEN ---
-function updateSilentUi(active, remainingMinutes) {
-  const badge = document.getElementById('silentStatus');
-  const stopBtn = document.getElementById('stopSilentBtn');
-  if (active) {
-    badge.className = 'pill active';
-    badge.textContent = 'Active • ' + remainingMinutes + ' min remaining';
-    stopBtn.classList.remove('hidden');
-  } else {
-    badge.className = 'pill idle';
-    badge.textContent = 'Inactive';
-    stopBtn.classList.add('hidden');
-  }
-}
-function renderDailySilent() {
-  const container = document.getElementById('dailySilentContainer');
-  container.innerHTML = '';
-  PRAYERS.forEach(p => {
-    const cfg = dailySilent[p.key] || { enabled: false, anchor: 'IQAMAH', leadMinutes: 0, durationMinutes: 15 };
-    dailySilent[p.key] = cfg;
-    const row = document.createElement('div');
-    row.className = 'iq-row';
-    const left = document.createElement('div');
-    left.innerHTML = '<strong>' + p.label + '</strong><div class="meta">' + (cfg.enabled ? (cfg.anchor + ' • ' + cfg.durationMinutes + 'm') : 'Off') + '</div>';
-    const ctrls = document.createElement('div');
-    ctrls.className = 'flex-gap';
-
-    const toggle = document.createElement('button');
-    toggle.className = 'chip' + (cfg.enabled ? ' sel' : '');
-    toggle.textContent = cfg.enabled ? 'On' : 'Off';
-    toggle.onclick = () => { cfg.enabled = !cfg.enabled; renderDailySilent(); };
-    ctrls.appendChild(toggle);
-
-    if (cfg.enabled) {
-      const anc = document.createElement('button');
-      anc.className = 'chip';
-      anc.textContent = cfg.anchor === 'IQAMAH' ? 'Iqamah' : 'Adhan';
-      anc.onclick = () => { cfg.anchor = cfg.anchor === 'IQAMAH' ? 'ADHAN' : 'IQAMAH'; renderDailySilent(); };
-      const dur = document.createElement('button');
-      dur.className = 'chip';
-      dur.textContent = cfg.durationMinutes + 'm';
-      dur.onclick = () => {
-        const opts = [10, 15, 20, 30];
-        const i = opts.indexOf(cfg.durationMinutes);
-        cfg.durationMinutes = opts[(i + 1) % opts.length];
-        renderDailySilent();
-      };
-      ctrls.appendChild(anc);
-      ctrls.appendChild(dur);
-    }
-    row.appendChild(left);
-    row.appendChild(ctrls);
-    container.appendChild(row);
-  });
-}
-async function startSilent(minutes) {
-  const res = await api('/api/v1/silent/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ durationMinutes: minutes })
-  });
-  if (res.ok) {
-    updateSilentUi(true, res.data.manualSilentRemainingMinutes || minutes);
-    showMsg('Silent screen started for ' + minutes + ' minutes.', true);
-  } else {
-    showMsg(res.data.message || 'Failed to start silent screen.', false);
-  }
-}
-async function stopSilent() {
-  const res = await api('/api/v1/silent/stop', { method: 'POST' });
-  if (res.ok) {
-    updateSilentUi(false, 0);
-    showMsg('Silent screen stopped.', true);
-  } else {
-    showMsg(res.data.message || 'Failed to stop silent screen.', false);
-  }
-}
-async function saveSilentSettings() {
-  const res = await api('/api/v1/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      silentJumuahEnabled: document.getElementById('silentJumuahEnabled').value === 'true',
-      silentJumuahLeadMinutes: parseInt(document.getElementById('silentJumuahLead').value, 10) || 0,
-      silentJumuahDurationMinutes: parseInt(document.getElementById('silentJumuahDur').value, 10) || 45,
-      silentDailyPrayers: dailySilent
-    })
-  });
-  showMsg(res.ok ? 'Silent screen schedule saved.' : (res.data.message || 'Save failed.'), res.ok);
-}
-
-// --- BRANDING & DISPLAY ---
-async function saveBranding() {
-  const mosqueName = document.getElementById('mosqueName').value.trim();
-  if (!mosqueName) { showMsg('Please enter your mosque name before saving.', false); return; }
-  const res = await api('/api/v1/settings', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      mosqueName,
-      mosqueSubtitle: document.getElementById('mosqueSubtitle').value.trim(),
-      mosqueIconPreset: document.getElementById('mosqueIconPreset').value,
-      mosqueFontPreset: document.getElementById('mosqueFontPreset').value,
-      appLanguage: document.getElementById('appLanguage').value,
-      themeMode: document.getElementById('themeMode').value,
-      is24HourFormat: document.getElementById('is24Hour').value === 'true',
-      showArabicPrayerNames: document.getElementById('showArabic').value === 'true',
-      showStrikeHighlight: document.getElementById('showStrike').value === 'true'
-    })
-  });
-  showMsg(res.ok ? 'Branding & display saved.' : (res.data.message || 'Save failed.'), res.ok);
-  if (res.ok) await loadAll();
-}
-async function uploadLogo() {
-  const file = document.getElementById('logoFile').files[0];
-  if (!file) { showMsg('Choose a logo image first.', false); return; }
-  const res = await api('/api/v1/logo', {
-    method: 'POST',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
-    body: file
-  });
-  showMsg(res.ok ? 'Custom mosque logo updated.' : (res.data.message || 'Logo upload failed.'), res.ok);
-  if (res.ok) { document.getElementById('logoFile').value = ''; await loadAll(); }
-}
-
-renderTextRows();
-document.getElementById('deviceNameInput').placeholder = defaultDeviceName();
-loadStatus();
-// Auto-pair from QR code hash (#pair=123456) and immediately clear hash from browser URL
-const hashMatch = (location.hash || '').match(/pair=(\d{6})/);
-if (hashMatch) {
-  const qrCode = hashMatch[1];
-  try { history.replaceState(null, '', location.pathname); } catch (_) {}
-  document.getElementById('pairCodeInput').value = qrCode;
-  pairWithCode(qrCode);
-} else if (token) {
-  document.getElementById('loginCard').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('logoutBtn').classList.remove('hidden');
-  loadAll();
-}
-</script>
+<script src="/app.js" defer></script>
 </body>
 </html>

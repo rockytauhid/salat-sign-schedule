@@ -418,6 +418,8 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     fun revokePairedDevice(deviceId: String) {
         viewModelScope.launch {
             repository.revokePairedDevice(deviceId, System.currentTimeMillis())
+            // Review 4 H4: Immediately propagate revocation to all linked peer TVs
+            getApplication<SalatSignApp>().localServer.notifyDeviceRevoked()
         }
     }
 

@@ -86,6 +86,21 @@ class PairingManagerTest {
     }
 
     @Test
+    fun redeemCode_invalidatesActiveCodeAfterGlobalFailureCap() {
+        val now = 1_700_000_000_000L
+        val mgr = PairingManager(nowMillisProvider = { now })
+        val active = mgr.generatePairingCode(RemoteRole.MANAGE)
+        val wrongCode = if (active.code == "000000") "999999" else "000000"
+
+        // Review 4 M1: 10 wrong codes across distinct source IPs must invalidate the active code
+        repeat(PairingManager.MAX_GLOBAL_WRONG_CODES_PER_CODE) { i ->
+            assertTrue(mgr.redeemCode(wrongCode, "Bot", "192.168.4.${10 + i}") is PairRedeemResult.InvalidCode)
+        }
+        assertNull(mgr.currentActiveCode())
+        assertTrue(mgr.redeemCode(active.code, "Late Admin", "192.168.4.200") is PairRedeemResult.NoActivePairing)
+    }
+
+    @Test
     fun rolePermissions_enforceHierarchy() {
         assertTrue(RemoteRole.CRITICAL.hasPermission(RemoteRole.MANAGE))
         assertTrue(RemoteRole.MANAGE.hasPermission(RemoteRole.MANAGE))

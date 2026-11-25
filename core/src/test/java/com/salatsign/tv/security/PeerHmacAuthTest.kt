@@ -6,49 +6,114 @@ package com.salatsign.tv.security
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.charset.StandardCharsets
 
 class PeerHmacAuthTest {
 
     @Test
-    fun verifyRequest_acceptsValidSignatureAndRejectsTamperReplayAndSkew() {
+    fun verifyRequest_acceptsValidSignatureAndRejectsTamperReplayWrongTargetAndSkew() {
         var now = 1_700_000_000_000L
         val auth = PeerHmacAuth(nowMillisProvider = { now })
         val secret = PeerHmacAuth.generateGroupSecretHex()
         val body = """{"hello":"world"}""".toByteArray()
         val nonce = PeerHmacAuth.generateNonce()
-        val sig = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", now, nonce, body)
+        val sig = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", "tv-a", "tv-b", now, nonce, body)
 
-        assertTrue(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", now.toString(), nonce, sig, body))
+        assertTrue(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", "tv-b", "tv-a", "tv-b", now.toString(), nonce, sig, body, "192.168.4.10"))
 
         // Replay of the exact same nonce MUST be rejected
-        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", now.toString(), nonce, sig, body))
+        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", "tv-b", "tv-a", "tv-b", now.toString(), nonce, sig, body, "192.168.4.10"))
+
+        // Review 4 L3: Replaying to a different target deviceId MUST be rejected
+        val nonceTarget = PeerHmacAuth.generateNonce()
+        val sigTarget = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", "tv-a", "tv-b", now, nonceTarget, body)
+        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", "tv-c", "tv-a", "tv-b", now.toString(), nonceTarget, sigTarget, body, "192.168.4.11"))
 
         // Tampered body MUST be rejected
         val nonce2 = PeerHmacAuth.generateNonce()
-        val sig2 = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", now, nonce2, body)
-        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", now.toString(), nonce2, sig2, """{"hello":"evil"}""".toByteArray()))
+        val sig2 = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", "tv-a", "tv-b", now, nonce2, body)
+        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", "tv-b", "tv-a", "tv-b", now.toString(), nonce2, sig2, """{"hello":"evil"}""".toByteArray(), "192.168.4.12"))
 
         // Timestamp outside ±120s window MUST be rejected
         val staleTs = now - 200_000L
         val nonce3 = PeerHmacAuth.generateNonce()
-        val sig3 = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", staleTs, nonce3, body)
-        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", staleTs.toString(), nonce3, sig3, body))
+        val sig3 = PeerHmacAuth.computeSignature(secret, "POST", "/api/v1/peer/sync", "tv-a", "tv-b", staleTs, nonce3, body)
+        assertFalse(auth.verifyRequest(secret, "POST", "/api/v1/peer/sync", "tv-b", "tv-a", "tv-b", staleTs.toString(), nonce3, sig3, body, "192.168.4.13"))
     }
 
     @Test
-    fun groupJoinManager_isSingleUseAndEnforcesExpiry() {
+    fun verifyRequest_unsignedTrafficDoesNotGrowNonceStore_andResponseSigningVerifies() {
+        val now = 1_700_000_000_000L
+        val auth = PeerHmacAuth(nowMillisProvider = { now })
+        val secret = PeerHmacAuth.generateGroupSecretHex()
+        val body = "{}".toByteArray()
+
+        // Review 4 M2: 20 unsigned requests must NOT insert anything into seenNonces
+        repeat(20) { i ->
+            assertFalse(
+                auth.verifyRequest(
+                    secret, "GET", "/api/v1/peer/sync", "tv-b", "tv-evil", "tv-b",
+                    now.toString(), "fake-nonce-$i-000000", "0".repeat(64), body, "192.168.4.${50 + i}"
+                )
+            )
+        }
+        assertEquals(0, auth.seenNonceCount)
+
+        // Review 4 H2: Response signature verifies matching body + nonce and rejects tampered body
+        val reqNonce = PeerHmacAuth.generateNonce()
+        val respBody = """{"configVersion":42}""".toByteArray()
+        val respSig = PeerHmacAuth.computeResponseSignature(secret, "tv-b", reqNonce, now, respBody)
+        assertTrue(PeerHmacAuth.verifyResponse(secret, "tv-b", reqNonce, now.toString(), respSig, respBody, now))
+        assertFalse(PeerHmacAuth.verifyResponse(secret, "tv-b", reqNonce, now.toString(), respSig, """{"configVersion":999}""".toByteArray(), now))
+        assertFalse(PeerHmacAuth.verifyResponse(secret, "tv-wrong", reqNonce, now.toString(), respSig, respBody, now))
+    }
+
+    @Test
+    fun groupJoinManager_enforces8CharCodeGlobalInvalidationAndEcdhEncryption() {
         var now = 1_700_000_000_000L
         val mgr = GroupJoinManager(nowMillisProvider = { now }, ttlMillis = 60_000L)
         val active = mgr.generateJoinCode()
-        assertEquals(6, active.code.length)
-        assertTrue(mgr.consumeIfValid(active.code))
-        assertFalse("Second use must fail", mgr.consumeIfValid(active.code))
+        assertEquals(8, active.code.length)
 
+        // Review 4 H1: 5 wrong guesses across different IPs invalidate the active code globally
+        repeat(GroupJoinManager.MAX_GLOBAL_FAILURES_PER_CODE) { i ->
+            assertTrue(mgr.redeemCode("ZZZZZZZZ", "192.168.4.${10 + i}") is JoinCodeRedeemResult.InvalidCode)
+        }
+        assertNull("Code must be invalidated after 5 global failures", mgr.currentJoinCode())
+        assertTrue(mgr.redeemCode(active.code, "192.168.4.200") is JoinCodeRedeemResult.NoActiveCode)
+
+        // Fresh code succeeds once with ECDH + AES-GCM round-trip
+        val fresh = mgr.generateJoinCode()
+        val res = mgr.redeemCode(fresh.code, "192.168.4.200")
+        assertTrue(res is JoinCodeRedeemResult.Success)
+        assertTrue("Second use must fail", mgr.redeemCode(fresh.code, "192.168.4.200") is JoinCodeRedeemResult.NoActiveCode)
+
+        val clientKp = PeerJoinCrypto.generateEphemeralKeyPair()
+        val secretMsg = """{"groupSecretHex":"${"a".repeat(64)}","peers":[]}""".toByteArray(StandardCharsets.UTF_8)
+        val envelope = PeerJoinCrypto.encryptForPeer(PeerJoinCrypto.encodePublicKey(clientKp), fresh.code, secretMsg)
+        val decrypted = PeerJoinCrypto.decryptFromServer(
+            clientKp, envelope.serverPublicKeyBase64, envelope.ivBase64, envelope.ciphertextBase64, fresh.code
+        )
+        assertEquals(secretMsg.toString(StandardCharsets.UTF_8), decrypted.toString(StandardCharsets.UTF_8))
+
+        // Expiry check
         val expiring = mgr.generateJoinCode()
         now += 61_000L
-        assertFalse("Expired code must fail", mgr.consumeIfValid(expiring.code))
+        assertTrue(mgr.redeemCode(expiring.code, "192.168.4.200") is JoinCodeRedeemResult.Expired)
+    }
+
+    @Test
+    fun peerAssetValidator_rejectsPathTraversalAndUnsafeNames() {
+        assertTrue(PeerAssetValidator.isSafeFileName("slide_1234.jpg"))
+        assertTrue(PeerAssetValidator.isSafeFileName("poster-01.webp"))
+        assertFalse(PeerAssetValidator.isSafeFileName("../settings.preferences_pb"))
+        assertFalse(PeerAssetValidator.isSafeFileName("sub/file.png"))
+        assertFalse(PeerAssetValidator.isSafeFileName("sub\\file.png"))
+        assertFalse(PeerAssetValidator.isSafeFileName(".hidden"))
+        assertFalse(PeerAssetValidator.isSafeFileName(""))
     }
 
     @Test

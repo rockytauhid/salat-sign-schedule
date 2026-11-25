@@ -12,10 +12,12 @@ import com.salatsign.tv.data.api.GroupJoinCodeResponse
 import com.salatsign.tv.data.api.PairExchangeResponse
 import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PeerJoinResponse
+import com.salatsign.tv.data.api.PeerJoinSecretPayload
 import com.salatsign.tv.data.api.PeerListResponse
 import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PhoneControllerJson
 import com.salatsign.tv.data.api.SettingsPatchRequest
+import com.salatsign.tv.data.api.SlideDto
 import com.salatsign.tv.data.api.StatusResponse
 import com.salatsign.tv.data.api.UrgentNoticeResponse
 import com.salatsign.tv.data.importing.ImageImporter
@@ -903,16 +905,26 @@ class SalatSignLocalServerTest {
         val joinCodeResp = server.handleRequest(HttpRequest("POST", "/api/v1/peers/code", headers = manageHeaders))
         assertEquals(200, joinCodeResp.statusCode)
         val joinCode = PhoneControllerJson.decode<GroupJoinCodeResponse>(joinCodeResp.body.toString(StandardCharsets.UTF_8)).code
+        assertEquals(8, joinCode.length)
 
+        // Review 4 H1: Peer join uses ephemeral ECDH + AES-256-GCM so groupSecretHex is never sent in cleartext
+        val clientKp = com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
+        val clientPubB64 = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(clientKp)
         val peerJoinResp = server.handleRequest(
             HttpRequest(
                 method = "POST",
                 path = "/api/v1/peer/join",
-                body = """{"code":"$joinCode","deviceId":"tv-downstairs-1","deviceName":"Downstairs Left","roomGroup":"Downstairs","host":"192.168.4.40","port":8088}""".toByteArray()
+                body = """{"code":"$joinCode","deviceId":"tv-downstairs-1","deviceName":"Downstairs Left","roomGroup":"Downstairs","host":"192.168.4.40","port":8088,"clientPublicKeyBase64":"$clientPubB64"}""".toByteArray()
             )
         )
         assertEquals(200, peerJoinResp.statusCode)
-        val joined = PhoneControllerJson.decode<PeerJoinResponse>(peerJoinResp.body.toString(StandardCharsets.UTF_8))
+        val rawJoinJson = peerJoinResp.body.toString(StandardCharsets.UTF_8)
+        assertFalse("Group secret must NOT appear in cleartext", rawJoinJson.contains(settingsRepo.current.groupSecretHex))
+        val envelope = PhoneControllerJson.decode<PeerJoinResponse>(rawJoinJson)
+        val decryptedBytes = com.salatsign.tv.security.PeerJoinCrypto.decryptFromServer(
+            clientKp, envelope.serverPublicKeyBase64, envelope.ivBase64, envelope.ciphertextBase64, joinCode
+        )
+        val joined = PhoneControllerJson.decode<PeerJoinSecretPayload>(decryptedBytes.toString(StandardCharsets.UTF_8))
         assertTrue(joined.groupSecretHex.length == 64)
 
         val peersResp = server.handleRequest(HttpRequest("GET", "/api/v1/peers", headers = manageHeaders))
@@ -925,7 +937,9 @@ class SalatSignLocalServerTest {
         val unsignedSync = server.handleRequest(HttpRequest("GET", "/api/v1/peer/sync"))
         assertEquals(401, unsignedSync.statusCode)
 
-        // 4. Valid HMAC-signed peer sync adopts newer group config & preserves local TV identity + ThemeMode!
+        // 4. Valid HMAC-signed peer sync (bound to target deviceId) adopts newer config, strips unsafe imageFile (H3),
+        // preserves local TV identity + ThemeMode (D24), and returns an authenticated response signature (H2)!
+        val selfDeviceId = settingsRepo.ensureDeviceId()
         val syncPayload = PeerSyncPayload(
             originDeviceId = "tv-downstairs-1",
             configVersion = 99L,
@@ -935,12 +949,22 @@ class SalatSignLocalServerTest {
                 themeMode = "ALWAYS_DARK",
                 mosqueName = "Masjid Al-Falah"
             ),
-            slides = emptyList()
+            slides = listOf(
+                SlideDto(
+                    id = "slide-evil",
+                    type = "IMAGE",
+                    title = "Traversal",
+                    body = "",
+                    imageFile = "../../evil.pb",
+                    durationSeconds = 15,
+                    enabled = true
+                )
+            )
         )
         val syncBytes = PhoneControllerJson.encode(syncPayload).toByteArray(StandardCharsets.UTF_8)
         val nonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
         val sig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
-            joined.groupSecretHex, "POST", "/api/v1/peer/sync", now, nonce, syncBytes
+            joined.groupSecretHex, "POST", "/api/v1/peer/sync", "tv-downstairs-1", selfDeviceId, now, nonce, syncBytes
         )
         val signedSyncResp = server.handleRequest(
             HttpRequest(
@@ -948,6 +972,7 @@ class SalatSignLocalServerTest {
                 path = "/api/v1/peer/sync",
                 headers = mapOf(
                     com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TARGET_ID to selfDeviceId,
                     com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
                     com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to nonce,
                     com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to sig
@@ -956,11 +981,61 @@ class SalatSignLocalServerTest {
             )
         )
         assertEquals(200, signedSyncResp.statusCode)
+        // Review 4 H2: Response must carry a valid HMAC signature bound to request nonce + responder deviceId
+        assertTrue(
+            com.salatsign.tv.security.PeerHmacAuth.verifyResponse(
+                groupSecretHex = joined.groupSecretHex,
+                expectedResponderDeviceId = selfDeviceId,
+                requestNonce = nonce,
+                responseTimestampHeader = signedSyncResp.extraHeaders[com.salatsign.tv.security.PeerHmacAuth.HEADER_RESP_TIMESTAMP],
+                responseSignatureHeader = signedSyncResp.extraHeaders[com.salatsign.tv.security.PeerHmacAuth.HEADER_RESP_SIGNATURE],
+                responseBody = signedSyncResp.body,
+                nowEpochMillis = now
+            )
+        )
         assertEquals(99L, settingsRepo.current.configVersion)
         assertEquals("Masjid Al-Falah", settingsRepo.current.mosqueName)
         // Local-only fields MUST remain untouched (D24)
         assertEquals("Upstairs Left", settingsRepo.current.deviceName)
         assertEquals("Upstairs", settingsRepo.current.roomGroup)
         assertEquals(ThemeMode.ALWAYS_LIGHT, settingsRepo.current.themeMode)
+
+        // 5. Review 4 M3: Remove TV & Rotate Secret + Leave Group
+        val removeResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peers/remove",
+                headers = manageHeaders,
+                body = """{"deviceId":"tv-downstairs-1"}""".toByteArray()
+            )
+        )
+        assertEquals(200, removeResp.statusCode)
+        assertTrue(settingsRepo.current.peerTvs.isEmpty())
+        assertEquals("", settingsRepo.current.groupSecretHex)
+    }
+
+    @Test
+    fun review4_staticAssetsServedAndPutConfigRejectsTraversalImageFile() = runBlocking {
+        val (server, _, _) = createServer()
+        val authHeaders = authenticate(server)
+
+        // Review 4 L1: /app.js and /app.css served cleanly for strict CSP
+        val jsResp = server.handleRequest(HttpRequest("GET", "/app.js"))
+        assertEquals(200, jsResp.statusCode)
+        assertTrue(jsResp.contentType.contains("javascript"))
+        val cssResp = server.handleRequest(HttpRequest("GET", "/app.css"))
+        assertEquals(200, cssResp.statusCode)
+        assertTrue(cssResp.contentType.contains("text/css"))
+
+        // Review 4 H3: PUT /api/v1/config rejects unsafe imageFile path traversal
+        val badConfigResp = server.handleRequest(
+            HttpRequest(
+                method = "PUT",
+                path = "/api/v1/config",
+                headers = authHeaders,
+                body = """{"slides":[{"id":"s1","type":"IMAGE","title":"Bad","body":"","imageFile":"../pin.dat","durationSeconds":15,"enabled":true}]}""".toByteArray()
+            )
+        )
+        assertEquals(400, badConfigResp.statusCode)
     }
 }

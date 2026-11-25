@@ -10,6 +10,7 @@ import com.salatsign.tv.data.api.AuthMeResponse
 import com.salatsign.tv.data.api.AuthRequest
 import com.salatsign.tv.data.api.AuthResponse
 import com.salatsign.tv.data.api.BrowserPeerJoinRequest
+import com.salatsign.tv.data.api.BrowserRemovePeerRequest
 import com.salatsign.tv.data.api.CreateSlideResponse
 import com.salatsign.tv.data.api.CreateTextSlideRequest
 import com.salatsign.tv.data.api.DailySilentPrayerDto
@@ -28,10 +29,13 @@ import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PatchSlideRequest
 import com.salatsign.tv.data.api.PatchSlideResponse
 import com.salatsign.tv.data.api.PeerDeliveryStatusDto
+import com.salatsign.tv.data.api.PeerHealthDto
 import com.salatsign.tv.data.api.PeerJoinRequest
 import com.salatsign.tv.data.api.PeerJoinResponse
+import com.salatsign.tv.data.api.PeerJoinSecretPayload
 import com.salatsign.tv.data.api.PeerListResponse
 import com.salatsign.tv.data.api.PeerNoticeMessage
+import com.salatsign.tv.data.api.PeerSecretRotateRequest
 import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PeerSyncPushResultResponse
 import com.salatsign.tv.data.api.PhoneControllerJson
@@ -64,10 +68,13 @@ import com.salatsign.tv.data.repository.ISettingsRepository
 import com.salatsign.tv.engine.SlideBudget
 import com.salatsign.tv.security.GroupJoinManager
 import com.salatsign.tv.security.GroupSyncConflictResolver
+import com.salatsign.tv.security.JoinCodeRedeemResult
 import com.salatsign.tv.security.PairRedeemResult
 import com.salatsign.tv.security.PairedDeviceRecord
 import com.salatsign.tv.security.PairingManager
+import com.salatsign.tv.security.PeerAssetValidator
 import com.salatsign.tv.security.PeerHmacAuth
+import com.salatsign.tv.security.PeerJoinCrypto
 import com.salatsign.tv.security.PeerTvRecord
 import com.salatsign.tv.security.PinHasher
 import com.salatsign.tv.security.PinVerifyResult
@@ -116,7 +123,8 @@ data class HttpResponse(
     val statusText: String,
     val contentType: String = "application/json; charset=utf-8",
     val body: ByteArray = ByteArray(0),
-    val etag: String? = null
+    val etag: String? = null,
+    val extraHeaders: Map<String, String> = emptyMap()
 )
 
 private sealed interface ReadRequestOutcome {
@@ -156,6 +164,7 @@ class SalatSignLocalServer(
         }
     },
     private val webAssetProvider: () -> ByteArray = defaultJvmWebAssetProvider,
+    private val staticAssetProvider: (String) -> ByteArray? = defaultJvmStaticAssetProvider,
     private val maxConcurrentConnections: Int = MAX_CONCURRENT_CONNECTIONS,
     private val maxConnectionsPerIp: Int = MAX_CONNECTIONS_PER_IP,
     private val headerDeadlineMillis: Long = HEADER_DEADLINE_MILLIS,
@@ -195,6 +204,14 @@ class SalatSignLocalServer(
             found?.readBytes()
                 ?: "<!DOCTYPE html><html><body>SalatSign Remote</body></html>".toByteArray(StandardCharsets.UTF_8)
         }
+
+        private val defaultJvmStaticAssetProvider: (String) -> ByteArray? = { assetName ->
+            val candidates = listOf(
+                File("src/main/assets/phone_controller/$assetName"),
+                File("app-salatsign/src/main/assets/phone_controller/$assetName")
+            )
+            candidates.firstOrNull { it.exists() && it.isFile }?.readBytes()
+        }
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -206,6 +223,7 @@ class SalatSignLocalServer(
     private val authAttemptsByIp = ConcurrentHashMap<String, MutableList<Long>>()
     private val cachedActivePairedHashes = ConcurrentHashMap.newKeySet<String>()
     private val lastTouchByDeviceId = ConcurrentHashMap<String, Long>()
+    private val peerHealthById = ConcurrentHashMap<String, PeerHealthDto>()
 
     private sealed interface AuthContext {
         val role: RemoteRole
@@ -379,7 +397,7 @@ class SalatSignLocalServer(
             return HttpResponse(204, "No Content", "text/plain", ByteArray(0))
         }
 
-        // Public endpoints
+        // Public endpoints & static web assets (Review 4 L1: no inline scripts/styles)
         if (method == "GET" && (path == "/" || path == "/index.html")) {
             return HttpResponse(
                 statusCode = 200,
@@ -387,6 +405,16 @@ class SalatSignLocalServer(
                 contentType = "text/html; charset=utf-8",
                 body = webAssetProvider()
             )
+        }
+        if (method == "GET" && path == "/app.js") {
+            val bytes = staticAssetProvider("app.js")
+                ?: return errorResponse(404, "Not Found", "not_found", "Asset not found")
+            return HttpResponse(200, "OK", "application/javascript; charset=utf-8", bytes)
+        }
+        if (method == "GET" && path == "/app.css") {
+            val bytes = staticAssetProvider("app.css")
+                ?: return errorResponse(404, "Not Found", "not_found", "Asset not found")
+            return HttpResponse(200, "OK", "text/css; charset=utf-8", bytes)
         }
 
         if (method == "GET" && path == "/api/v1/status") {
@@ -407,8 +435,7 @@ class SalatSignLocalServer(
                     roomGroup = settings.roomGroup,
                     configVersion = settings.configVersion,
                     pairedDeviceCount = activePairedCount,
-                    lanPinLoginEnabled = settings.lanPinLoginEnabled,
-                    pairingActive = pairingManager.currentActiveCode() != null
+                    lanPinLoginEnabled = settings.lanPinLoginEnabled
                 ),
                 etag = "\"${settings.configVersion}\""
             )
@@ -492,6 +519,8 @@ class SalatSignLocalServer(
                 method == "POST" && path == "/api/v1/peers/code" -> handleCreateGroupJoinCode()
                 method == "POST" && path == "/api/v1/peers/join" -> handleBrowserJoinGroup(req, currentSettings)
                 method == "POST" && path == "/api/v1/peers/push" -> handlePushConfigToPeers(currentSettings)
+                method == "POST" && path == "/api/v1/peers/remove" -> handleRemovePeerAndRotate(req, currentSettings)
+                method == "POST" && path == "/api/v1/peers/leave" -> handleLeaveGroup()
                 method == "GET" && path == "/api/v1/devices" -> handleGetDevices(currentSettings)
                 method == "DELETE" && path.startsWith("/api/v1/devices/") -> {
                     val devId = URLDecoder.decode(path.removePrefix("/api/v1/devices/"), "UTF-8")
@@ -613,7 +642,31 @@ class SalatSignLocalServer(
         settingsRepository.revokePairedDevice(deviceId, now)
         val refreshed = settingsRepository.appSettingsFlow.first()
         syncPairedHashCache(refreshed)
+        // Review 4 H4: Immediately propagate revocation tombstones to all linked peers
+        pushRevocationToPeersAsync()
         return handleGetDevices(refreshed)
+    }
+
+    /**
+     * Review 4 H4: Called after revoking a paired device on the TV or via the Phone Controller
+     * so all linked peer TVs immediately receive the revocation tombstone.
+     */
+    fun notifyDeviceRevoked() {
+        pushRevocationToPeersAsync()
+    }
+
+    private fun pushRevocationToPeersAsync() {
+        scope.launch {
+            runCatching {
+                val settings = settingsRepository.appSettingsFlow.first()
+                val selfId = settingsRepository.ensureDeviceId()
+                val peers = settings.peerTvs.filterNot { it.deviceId == selfId }
+                if (peers.isNotEmpty() && settings.groupSecretHex.isNotBlank()) {
+                    val payload = buildPeerSyncPayload(settings)
+                    peerSyncClient.pushConfigToPeers(peers, payload, settings.groupSecretHex, selfId)
+                }
+            }
+        }
     }
 
     // --- Phase 3: Multi-TV Group Sync & Urgent Notice Handlers ---
@@ -670,9 +723,8 @@ class SalatSignLocalServer(
         val allPeers = (settings.peerTvs.filterNot { it.deviceId == self.deviceId } + self)
         return PeerSyncPayload(
             originDeviceId = self.deviceId,
-            originHost = self.lastKnownHost,
-            originPort = self.port,
             configVersion = settings.configVersion,
+            serverTimeEpochMillis = nowMillisProvider(),
             settings = groupPatch,
             slides = contentRepository.slidesFlow.value.slides.map(::slideToDto),
             pairedDevices = settings.pairedDevices,
@@ -691,11 +743,31 @@ class SalatSignLocalServer(
 
     private suspend fun handlePeerJoin(req: HttpRequest): HttpResponse {
         val joinReq = PhoneControllerJson.decode<PeerJoinRequest>(req.body.toString(StandardCharsets.UTF_8))
-        if (!groupJoinManager.consumeIfValid(joinReq.code)) {
-            return errorResponse(401, "Unauthorized", "invalid_join_code", "Invalid or expired TV group join code")
+        val normalizedCode = when (val res = groupJoinManager.redeemCode(joinReq.code, req.remoteAddress)) {
+            is JoinCodeRedeemResult.Success -> res.normalizedCode
+            is JoinCodeRedeemResult.RateLimited -> {
+                return typedJsonResponse(
+                    429, "Too Many Requests",
+                    ApiErrorResponse(
+                        error = "rate_limited",
+                        message = "Too many wrong join codes. Try again in ${res.remainingSeconds} seconds.",
+                        remainingSeconds = res.remainingSeconds
+                    )
+                )
+            }
+            is JoinCodeRedeemResult.Expired -> {
+                return errorResponse(401, "Unauthorized", "join_code_expired", "TV group join code expired")
+            }
+            is JoinCodeRedeemResult.NoActiveCode,
+            is JoinCodeRedeemResult.InvalidCode -> {
+                return errorResponse(401, "Unauthorized", "invalid_join_code", "Invalid or expired TV group join code")
+            }
         }
         if (joinReq.deviceId.isBlank()) {
             return errorResponse(400, "Bad Request", "missing_device_id", "Joining TV must supply deviceId")
+        }
+        if (joinReq.clientPublicKeyBase64.isBlank()) {
+            return errorResponse(400, "Bad Request", "missing_public_key", "ECDH public key is required for secure group join")
         }
         var settings = settingsRepository.appSettingsFlow.first()
         var secret = settings.groupSecretHex
@@ -717,17 +789,41 @@ class SalatSignLocalServer(
         val updatedSettings = settingsRepository.appSettingsFlow.first()
         val self = selfPeerRecord(updatedSettings)
         val peersForJoiner = (updatedSettings.peerTvs.filterNot { it.deviceId == self.deviceId } + self)
-        return typedJsonResponse(200, "OK", PeerJoinResponse(groupSecretHex = secret, peers = peersForJoiner))
+        val secretPayloadBytes = PhoneControllerJson.encode(
+            PeerJoinSecretPayload(groupSecretHex = secret, peers = peersForJoiner)
+        ).toByteArray(StandardCharsets.UTF_8)
+        // Review 4 H1: Encrypt group secret with ephemeral ECDH + AES-256-GCM bound to join code
+        val envelope = try {
+            PeerJoinCrypto.encryptForPeer(
+                clientPublicKeyBase64 = joinReq.clientPublicKeyBase64.trim(),
+                normalizedJoinCode = normalizedCode,
+                plaintextUtf8 = secretPayloadBytes
+            )
+        } catch (_: Exception) {
+            return errorResponse(400, "Bad Request", "invalid_public_key", "Invalid ECDH public key")
+        }
+        return typedJsonResponse(
+            200, "OK",
+            PeerJoinResponse(
+                serverPublicKeyBase64 = envelope.serverPublicKeyBase64,
+                ivBase64 = envelope.ivBase64,
+                ciphertextBase64 = envelope.ciphertextBase64
+            )
+        )
     }
 
     private suspend fun handleBrowserJoinGroup(req: HttpRequest, settings: AppSettings): HttpResponse {
         val body = PhoneControllerJson.decode<BrowserPeerJoinRequest>(req.body.toString(StandardCharsets.UTF_8))
         val host = body.host.trim()
-        if (host.isBlank() || body.code.filter { it.isDigit() }.length != 6) {
-            return errorResponse(400, "Bad Request", "invalid_join_request", "Host IP and 6-digit join code are required")
+        val normalizedCode = GroupJoinManager.normalizeCode(body.code)
+        if (host.isBlank() || normalizedCode.length != GroupJoinManager.CODE_LENGTH) {
+            return errorResponse(
+                400, "Bad Request", "invalid_join_request",
+                "Host IP and ${GroupJoinManager.CODE_LENGTH}-character join code are required"
+            )
         }
         val self = selfPeerRecord(settings)
-        val result = peerSyncClient.joinGroup(host, body.port.coerceIn(1024, 65535), body.code, self)
+        val result = peerSyncClient.joinGroup(host, body.port.coerceIn(1024, 65535), normalizedCode, self)
         val joined = result.getOrElse { err ->
             return errorResponse(502, "Bad Gateway", "peer_join_failed", err.message ?: "Could not reach peer TV")
         }
@@ -747,13 +843,16 @@ class SalatSignLocalServer(
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
+        val health = peers.mapNotNull { peerHealthById[it.deviceId] }
         return typedJsonResponse(
             200, "OK",
             PeerListResponse(
                 self = self,
                 peers = peers,
                 roomGroups = groups,
-                groupLinked = settings.groupSecretHex.isNotBlank()
+                groupLinked = settings.groupSecretHex.isNotBlank(),
+                configVersion = settings.configVersion,
+                peerHealth = health
             )
         )
     }
@@ -763,34 +862,145 @@ class SalatSignLocalServer(
         val peers = settings.peerTvs.filterNot { it.deviceId == selfId }
         val payload = buildPeerSyncPayload(settings)
         val deliveries = peerSyncClient.pushConfigToPeers(peers, payload, settings.groupSecretHex, selfId)
+        val now = nowMillisProvider()
+        for (d in deliveries) {
+            if (d.status == "delivered") {
+                peerHealthById[d.deviceId] = PeerHealthDto(
+                    deviceId = d.deviceId,
+                    reachable = true,
+                    configVersion = settings.configVersion,
+                    inSync = true,
+                    clockSkewSeconds = peerHealthById[d.deviceId]?.clockSkewSeconds,
+                    checkedAtEpochMillis = now
+                )
+            }
+        }
         return typedJsonResponse(
             200, "OK",
             PeerSyncPushResultResponse(configVersion = settings.configVersion, deliveries = deliveries)
         )
     }
 
+    /**
+     * Review 4 M3: Removes a peer TV from the group and rotates the group secret across all remaining
+     * peers so a retired/stolen TV permanently loses group access.
+     */
+    private suspend fun handleRemovePeerAndRotate(req: HttpRequest, settings: AppSettings): HttpResponse {
+        val body = PhoneControllerJson.decode<BrowserRemovePeerRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val targetId = body.deviceId.trim()
+        if (targetId.isBlank()) {
+            return errorResponse(400, "Bad Request", "missing_device_id", "Peer deviceId is required")
+        }
+        val self = selfPeerRecord(settings)
+        val remainingPeers = settings.peerTvs.filterNot { it.deviceId == self.deviceId || it.deviceId == targetId }
+        val oldSecret = settings.groupSecretHex
+        val newSecret = PeerHmacAuth.generateGroupSecretHex()
+        val allRemaining = remainingPeers + self
+
+        if (oldSecret.isNotBlank() && remainingPeers.isNotEmpty()) {
+            peerSyncClient.rotateSecretOnPeers(
+                peers = remainingPeers,
+                request = PeerSecretRotateRequest(
+                    newGroupSecretHex = newSecret,
+                    removedDeviceId = targetId,
+                    peers = allRemaining
+                ),
+                oldGroupSecretHex = oldSecret,
+                selfDeviceId = self.deviceId
+            )
+        }
+        settingsRepository.setPeerTvs(remainingPeers)
+        settingsRepository.setGroupSecretHex(if (remainingPeers.isEmpty()) "" else newSecret)
+        peerHealthById.remove(targetId)
+        val refreshed = settingsRepository.appSettingsFlow.first()
+        return handleGetPeers(refreshed)
+    }
+
+    /**
+     * Review 4 M3: Unlinks this TV locally from its current TV group.
+     */
+    private suspend fun handleLeaveGroup(): HttpResponse {
+        settingsRepository.setGroupSecretHex("")
+        settingsRepository.setPeerTvs(emptyList())
+        peerHealthById.clear()
+        val refreshed = settingsRepository.appSettingsFlow.first()
+        return handleGetPeers(refreshed)
+    }
+
+    /**
+     * Review 4 H2: Verifies a candidate mDNS host:port via a signed ping challenge before updating
+     * a known peer's address, preventing LAN mDNS spoofing/redirection.
+     */
+    suspend fun verifyAndUpdatePeerAddress(
+        peerId: String,
+        peerName: String,
+        peerGroup: String,
+        candidateHost: String,
+        candidatePort: Int
+    ): Boolean {
+        val settings = settingsRepository.appSettingsFlow.first()
+        if (settings.groupSecretHex.isBlank()) return false
+        val existing = settings.peerTvs.firstOrNull { it.deviceId == peerId } ?: return false
+        val selfId = settingsRepository.ensureDeviceId()
+        if (peerId == selfId) return false
+        val ok = peerSyncClient.verifyPeerAddress(
+            expectedPeerId = peerId,
+            candidateHost = candidateHost,
+            candidatePort = candidatePort,
+            groupSecretHex = settings.groupSecretHex,
+            selfDeviceId = selfId
+        )
+        if (!ok) return false
+        settingsRepository.upsertPeerTv(
+            existing.copy(
+                deviceName = peerName.ifBlank { existing.deviceName },
+                roomGroup = peerGroup.ifBlank { existing.roomGroup },
+                lastKnownHost = candidateHost,
+                port = candidatePort,
+                lastSeenEpochMillis = nowMillisProvider()
+            )
+        )
+        return true
+    }
+
     private suspend fun handleSignedPeerRequest(method: String, path: String, req: HttpRequest): HttpResponse {
         val settings = settingsRepository.appSettingsFlow.first()
+        val selfId = settingsRepository.ensureDeviceId()
+        val requestNonce = req.headers[PeerHmacAuth.HEADER_NONCE]?.trim().orEmpty()
+        val senderPeerId = req.headers[PeerHmacAuth.HEADER_PEER_ID]?.trim().orEmpty()
         val verified = peerHmacAuth.verifyRequest(
             groupSecretHex = settings.groupSecretHex,
             method = method,
             path = path,
+            expectedTargetDeviceId = selfId,
+            peerIdHeader = senderPeerId,
+            targetIdHeader = req.headers[PeerHmacAuth.HEADER_TARGET_ID],
             timestampHeader = req.headers[PeerHmacAuth.HEADER_TIMESTAMP],
-            nonceHeader = req.headers[PeerHmacAuth.HEADER_NONCE],
+            nonceHeader = requestNonce,
             signatureHeader = req.headers[PeerHmacAuth.HEADER_SIGNATURE],
-            body = req.body
+            body = req.body,
+            remoteIp = req.remoteAddress
         )
         if (!verified) {
             return errorResponse(401, "Unauthorized", "invalid_peer_signature", "Invalid or replayed peer HMAC signature")
         }
-        return try {
+        val secretForSigningResponse = settings.groupSecretHex
+        val baseResponse = try {
             when {
+                method == "GET" && path == "/api/v1/peer/ping" -> {
+                    typedJsonResponse(
+                        200, "OK",
+                        mapOf("ok" to 1L, "serverTimeEpochMillis" to nowMillisProvider(), "configVersion" to settings.configVersion)
+                    )
+                }
                 method == "GET" && path == "/api/v1/peer/sync" -> {
                     typedJsonResponse(200, "OK", buildPeerSyncPayload(settings))
                 }
                 method == "POST" && path == "/api/v1/peer/sync" -> {
                     val incoming = PhoneControllerJson.decode<PeerSyncPayload>(req.body.toString(StandardCharsets.UTF_8))
-                    applyIncomingPeerSync(incoming, settings)
+                    val knownPeer = settings.peerTvs.firstOrNull { it.deviceId == senderPeerId }
+                        ?: settings.peerTvs.firstOrNull { it.deviceId == incoming.originDeviceId }
+                    applyIncomingPeerSync(incoming, settings, authenticatedPeer = knownPeer)
                     val refreshed = settingsRepository.appSettingsFlow.first()
                     typedJsonResponse(200, "OK", mapOf("configVersion" to refreshed.configVersion))
                 }
@@ -798,6 +1008,22 @@ class SalatSignLocalServer(
                     val msg = PhoneControllerJson.decode<PeerNoticeMessage>(req.body.toString(StandardCharsets.UTF_8))
                     applyIncomingPeerNotice(msg)
                     typedJsonResponse(200, "OK", LogoutResponse(loggedOut = false))
+                }
+                method == "POST" && path == "/api/v1/peer/rotate" -> {
+                    val rot = PhoneControllerJson.decode<PeerSecretRotateRequest>(req.body.toString(StandardCharsets.UTF_8))
+                    val newSecret = rot.newGroupSecretHex.trim()
+                    if (newSecret.length != 64 || !newSecret.all { it.isDigit() || it.lowercaseChar() in 'a'..'f' }) {
+                        errorResponse(400, "Bad Request", "invalid_secret", "Invalid rotated group secret")
+                    } else {
+                        settingsRepository.setGroupSecretHex(newSecret)
+                        if (rot.peers.isNotEmpty()) {
+                            settingsRepository.setPeerTvs(rot.peers.filterNot { it.deviceId == selfId || it.deviceId == rot.removedDeviceId })
+                        } else if (rot.removedDeviceId.isNotBlank()) {
+                            settingsRepository.setPeerTvs(settings.peerTvs.filterNot { it.deviceId == rot.removedDeviceId })
+                        }
+                        peerHealthById.remove(rot.removedDeviceId)
+                        typedJsonResponse(200, "OK", LogoutResponse(loggedOut = false))
+                    }
                 }
                 method == "GET" && path.startsWith("/api/v1/peer/asset/") -> {
                     handleServePeerAsset(path.removePrefix("/api/v1/peer/asset/"))
@@ -807,9 +1033,37 @@ class SalatSignLocalServer(
         } catch (_: IllegalArgumentException) {
             errorResponse(400, "Bad Request", "invalid_json", "Malformed peer JSON payload")
         }
+        return signPeerResponse(baseResponse, secretForSigningResponse, selfId, requestNonce)
     }
 
-    private suspend fun applyIncomingPeerSync(incoming: PeerSyncPayload, current: AppSettings) {
+    private fun signPeerResponse(
+        response: HttpResponse,
+        groupSecretHex: String,
+        selfDeviceId: String,
+        requestNonce: String
+    ): HttpResponse {
+        if (groupSecretHex.isBlank() || requestNonce.isBlank()) return response
+        val respTs = nowMillisProvider()
+        val respSig = PeerHmacAuth.computeResponseSignature(
+            groupSecretHex = groupSecretHex,
+            responderDeviceId = selfDeviceId,
+            requestNonce = requestNonce,
+            responseTimestampMillis = respTs,
+            responseBody = response.body
+        )
+        return response.copy(
+            extraHeaders = response.extraHeaders + mapOf(
+                PeerHmacAuth.HEADER_RESP_TIMESTAMP to respTs.toString(),
+                PeerHmacAuth.HEADER_RESP_SIGNATURE to respSig
+            )
+        )
+    }
+
+    internal suspend fun applyIncomingPeerSync(
+        incoming: PeerSyncPayload,
+        current: AppSettings,
+        authenticatedPeer: PeerTvRecord? = null
+    ) {
         val selfId = settingsRepository.ensureDeviceId()
 
         // 1. Always merge paired devices with revocation-wins tombstones (D24)
@@ -849,7 +1103,12 @@ class SalatSignLocalServer(
         )
         applySettingsPatch(safeGroupPatch, current, bumpVersion = false)
 
-        // Replace slides and fetch any missing slide images from origin TV
+        // Review 4 H3: Sanitize every imageFile, download only from authenticated known peer,
+        // verify canonical path + SHA-256 + image bytes, and track missing assets for M4 retry.
+        val sourcePeer = authenticatedPeer
+            ?: current.peerTvs.firstOrNull { it.deviceId == incoming.originDeviceId }
+        var allAssetsPresent = true
+
         val mappedSlides = incoming.slides.mapIndexed { idx, dto ->
             val slideType = runCatching { SlideType.valueOf(dto.type.uppercase(Locale.ROOT)) }.getOrDefault(SlideType.TEXT)
             val parsedLines = parseSlideLineDtos(dto.lines)
@@ -857,21 +1116,18 @@ class SalatSignLocalServer(
             val align = runCatching { SlideTextAlign.valueOf(dto.textAlign.uppercase(Locale.ROOT)) }.getOrNull()
                 ?: parsedLines.firstOrNull()?.align
                 ?: SlideTextAlign.CENTER
+            val safeImageFile = dto.imageFile?.takeIf { PeerAssetValidator.isSafeFileName(it) }
             val targetSlideDir = slideImagesDir
-            val imageFileName = dto.imageFile
-            if (slideType == SlideType.IMAGE && !imageFileName.isNullOrBlank() && targetSlideDir != null && incoming.originHost.isNotBlank()) {
-                val localFile = File(targetSlideDir, imageFileName)
-                if (!localFile.exists()) {
-                    val bytes = peerSyncClient.downloadPeerAsset(
-                        incoming.originHost, incoming.originPort, "slide", imageFileName, current.groupSecretHex, selfId
-                    )
-                    if (bytes != null && bytes.isNotEmpty()) {
-                        runCatching {
-                            targetSlideDir.mkdirs()
-                            localFile.writeBytes(bytes)
-                        }
-                    }
-                }
+            if (slideType == SlideType.IMAGE && safeImageFile != null && targetSlideDir != null) {
+                val ok = ensureLocalSlideAsset(
+                    targetSlideDir = targetSlideDir,
+                    fileName = safeImageFile,
+                    expectedSha256 = dto.imageSha256,
+                    sourcePeer = sourcePeer,
+                    groupSecretHex = current.groupSecretHex,
+                    selfId = selfId
+                )
+                if (!ok) allAssetsPresent = false
             }
             AnnouncementSlide(
                 id = dto.id.trim().ifEmpty { "slide_${UUID.randomUUID()}" },
@@ -879,7 +1135,7 @@ class SalatSignLocalServer(
                 title = dto.title.trim(),
                 body = if (slideType == SlideType.TEXT) textBody else dto.body,
                 lines = if (slideType == SlideType.TEXT) parsedLines else emptyList(),
-                imageFile = dto.imageFile,
+                imageFile = if (slideType == SlideType.IMAGE) safeImageFile else null,
                 durationSeconds = dto.durationSeconds.coerceIn(3, 120),
                 enabled = dto.enabled,
                 textAlign = align,
@@ -888,18 +1144,115 @@ class SalatSignLocalServer(
         }
         val rev = contentRepository.slidesFlow.value.revision
         contentRepository.replaceAll(rev, mappedSlides)
-        settingsRepository.setConfigVersion(incoming.configVersion)
+        // Review 4 M4: Only mark configVersion caught up if all image assets succeeded
+        if (allAssetsPresent) {
+            settingsRepository.setConfigVersion(incoming.configVersion)
+        }
+    }
+
+    private suspend fun ensureLocalSlideAsset(
+        targetSlideDir: File,
+        fileName: String,
+        expectedSha256: String?,
+        sourcePeer: PeerTvRecord?,
+        groupSecretHex: String,
+        selfId: String
+    ): Boolean {
+        if (!PeerAssetValidator.isSafeFileName(fileName)) return false
+        targetSlideDir.mkdirs()
+        val localFile = File(targetSlideDir, fileName)
+        val canonicalDir = targetSlideDir.canonicalPath + File.separator
+        if (!localFile.canonicalPath.startsWith(canonicalDir)) return false
+        if (localFile.exists() && localFile.isFile) return true
+        if (sourcePeer == null || groupSecretHex.isBlank()) return false
+
+        val bytes = peerSyncClient.downloadPeerAsset(
+            peer = sourcePeer,
+            kind = "slide",
+            fileName = fileName,
+            groupSecretHex = groupSecretHex,
+            selfDeviceId = selfId,
+            expectedSha256 = expectedSha256
+        ) ?: return false
+        if (bytes.isEmpty() || !isLikelyValidImageBytes(bytes)) return false
+        return runCatching {
+            localFile.writeBytes(bytes)
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun isLikelyValidImageBytes(bytes: ByteArray): Boolean {
+        if (bytes.size < 12) return false
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        val isPng = bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() &&
+            bytes[2] == 0x4E.toByte() && bytes[3] == 0x47.toByte()
+        // JPEG: FF D8 FF
+        val isJpeg = bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() && bytes[2] == 0xFF.toByte()
+        // WEBP: RIFF....WEBP
+        val isWebp = bytes[0] == 'R'.code.toByte() && bytes[1] == 'I'.code.toByte() &&
+            bytes[2] == 'F'.code.toByte() && bytes[3] == 'F'.code.toByte() &&
+            bytes[8] == 'W'.code.toByte() && bytes[9] == 'E'.code.toByte() &&
+            bytes[10] == 'B'.code.toByte() && bytes[11] == 'P'.code.toByte()
+        return isPng || isJpeg || isWebp
     }
 
     suspend fun pullNewerConfigFromPeers() {
         val settings = settingsRepository.appSettingsFlow.first()
         if (settings.groupSecretHex.isBlank() || settings.peerTvs.isEmpty()) return
         val selfId = settingsRepository.ensureDeviceId()
+        val targetSlideDir = slideImagesDir
+
         for (peer in settings.peerTvs) {
             if (peer.deviceId == selfId) continue
-            val pulled = peerSyncClient.pullConfigFromPeer(peer, settings.groupSecretHex, selfId).getOrNull() ?: continue
+            val now = nowMillisProvider()
+            val pulled = peerSyncClient.pullConfigFromPeer(peer, settings.groupSecretHex, selfId).getOrNull()
+            if (pulled == null) {
+                peerHealthById[peer.deviceId] = PeerHealthDto(
+                    deviceId = peer.deviceId,
+                    reachable = false,
+                    configVersion = peerHealthById[peer.deviceId]?.configVersion,
+                    inSync = false,
+                    clockSkewSeconds = null,
+                    checkedAtEpochMillis = now
+                )
+                continue
+            }
             val latestLocal = settingsRepository.appSettingsFlow.first()
-            applyIncomingPeerSync(pulled, latestLocal)
+            applyIncomingPeerSync(pulled, latestLocal, authenticatedPeer = peer)
+
+            // Review 4 M4: Retry any missing local image assets even if configVersion already matched
+            if (targetSlideDir != null) {
+                val slides = contentRepository.slidesFlow.value.slides
+                val shaByFile = pulled.slides.mapNotNull { s ->
+                    s.imageFile?.let { it to s.imageSha256 }
+                }.toMap()
+                for (slide in slides) {
+                    val fileName = slide.imageFile
+                    if (slide.type == SlideType.IMAGE && fileName != null && PeerAssetValidator.isSafeFileName(fileName)) {
+                        ensureLocalSlideAsset(
+                            targetSlideDir = targetSlideDir,
+                            fileName = fileName,
+                            expectedSha256 = shaByFile[fileName],
+                            sourcePeer = peer,
+                            groupSecretHex = latestLocal.groupSecretHex,
+                            selfId = selfId
+                        )
+                    }
+                }
+            }
+
+            val afterSync = settingsRepository.appSettingsFlow.first()
+            val skewSeconds = if (pulled.serverTimeEpochMillis > 0L) {
+                (pulled.serverTimeEpochMillis - nowMillisProvider()) / 1000L
+            } else null
+            peerHealthById[peer.deviceId] = PeerHealthDto(
+                deviceId = peer.deviceId,
+                reachable = true,
+                configVersion = pulled.configVersion,
+                inSync = pulled.configVersion == afterSync.configVersion,
+                clockSkewSeconds = skewSeconds,
+                checkedAtEpochMillis = nowMillisProvider()
+            )
         }
     }
 
@@ -908,7 +1261,7 @@ class SalatSignLocalServer(
         if (parts.size != 2) return errorResponse(404, "Not Found", "not_found", "Asset not found")
         val kind = parts[0]
         val fileName = parts[1]
-        if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\') || fileName.contains("..")) {
+        if (!PeerAssetValidator.isSafeFileName(fileName)) {
             return errorResponse(400, "Bad Request", "invalid_file", "Invalid asset filename")
         }
         val dir = when (kind) {
@@ -920,6 +1273,9 @@ class SalatSignLocalServer(
         val canonicalDir = dir.canonicalPath + File.separator
         if (!target.canonicalPath.startsWith(canonicalDir) || !target.exists() || !target.isFile) {
             return errorResponse(404, "Not Found", "not_found", "Asset not found")
+        }
+        if (target.length() > PeerAssetValidator.MAX_PEER_ASSET_BYTES) {
+            return errorResponse(413, "Payload Too Large", "asset_too_large", "Asset exceeds size limit")
         }
         return HttpResponse(200, "OK", "application/octet-stream", target.readBytes())
     }
@@ -1279,20 +1635,30 @@ class SalatSignLocalServer(
         )
     }
 
-    private fun slideToDto(slide: AnnouncementSlide): SlideDto = SlideDto(
-        id = slide.id,
-        type = slide.type.name,
-        title = slide.title,
-        body = slide.body,
-        lines = slide.effectiveLines().map { line ->
-            SlideLineDto(text = line.text, align = line.align.name, fontSize = line.fontSize.name)
-        },
-        imageFile = slide.imageFile,
-        durationSeconds = slide.durationSeconds,
-        enabled = slide.enabled,
-        textAlign = slide.textAlign.name,
-        sortOrder = slide.sortOrder
-    )
+    private fun slideToDto(slide: AnnouncementSlide): SlideDto {
+        val sha256 = slide.imageFile?.takeIf { PeerAssetValidator.isSafeFileName(it) }?.let { fileName ->
+            val dir = slideImagesDir ?: return@let null
+            val f = File(dir, fileName)
+            if (f.exists() && f.isFile && f.length() <= PeerAssetValidator.MAX_PEER_ASSET_BYTES) {
+                runCatching { PeerAssetValidator.sha256Hex(f.readBytes()) }.getOrNull()
+            } else null
+        }
+        return SlideDto(
+            id = slide.id,
+            type = slide.type.name,
+            title = slide.title,
+            body = slide.body,
+            lines = slide.effectiveLines().map { line ->
+                SlideLineDto(text = line.text, align = line.align.name, fontSize = line.fontSize.name)
+            },
+            imageFile = slide.imageFile,
+            imageSha256 = sha256,
+            durationSeconds = slide.durationSeconds,
+            enabled = slide.enabled,
+            textAlign = slide.textAlign.name,
+            sortOrder = slide.sortOrder
+        )
+    }
 
     private suspend fun handleGetFullConfig(): HttpResponse {
         val deviceId = settingsRepository.ensureDeviceId()
@@ -1341,13 +1707,17 @@ class SalatSignLocalServer(
                 val align = runCatching { SlideTextAlign.valueOf(dto.textAlign.uppercase(Locale.ROOT)) }.getOrNull()
                     ?: parsedLines.firstOrNull()?.align
                     ?: SlideTextAlign.CENTER
+                val safeImageFile = dto.imageFile?.trim()?.takeIf { it.isNotEmpty() }
+                if (safeImageFile != null && !PeerAssetValidator.isSafeFileName(safeImageFile)) {
+                    return errorResponse(400, "Bad Request", "invalid_image_file", "Invalid slide image filename")
+                }
                 AnnouncementSlide(
                     id = dto.id.trim().ifEmpty { "slide_${UUID.randomUUID()}" },
                     type = slideType,
                     title = dto.title.trim(),
                     body = if (slideType == SlideType.TEXT) textBody else dto.body,
                     lines = if (slideType == SlideType.TEXT) parsedLines else emptyList(),
-                    imageFile = dto.imageFile,
+                    imageFile = if (slideType == SlideType.IMAGE) safeImageFile else null,
                     durationSeconds = dto.durationSeconds.coerceIn(3, 120),
                     enabled = dto.enabled,
                     textAlign = align,
@@ -2072,11 +2442,15 @@ class SalatSignLocalServer(
             append("Content-Type: ${response.contentType}\r\n")
             append("Content-Length: ${response.body.size}\r\n")
             response.etag?.let { append("ETag: $it\r\n") }
+            for ((k, v) in response.extraHeaders) {
+                append("$k: $v\r\n")
+            }
             append("Cache-Control: no-store\r\n")
             append("X-Content-Type-Options: nosniff\r\n")
             append("X-Frame-Options: DENY\r\n")
             append("Referrer-Policy: no-referrer\r\n")
-            append("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n")
+            // Review 4 L1: Strict CSP with zero 'unsafe-inline' (JS/CSS served from /app.js and /app.css)
+            append("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'\r\n")
             append("Connection: close\r\n")
             append("\r\n")
         }

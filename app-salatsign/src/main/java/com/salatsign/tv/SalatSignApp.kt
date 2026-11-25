@@ -78,6 +78,11 @@ class SalatSignApp : Application() {
             webAssetProvider = {
                 assets.open("phone_controller/index.html").use { it.readBytes() }
             },
+            staticAssetProvider = { assetName ->
+                runCatching {
+                    assets.open("phone_controller/$assetName").use { it.readBytes() }
+                }.getOrNull()
+            },
             slideImagesDir = slideImagesDir,
             logoImagesDir = logoImagesDir,
             onDevicePaired = { record ->
@@ -114,22 +119,16 @@ class SalatSignApp : Application() {
                         deviceName = s.deviceName,
                         roomGroup = s.roomGroup
                     )
-                    // Phase 3a: Keep peer IP addresses refreshed via mDNS discovery
+                    // Phase 3a + Review 4 H2: Verify mDNS peer address changes via signed challenge before adopting
                     nsdHelper.startPeerDiscovery(deviceId) { peerId, peerName, peerGroup, peerHost, peerPort ->
                         CoroutineScope(Dispatchers.IO).launch {
-                            val currentPeers = settingsRepository.appSettingsFlow.first().peerTvs
-                            if (currentPeers.any { it.deviceId == peerId }) {
-                                settingsRepository.upsertPeerTv(
-                                    com.salatsign.tv.security.PeerTvRecord(
-                                        deviceId = peerId,
-                                        deviceName = peerName,
-                                        roomGroup = peerGroup,
-                                        lastKnownHost = peerHost,
-                                        port = peerPort,
-                                        lastSeenEpochMillis = System.currentTimeMillis()
-                                    )
-                                )
-                            }
+                            localServer.verifyAndUpdatePeerAddress(
+                                peerId = peerId,
+                                peerName = peerName,
+                                peerGroup = peerGroup,
+                                candidateHost = peerHost,
+                                candidatePort = peerPort
+                            )
                         }
                     }
                     // Phase 3b: Offline catch-up on startup
@@ -144,6 +143,11 @@ class SalatSignApp : Application() {
                             _phoneControllerUrl.value = "http://$ip:${localServer.port}"
                             break
                         }
+                    }
+                    // Review 4 M4: Periodic background sync check & missing-asset retry every 5 minutes
+                    while (isActive) {
+                        delay(5 * 60_000L)
+                        runCatching { localServer.pullNewerConfigFromPeers() }
                     }
                 }
             }
