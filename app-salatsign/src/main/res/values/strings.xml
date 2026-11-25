@@ -81,7 +81,7 @@
     <string name="settings_text_slide_qr">QR Code</string>
     <string name="settings_text_slide_body_placeholder">Type your announcement message here…</string>
     <string name="settings_text_slide_body_hint">Press OK to type • Use Enter, + New Line, • Bullet, or 1. Number for list rows • Press Back when done</string>
-    <string name="settings_text_slide_new_line">+ New Line</string>
+    <string name="settings_text_slide_new_line">Row</string>
     <string name="settings_text_slide_bullet">• Bullet</string>
     <string name="settings_text_slide_numbered">1. Number</string>
     <string name="settings_text_slide_align_label">Text Alignment</string>

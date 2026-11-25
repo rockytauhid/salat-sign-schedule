@@ -21,6 +21,7 @@
   button { width: 100%; margin-top: 12px; padding: 11px 14px; border: 0; border-radius: 10px; background: var(--emerald); color: #052014; font-weight: 700; font-size: 0.93rem; cursor: pointer; }
   button.secondary { background: #1c3f30; color: var(--text); }
   button.sm { width: auto; margin-top: 0; padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
   button.danger { background: var(--danger); color: #fff; }
   button.danger-full { background: var(--danger); color: #fff; width: 100%; margin-top: 10px; }
   button.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }

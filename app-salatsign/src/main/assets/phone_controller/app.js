@@ -451,9 +451,34 @@ const SIZE_CLASS = { SMALL: 'row-sz-sm', MEDIUM: 'row-sz-md', LARGE: 'row-sz-lg'
 const SIZE_TITLE = { SMALL: 'Size: Small (tap to cycle)', MEDIUM: 'Size: Medium (tap to cycle)', LARGE: 'Size: Large (tap to cycle)' };
 const TRASH_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 3v8h2v-8H9zm4 0v8h2v-8h-2zM9 4l1-1h4l1 1h4v2H5V4h4z"/></svg>';
 
-function renderTextRows() {
+function rowWeight(row) {
+  if (!/^\s*qrc:/i.test(row.text || '')) return 1;
+  const sz = row.fontSize || 'MEDIUM';
+  if (sz === 'SMALL') return 3;
+  if (sz === 'LARGE') return 5;
+  return 4;
+}
+function usedTextRows() {
+  return textRows.reduce((acc, r) => acc + rowWeight(r), 0);
+}
+function updateTextRowToolbar() {
+  const used = usedTextRows();
+  const rem = Math.max(0, 10 - used);
+  const lastBlank = textRows.length > 0 && !(textRows[textRows.length - 1].text || '').trim();
   const lbl = document.getElementById('textRowsLabel');
-  if (lbl) lbl.textContent = 'Message (' + textRows.length + ' out of 10 rows)';
+  if (lbl) lbl.textContent = 'Message (' + used + ' out of 10 rows)';
+  const rowBtn = document.querySelector('[data-evt-click="12"]');
+  const bulBtn = document.querySelector('[data-evt-click="13"]');
+  const numBtn = document.querySelector('[data-evt-click="14"]');
+  const qrBtn = document.querySelector('[data-evt-click="42"]');
+  if (rowBtn) rowBtn.disabled = rem < 1;
+  if (bulBtn) bulBtn.disabled = rem < 1 && !lastBlank;
+  if (numBtn) numBtn.disabled = rem < 1 && !lastBlank;
+  if (qrBtn) qrBtn.disabled = (rem + (lastBlank ? 1 : 0)) < 3;
+}
+
+function renderTextRows() {
+  updateTextRowToolbar();
   const c = document.getElementById('textRowsContainer');
   if (!c) return;
   c.innerHTML = '';
@@ -473,6 +498,7 @@ function renderTextRows() {
       textRows[idx].text = e.target.value;
       const nowQr = /^\s*qrc:/i.test(e.target.value || '');
       inp.classList.toggle('qr-row-input', nowQr);
+      updateTextRowToolbar();
     };
 
     const alignBtn = document.createElement('button');
@@ -493,8 +519,15 @@ function renderTextRows() {
     sizeBtn.textContent = 'Aa';
     sizeBtn.title = SIZE_TITLE[sizeVal];
     sizeBtn.onclick = () => {
-      const next = SIZE_CYCLE[(SIZE_CYCLE.indexOf(sizeVal) + 1) % SIZE_CYCLE.length];
-      textRows[idx].fontSize = next;
+      const rem = Math.max(0, 10 - usedTextRows());
+      const curW = rowWeight(textRows[idx]);
+      let chosen = sizeVal;
+      for (let step = 1; step <= SIZE_CYCLE.length; step++) {
+        const cand = SIZE_CYCLE[(SIZE_CYCLE.indexOf(sizeVal) + step) % SIZE_CYCLE.length];
+        const candW = isQr ? (cand === 'SMALL' ? 3 : cand === 'LARGE' ? 5 : 4) : 1;
+        if (candW - curW <= rem) { chosen = cand; break; }
+      }
+      textRows[idx].fontSize = chosen;
       renderTextRows();
     };
 
@@ -518,12 +551,27 @@ function renderTextRows() {
 
 function addTextRow(prefix, align) {
   const targetAlign = align || (textRows.length ? textRows[textRows.length - 1].align : 'CENTER');
-  if (prefix && textRows.length && !textRows[textRows.length - 1].text.trim()) {
+  const isQr = /^\s*qrc:/i.test(prefix || '');
+  const rem = Math.max(0, 10 - usedTextRows());
+  const lastBlank = textRows.length > 0 && !(textRows[textRows.length - 1].text || '').trim();
+  const avail = rem + (lastBlank ? 1 : 0);
+  if (isQr) {
+    if (avail < 3) return;
+    const qrSize = avail >= 4 ? 'MEDIUM' : 'SMALL';
+    if (lastBlank) {
+      textRows[textRows.length - 1] = { text: prefix, align: targetAlign, fontSize: qrSize };
+    } else {
+      textRows.push({ text: prefix, align: targetAlign, fontSize: qrSize });
+    }
+    renderTextRows();
+    return;
+  }
+  if (prefix && lastBlank) {
     textRows[textRows.length - 1] = { text: prefix, align: targetAlign, fontSize: textRows[textRows.length - 1].fontSize || 'MEDIUM' };
     renderTextRows();
     return;
   }
-  if (textRows.length >= 10) return;
+  if (rem < 1) return;
   textRows.push({ text: prefix || '', align: targetAlign, fontSize: 'MEDIUM' });
   renderTextRows();
 }

@@ -72,16 +72,42 @@ import com.salatsign.tv.ui.theme.TvTypography
 const val MAX_TEXT_SLIDE_LINES = 10
 private const val MAX_LINE_CHARS = 100
 
+private fun isQrLine(text: String): Boolean = text.trimStart().startsWith("qrc:", ignoreCase = true)
+
+private fun rowWeight(line: SlideTextLine): Int {
+    if (!isQrLine(line.text)) return 1
+    return when (line.fontSize) {
+        SlideFontSize.SMALL -> 3
+        SlideFontSize.MEDIUM -> 4
+        SlideFontSize.LARGE -> 5
+    }
+}
+
 private fun nextAlignment(current: SlideTextAlign): SlideTextAlign = when (current) {
     SlideTextAlign.CENTER -> SlideTextAlign.LEFT
     SlideTextAlign.LEFT -> SlideTextAlign.RIGHT
     SlideTextAlign.RIGHT -> SlideTextAlign.CENTER
 }
 
-private fun nextFontSize(current: SlideFontSize): SlideFontSize = when (current) {
-    SlideFontSize.MEDIUM -> SlideFontSize.LARGE
-    SlideFontSize.LARGE -> SlideFontSize.SMALL
-    SlideFontSize.SMALL -> SlideFontSize.MEDIUM
+private fun nextFontSize(current: SlideFontSize, isQr: Boolean = false, extraRowsAvailable: Int = 10): SlideFontSize {
+    val order = listOf(SlideFontSize.MEDIUM, SlideFontSize.LARGE, SlideFontSize.SMALL)
+    val startIdx = order.indexOf(current).coerceAtLeast(0)
+    if (!isQr) return order[(startIdx + 1) % order.size]
+    val currentWeight = when (current) {
+        SlideFontSize.SMALL -> 3
+        SlideFontSize.MEDIUM -> 4
+        SlideFontSize.LARGE -> 5
+    }
+    for (step in 1..order.size) {
+        val candidate = order[(startIdx + step) % order.size]
+        val candWeight = when (candidate) {
+            SlideFontSize.SMALL -> 3
+            SlideFontSize.MEDIUM -> 4
+            SlideFontSize.LARGE -> 5
+        }
+        if (candWeight - currentWeight <= extraRowsAvailable) return candidate
+    }
+    return current
 }
 
 @Composable
@@ -120,7 +146,13 @@ fun AddTextSlideDialog(
         runCatching { titleFocusRequester.requestFocus() }
     }
 
-    val canAddRow = lines.size < MAX_TEXT_SLIDE_LINES
+    val usedRows = lines.sumOf { rowWeight(it) }
+    val remainingRows = (MAX_TEXT_SLIDE_LINES - usedRows).coerceAtLeast(0)
+    val lastIsBlankText = lines.lastOrNull()?.let { it.text.isBlank() && !isQrLine(it.text) } == true
+    val canAddRow = remainingRows >= 1
+    val canAddBulletOrNum = remainingRows >= 1 || lastIsBlankText
+    val rowsAvailableForQr = remainingRows + if (lastIsBlankText) 1 else 0
+    val canAddQr = rowsAvailableForQr >= 3
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -220,7 +252,7 @@ fun AddTextSlideDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(AppR.string.settings_text_slide_body_label, lines.size, MAX_TEXT_SLIDE_LINES),
+                            text = stringResource(AppR.string.settings_text_slide_body_label, usedRows, MAX_TEXT_SLIDE_LINES),
                             style = TvTypography.CardTitle.copy(fontSize = 16.sp, color = colorScheme.secondary)
                         )
 
@@ -265,14 +297,14 @@ fun AddTextSlideDialog(
                             Surface(
                                 onClick = {
                                     onUserInteraction()
-                                    if (lines.lastOrNull()?.text?.isBlank() == true) {
+                                    if (lastIsBlankText) {
                                         lines = lines.dropLast(1) + SlideTextLine("• ", SlideTextAlign.LEFT)
                                     } else if (canAddRow) {
                                         lines = lines + SlideTextLine("• ", SlideTextAlign.LEFT)
                                     }
                                     if (validationError) validationError = false
                                 },
-                                enabled = canAddRow || lines.lastOrNull()?.text?.isBlank() == true,
+                                enabled = canAddBulletOrNum,
                                 shape = ClickableSurfaceDefaults.shape(toolBtnShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
@@ -286,12 +318,16 @@ fun AddTextSlideDialog(
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
                                         contentDescription = null,
-                                        tint = colorScheme.primary,
+                                        tint = if (canAddBulletOrNum) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Text(
                                         text = stringResource(AppR.string.settings_text_slide_bullet),
-                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (canAddBulletOrNum) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.4f)
+                                        )
                                     )
                                 }
                             }
@@ -302,14 +338,14 @@ fun AddTextSlideDialog(
                                     val rx = Regex("""^\s*(\d+)\.""")
                                     val nextNum = lines.mapNotNull { rx.find(it.text)?.groupValues?.get(1)?.toIntOrNull() }
                                         .maxOrNull()?.plus(1) ?: 1
-                                    if (lines.lastOrNull()?.text?.isBlank() == true) {
+                                    if (lastIsBlankText) {
                                         lines = lines.dropLast(1) + SlideTextLine("$nextNum. ", SlideTextAlign.LEFT)
                                     } else if (canAddRow) {
                                         lines = lines + SlideTextLine("$nextNum. ", SlideTextAlign.LEFT)
                                     }
                                     if (validationError) validationError = false
                                 },
-                                enabled = canAddRow || lines.lastOrNull()?.text?.isBlank() == true,
+                                enabled = canAddBulletOrNum,
                                 shape = ClickableSurfaceDefaults.shape(toolBtnShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
@@ -323,12 +359,16 @@ fun AddTextSlideDialog(
                                     Icon(
                                         imageVector = Icons.Default.FormatListNumbered,
                                         contentDescription = null,
-                                        tint = colorScheme.primary,
+                                        tint = if (canAddBulletOrNum) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Text(
                                         text = stringResource(AppR.string.settings_text_slide_numbered),
-                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (canAddBulletOrNum) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.4f)
+                                        )
                                     )
                                 }
                             }
@@ -336,14 +376,15 @@ fun AddTextSlideDialog(
                             Surface(
                                 onClick = {
                                     onUserInteraction()
-                                    if (lines.lastOrNull()?.text?.isBlank() == true) {
-                                        lines = lines.dropLast(1) + SlideTextLine("qrc:", SlideTextAlign.CENTER)
-                                    } else if (canAddRow) {
-                                        lines = lines + SlideTextLine("qrc:", SlideTextAlign.CENTER)
+                                    val qrSize = if (rowsAvailableForQr >= 4) SlideFontSize.MEDIUM else SlideFontSize.SMALL
+                                    if (lastIsBlankText && canAddQr) {
+                                        lines = lines.dropLast(1) + SlideTextLine("qrc:", SlideTextAlign.CENTER, qrSize)
+                                    } else if (canAddQr) {
+                                        lines = lines + SlideTextLine("qrc:", SlideTextAlign.CENTER, qrSize)
                                     }
                                     if (validationError) validationError = false
                                 },
-                                enabled = canAddRow || lines.lastOrNull()?.text?.isBlank() == true,
+                                enabled = canAddQr,
                                 shape = ClickableSurfaceDefaults.shape(toolBtnShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
@@ -357,12 +398,16 @@ fun AddTextSlideDialog(
                                     Icon(
                                         imageVector = Icons.Default.QrCode2,
                                         contentDescription = null,
-                                        tint = colorScheme.primary,
+                                        tint = if (canAddQr) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.4f),
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Text(
                                         text = stringResource(AppR.string.settings_text_slide_qr),
-                                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+                                        style = TvTypography.BodyLabel.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (canAddQr) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.4f)
+                                        )
                                     )
                                 }
                             }
@@ -448,7 +493,15 @@ fun AddTextSlideDialog(
                                 onClick = {
                                     onUserInteraction()
                                     lines = lines.mapIndexed { i, item ->
-                                        if (i == idx) item.copy(fontSize = nextFontSize(item.fontSize)) else item
+                                        if (i == idx) {
+                                            item.copy(
+                                                fontSize = nextFontSize(
+                                                    current = item.fontSize,
+                                                    isQr = isQrRow,
+                                                    extraRowsAvailable = remainingRows
+                                                )
+                                            )
+                                        } else item
                                     }
                                 },
                                 shape = ClickableSurfaceDefaults.shape(rowBtnShape),

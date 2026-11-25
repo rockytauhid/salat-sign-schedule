@@ -79,7 +79,7 @@
     <string name="settings_text_slide_qr">Kode QR</string>
     <string name="settings_text_slide_body_placeholder">Ketik pesan pengumuman Anda di sini…</string>
     <string name="settings_text_slide_body_hint">Tekan OK untuk mengetik • Gunakan Enter, + Baris Baru, • Poin, atau 1. Nomor • Tekan Kembali jika selesai</string>
-    <string name="settings_text_slide_new_line">+ Baris Baru</string>
+    <string name="settings_text_slide_new_line">Baris</string>
     <string name="settings_text_slide_bullet">• Poin</string>
     <string name="settings_text_slide_numbered">1. Nomor</string>
     <string name="settings_text_slide_align_label">Perataan Teks</string>
