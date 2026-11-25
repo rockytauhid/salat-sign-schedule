@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,7 +24,9 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.salatsign.core.tv.R as CoreR
 import com.salatsign.tv.data.model.Prayer
@@ -252,6 +255,15 @@ private fun SalatSignMainContent(
     val isPhoneControllerRunning by settingsViewModel.isPhoneControllerRunning.collectAsState()
     val phoneControllerUrl by settingsViewModel.phoneControllerUrl.collectAsState()
     val view = LocalView.current
+    val app = view.context.applicationContext as? SalatSignApp
+    val pairedDeviceNotice by (app?.lastPairedDeviceNotice?.collectAsState() ?: remember { mutableStateOf(null) })
+
+    LaunchedEffect(pairedDeviceNotice) {
+        if (pairedDeviceNotice != null) {
+            delay(6_000L)
+            app?.clearPairedDeviceNotice()
+        }
+    }
 
     // Always keep screen awake for Mosque Digital Signage
     DisposableEffect(Unit) {
@@ -347,6 +359,11 @@ private fun SalatSignMainContent(
                 isPhoneControllerRunning = isPhoneControllerRunning,
                 phoneControllerUrl = phoneControllerUrl,
                 onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },
+                onGeneratePairingCode = { role -> settingsViewModel.generatePairingCode(role) },
+                onCancelPairingCode = { settingsViewModel.cancelPairingCode() },
+                onRevokePairedDevice = { settingsViewModel.revokePairedDevice(it) },
+                onSetLanPinLoginEnabled = { settingsViewModel.setLanPinLoginEnabled(it) },
+                onSetPairedTokenExpiryDays = { settingsViewModel.setPairedTokenExpiryDays(it) },
                 onRestartSetupWizard = {
                     onCloseSettings()
                     settingsViewModel.restartSetupWizard()
@@ -384,5 +401,33 @@ private fun SalatSignMainContent(
             },
             onDismiss = onClosePinDialog
         )
+    }
+
+    // Brief on-TV confirmation banner whenever a new phone/browser pairs
+    pairedDeviceNotice?.let { device ->
+        androidx.compose.foundation.layout.Box(
+            modifier = androidx.compose.ui.Modifier
+                .fillMaxSize()
+                .padding(top = 32.dp),
+            contentAlignment = androidx.compose.ui.Alignment.TopCenter
+        ) {
+            val roleLabel = if (device.role == com.salatsign.tv.security.RemoteRole.MANAGE) {
+                androidx.compose.ui.res.stringResource(R.string.pair_role_manage)
+            } else {
+                androidx.compose.ui.res.stringResource(R.string.pair_role_notify)
+            }
+            androidx.tv.material3.Text(
+                text = androidx.compose.ui.res.stringResource(R.string.pair_tv_notice, device.deviceName, roleLabel),
+                style = com.salatsign.tv.ui.theme.TvTypography.CardTitle.copy(
+                    color = androidx.compose.ui.graphics.Color.White
+                ),
+                modifier = Modifier
+                    .background(
+                        androidx.compose.ui.graphics.Color(0xE6065F46),
+                        androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 24.dp, vertical = 14.dp)
+            )
+        }
     }
 }

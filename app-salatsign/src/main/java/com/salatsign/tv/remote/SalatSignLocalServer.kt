@@ -6,6 +6,7 @@ package com.salatsign.tv.remote
 import android.util.Log
 import com.salatsign.tv.data.api.ApiConstants
 import com.salatsign.tv.data.api.ApiErrorResponse
+import com.salatsign.tv.data.api.AuthMeResponse
 import com.salatsign.tv.data.api.AuthRequest
 import com.salatsign.tv.data.api.AuthResponse
 import com.salatsign.tv.data.api.CreateSlideResponse
@@ -18,6 +19,10 @@ import com.salatsign.tv.data.api.LogoUploadResponse
 import com.salatsign.tv.data.api.LogoutResponse
 import com.salatsign.tv.data.api.ManualSilentResponse
 import com.salatsign.tv.data.api.ManualSilentStartRequest
+import com.salatsign.tv.data.api.PairExchangeRequest
+import com.salatsign.tv.data.api.PairExchangeResponse
+import com.salatsign.tv.data.api.PairedDeviceDto
+import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PatchSlideRequest
 import com.salatsign.tv.data.api.PatchSlideResponse
 import com.salatsign.tv.data.api.PhoneControllerJson
@@ -46,8 +51,12 @@ import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
 import com.salatsign.tv.data.repository.ISettingsRepository
 import com.salatsign.tv.engine.SlideBudget
+import com.salatsign.tv.security.PairRedeemResult
+import com.salatsign.tv.security.PairedDeviceRecord
+import com.salatsign.tv.security.PairingManager
 import com.salatsign.tv.security.PinHasher
 import com.salatsign.tv.security.PinVerifyResult
+import com.salatsign.tv.security.RemoteRole
 import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -135,7 +144,9 @@ class SalatSignLocalServer(
     private val maxConnectionsPerIp: Int = MAX_CONNECTIONS_PER_IP,
     private val headerDeadlineMillis: Long = HEADER_DEADLINE_MILLIS,
     private val jsonBodyDeadlineMillis: Long = JSON_BODY_DEADLINE_MILLIS,
-    private val uploadBodyDeadlineMillis: Long = UPLOAD_BODY_DEADLINE_MILLIS
+    private val uploadBodyDeadlineMillis: Long = UPLOAD_BODY_DEADLINE_MILLIS,
+    val pairingManager: PairingManager = PairingManager(nowMillisProvider),
+    private val onDevicePaired: (PairedDeviceRecord) -> Unit = {}
 ) {
     companion object {
         private const val TAG = "SalatSignLocalServer"
@@ -172,6 +183,18 @@ class SalatSignLocalServer(
     private val activeConnectionsByIp = ConcurrentHashMap<String, Int>()
     private val sessions = ConcurrentHashMap<String, Long>()
     private val authAttemptsByIp = ConcurrentHashMap<String, MutableList<Long>>()
+    private val cachedActivePairedHashes = ConcurrentHashMap.newKeySet<String>()
+    private val lastTouchByDeviceId = ConcurrentHashMap<String, Long>()
+
+    private sealed interface AuthContext {
+        val role: RemoteRole
+        data class Paired(val device: PairedDeviceRecord) : AuthContext {
+            override val role: RemoteRole get() = device.role
+        }
+        data class PinSession(val token: String) : AuthContext {
+            override val role: RemoteRole get() = RemoteRole.MANAGE
+        }
+    }
 
     // Isolated remote lockout state so a LAN client guessing PINs can never lock out the TV's own Settings PIN dialog.
     private var remoteFailedAttempts: Int = 0
@@ -348,6 +371,8 @@ class SalatSignLocalServer(
         if (method == "GET" && path == "/api/v1/status") {
             val deviceId = settingsRepository.ensureDeviceId()
             val settings = settingsRepository.appSettingsFlow.first()
+            syncPairedHashCache(settings)
+            val activePairedCount = settings.pairedDevices.count { !it.isRevoked }
             return typedJsonResponse(
                 200, "OK",
                 StatusResponse(
@@ -359,10 +384,24 @@ class SalatSignLocalServer(
                     deviceId = deviceId,
                     deviceName = settings.deviceName,
                     roomGroup = settings.roomGroup,
-                    configVersion = settings.configVersion
+                    configVersion = settings.configVersion,
+                    pairedDeviceCount = activePairedCount,
+                    lanPinLoginEnabled = settings.lanPinLoginEnabled,
+                    pairingActive = pairingManager.currentActiveCode() != null
                 ),
                 etag = "\"${settings.configVersion}\""
             )
+        }
+
+        if (method == "POST" && path == "/api/v1/pair") {
+            if (req.body.size > MAX_PRE_AUTH_BODY_BYTES) {
+                return errorResponse(413, "Payload Too Large", "payload_too_large", "Request body exceeds limit")
+            }
+            return try {
+                handlePairExchange(req)
+            } catch (_: IllegalArgumentException) {
+                errorResponse(400, "Bad Request", "invalid_json", "Malformed JSON payload")
+            }
         }
 
         if (method == "POST" && path == "/api/v1/auth") {
@@ -376,15 +415,44 @@ class SalatSignLocalServer(
             }
         }
 
-        // All remaining /api/v1/* endpoints require valid bearer token
-        val bearerToken = extractValidBearerToken(req.headers)
-            ?: return errorResponse(401, "Unauthorized", "unauthorized", "Valid admin session required")
+        // All remaining /api/v1/* endpoints require a valid paired device token or active PIN session
+        val currentSettings = settingsRepository.appSettingsFlow.first()
+        syncPairedHashCache(currentSettings)
+        val authCtx = authenticateRequest(req.headers, currentSettings)
+            ?: return errorResponse(401, "Unauthorized", "unauthorized", "Valid paired device or admin session required")
 
         return try {
             when {
+                method == "GET" && path == "/api/v1/auth/me" -> {
+                    when (authCtx) {
+                        is AuthContext.Paired -> typedJsonResponse(
+                            200, "OK",
+                            AuthMeResponse(
+                                authType = "PAIRED",
+                                deviceId = authCtx.device.deviceId,
+                                deviceName = authCtx.device.deviceName,
+                                role = authCtx.role.name
+                            )
+                        )
+                        is AuthContext.PinSession -> typedJsonResponse(
+                            200, "OK",
+                            AuthMeResponse(authType = "PIN_SESSION", role = authCtx.role.name)
+                        )
+                    }
+                }
                 method == "POST" && path == "/api/v1/logout" -> {
-                    sessions.remove(bearerToken)
+                    if (authCtx is AuthContext.PinSession) {
+                        sessions.remove(authCtx.token)
+                    }
                     typedJsonResponse(200, "OK", LogoutResponse(loggedOut = true))
+                }
+                !authCtx.role.hasPermission(RemoteRole.MANAGE) -> {
+                    errorResponse(403, "Forbidden", "insufficient_role", "This device only has Notify permission")
+                }
+                method == "GET" && path == "/api/v1/devices" -> handleGetDevices(currentSettings)
+                method == "DELETE" && path.startsWith("/api/v1/devices/") -> {
+                    val devId = URLDecoder.decode(path.removePrefix("/api/v1/devices/"), "UTF-8")
+                    handleRevokeDevice(devId)
                 }
                 method == "GET" && path == "/api/v1/config" -> handleGetFullConfig()
                 method == "PUT" && path == "/api/v1/config" -> handlePutFullConfig(req)
@@ -434,6 +502,77 @@ class SalatSignLocalServer(
         return null
     }
 
+    private suspend fun handlePairExchange(req: HttpRequest): HttpResponse {
+        val pairReq = PhoneControllerJson.decode<PairExchangeRequest>(req.body.toString(StandardCharsets.UTF_8))
+        return when (val res = pairingManager.redeemCode(pairReq.code, pairReq.deviceName, req.remoteAddress)) {
+            is PairRedeemResult.Success -> {
+                settingsRepository.addPairedDevice(res.record)
+                cachedActivePairedHashes.add(res.record.tokenHash)
+                runCatching { onDevicePaired(res.record) }
+                typedJsonResponse(
+                    200, "OK",
+                    PairExchangeResponse(
+                        deviceId = res.record.deviceId,
+                        deviceName = res.record.deviceName,
+                        role = res.record.role.name,
+                        token = res.rawToken
+                    )
+                )
+            }
+            is PairRedeemResult.NoActivePairing -> {
+                errorResponse(400, "Bad Request", "pairing_inactive", "Open Settings → PIN & Remote → Pair Phone on the TV first.")
+            }
+            is PairRedeemResult.Expired -> {
+                errorResponse(400, "Bad Request", "pairing_expired", "Pairing code expired. Generate a new code on the TV.")
+            }
+            is PairRedeemResult.InvalidCode -> {
+                errorResponse(401, "Unauthorized", "invalid_pairing_code", "Incorrect pairing code.")
+            }
+            is PairRedeemResult.RateLimited -> {
+                typedJsonResponse(
+                    429, "Too Many Requests",
+                    ApiErrorResponse(
+                        error = "rate_limited",
+                        message = "Too many wrong pairing codes from this device. Try again in ${res.remainingSeconds} seconds.",
+                        remainingSeconds = res.remainingSeconds
+                    )
+                )
+            }
+        }
+    }
+
+    private fun handleGetDevices(settings: AppSettings): HttpResponse {
+        val list = settings.pairedDevices.filterNot { it.isRevoked }.map { d ->
+            PairedDeviceDto(
+                deviceId = d.deviceId,
+                deviceName = d.deviceName,
+                role = d.role.name,
+                createdAtEpochMillis = d.createdAtEpochMillis,
+                lastSeenAtEpochMillis = d.lastSeenAtEpochMillis,
+                revoked = d.isRevoked
+            )
+        }
+        return typedJsonResponse(
+            200, "OK",
+            PairedDevicesResponse(
+                devices = list,
+                lanPinLoginEnabled = settings.lanPinLoginEnabled,
+                tokenExpiryDays = settings.pairedTokenExpiryDays
+            )
+        )
+    }
+
+    private suspend fun handleRevokeDevice(deviceId: String): HttpResponse {
+        if (deviceId.isBlank()) {
+            return errorResponse(400, "Bad Request", "missing_id", "Device ID is required")
+        }
+        val now = nowMillisProvider()
+        settingsRepository.revokePairedDevice(deviceId, now)
+        val refreshed = settingsRepository.appSettingsFlow.first()
+        syncPairedHashCache(refreshed)
+        return handleGetDevices(refreshed)
+    }
+
     private suspend fun handleAuth(req: HttpRequest): HttpResponse = authMutex.withLock {
         val now = nowMillisProvider()
         pruneExpiredSessions(now)
@@ -451,6 +590,13 @@ class SalatSignLocalServer(
         attempts.add(now)
 
         val settings = settingsRepository.appSettingsFlow.first()
+        if (!settings.lanPinLoginEnabled) {
+            return errorResponse(
+                403, "Forbidden",
+                "pin_login_disabled",
+                "PIN login over LAN is disabled. Pair your phone from TV Settings → PIN & Remote → Pair Phone."
+            )
+        }
         if (!settings.hasCustomPin) {
             return errorResponse(
                 403, "Forbidden",
@@ -534,16 +680,60 @@ class SalatSignLocalServer(
         }
     }
 
-    private fun extractValidBearerToken(headers: Map<String, String>): String? {
+    private fun syncPairedHashCache(settings: AppSettings) {
+        val now = nowMillisProvider()
+        val activeHashes = settings.pairedDevices
+            .filter { !it.isRevoked && !it.isExpired(now, settings.pairedTokenExpiryDays) }
+            .map { it.tokenHash }
+            .toSet()
+        cachedActivePairedHashes.retainAll(activeHashes)
+        cachedActivePairedHashes.addAll(activeHashes)
+    }
+
+    private fun extractRawBearerToken(headers: Map<String, String>): String? {
         val auth = headers["authorization"] ?: return null
         if (!auth.startsWith("Bearer ", ignoreCase = true)) return null
-        val token = auth.substring(7).trim()
-        val expiry = sessions[token] ?: return null
-        if (nowMillisProvider() > expiry) {
-            sessions.remove(token)
-            return null
+        return auth.substring(7).trim().takeIf { it.isNotEmpty() }
+    }
+
+    private fun isTokenLikelyAuthenticatedForBodyLimit(headers: Map<String, String>): Boolean {
+        val token = extractRawBearerToken(headers) ?: return false
+        val sessionExpiry = sessions[token]
+        if (sessionExpiry != null && nowMillisProvider() <= sessionExpiry) return true
+        val hash = PairingManager.sha256Hex(token)
+        return hash in cachedActivePairedHashes
+    }
+
+    private suspend fun authenticateRequest(headers: Map<String, String>, settings: AppSettings): AuthContext? {
+        val token = extractRawBearerToken(headers) ?: return null
+        val now = nowMillisProvider()
+
+        val paired = PairingManager.findMatchingActiveDevice(
+            rawToken = token,
+            devices = settings.pairedDevices,
+            nowEpochMillis = now,
+            expiryDays = settings.pairedTokenExpiryDays
+        )
+        if (paired != null) {
+            val lastTouch = lastTouchByDeviceId[paired.deviceId] ?: 0L
+            if (now - lastTouch >= 60_000L) {
+                lastTouchByDeviceId[paired.deviceId] = now
+                settingsRepository.touchPairedDeviceLastSeen(paired.deviceId, now)
+            }
+            return AuthContext.Paired(paired)
         }
-        return token
+
+        if (settings.lanPinLoginEnabled) {
+            val expiry = sessions[token]
+            if (expiry != null) {
+                if (now > expiry) {
+                    sessions.remove(token)
+                    return null
+                }
+                return AuthContext.PinSession(token)
+            }
+        }
+        return null
     }
 
     private fun buildSettingsDto(s: AppSettings, deviceId: String): SettingsResponse {
@@ -1308,7 +1498,7 @@ class SalatSignLocalServer(
                 return ReadRequestOutcome.Error(errorResponse(400, "Bad Request", "invalid_content_length", "Negative Content-Length"))
             }
 
-            val isAuthed = extractValidBearerToken(headers) != null
+            val isAuthed = isTokenLikelyAuthenticatedForBodyLimit(headers)
             val isUploadRoute = path == "/api/v1/logo" || path == "/api/v1/slides/image"
             val maxAllowedBytes = when {
                 !isAuthed -> MAX_PRE_AUTH_BODY_BYTES

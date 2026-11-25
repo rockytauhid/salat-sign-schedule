@@ -119,6 +119,7 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(project(":core-tv-ui"))
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

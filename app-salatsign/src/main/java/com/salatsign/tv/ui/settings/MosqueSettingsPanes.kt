@@ -1180,6 +1180,10 @@ fun MosqueRemoteSecurityPane(
     isPhoneControllerRunning: Boolean,
     phoneControllerUrl: String?,
     onTogglePhoneController: (Boolean) -> Unit,
+    onOpenPairPhone: () -> Unit = {},
+    onRevokePairedDevice: (String) -> Unit = {},
+    onSetLanPinLoginEnabled: (Boolean) -> Unit = {},
+    onSetPairedTokenExpiryDays: (Int) -> Unit = {},
     onOpenChangePin: () -> Unit,
     onResetPin: () -> Unit
 ) {
@@ -1313,6 +1317,146 @@ fun MosqueRemoteSecurityPane(
                         color = colorScheme.secondary
                     )
                 )
+            }
+        }
+    }
+
+    // Pair Phone (QR & one-time code)
+    val pairBtnShape = RoundedCornerShape(12.dp)
+    Surface(
+        onClick = onOpenPairPhone,
+        shape = ClickableSurfaceDefaults.shape(pairBtnShape),
+        scale = tvSurfaceScale(1.0f),
+        colors = tvSelectableSurfaceColors(
+            selected = false,
+            containerColor = colorScheme.primary.copy(alpha = 0.14f)
+        ),
+        border = tvSelectableSurfaceBorder(selected = false, shape = pairBtnShape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = stringResource(AppR.string.pair_btn_open),
+                style = TvTypography.CardTitle.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
+            )
+            Text(
+                text = stringResource(AppR.string.pair_btn_open_desc),
+                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
+            )
+        }
+    }
+
+    // Allow PIN login over LAN toggle
+    val lanPinShape = RoundedCornerShape(12.dp)
+    Surface(
+        onClick = { onSetLanPinLoginEnabled(!settings.lanPinLoginEnabled) },
+        shape = ClickableSurfaceDefaults.shape(lanPinShape),
+        scale = tvSurfaceScale(1.0f),
+        colors = tvSelectableSurfaceColors(selected = settings.lanPinLoginEnabled),
+        border = tvSelectableSurfaceBorder(selected = settings.lanPinLoginEnabled, shape = lanPinShape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    if (settings.lanPinLoginEnabled) AppR.string.pair_pin_login_on else AppR.string.pair_pin_login_off
+                ),
+                style = TvTypography.CardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+            )
+            Text(
+                text = stringResource(AppR.string.pair_pin_login_desc),
+                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+            )
+        }
+    }
+
+    // Inactivity auto-expiry chips
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(AppR.string.pair_expiry_label),
+            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.85f))
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(
+                0 to stringResource(AppR.string.pair_expiry_never),
+                30 to stringResource(AppR.string.pair_expiry_30d),
+                90 to stringResource(AppR.string.pair_expiry_90d)
+            ).forEach { (days, label) ->
+                val isSelected = settings.pairedTokenExpiryDays == days
+                val chipShape = RoundedCornerShape(10.dp)
+                Surface(
+                    onClick = { onSetPairedTokenExpiryDays(days) },
+                    shape = ClickableSurfaceDefaults.shape(chipShape),
+                    scale = tvSurfaceScale(1.02f),
+                    colors = tvSelectableSurfaceColors(selected = isSelected),
+                    border = tvSelectableSurfaceBorder(selected = isSelected, shape = chipShape)
+                ) {
+                    Text(
+                        text = label,
+                        style = TvTypography.ButtonText.copy(fontSize = 14.sp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    // Active Paired Devices list with instant Revoke
+    val activeDevices = settings.pairedDevices.filterNot { it.isRevoked }
+    Text(
+        text = stringResource(AppR.string.pair_devices_title, activeDevices.size),
+        style = TvTypography.CardTitle.copy(color = colorScheme.secondary)
+    )
+    if (activeDevices.isEmpty()) {
+        Text(
+            text = stringResource(AppR.string.pair_devices_empty),
+            style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface.copy(alpha = 0.72f))
+        )
+    } else {
+        activeDevices.forEach { device ->
+            val rowShape = RoundedCornerShape(12.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(colorScheme.surface, rowShape)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = device.deviceName,
+                        style = TvTypography.CardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
+                    )
+                    Text(
+                        text = if (device.role == com.salatsign.tv.security.RemoteRole.MANAGE) {
+                            stringResource(AppR.string.pair_role_manage)
+                        } else {
+                            stringResource(AppR.string.pair_role_notify)
+                        },
+                        style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.primary)
+                    )
+                }
+                val revokeShape = RoundedCornerShape(8.dp)
+                Surface(
+                    onClick = { onRevokePairedDevice(device.deviceId) },
+                    shape = ClickableSurfaceDefaults.shape(revokeShape),
+                    scale = tvSurfaceScale(1.02f),
+                    colors = tvSelectableSurfaceColors(selected = false),
+                    border = tvSelectableSurfaceBorder(selected = false, shape = revokeShape)
+                ) {
+                    Text(
+                        text = stringResource(AppR.string.pair_btn_revoke),
+                        style = TvTypography.ButtonText.copy(fontSize = 13.sp, color = Color(0xFFFCA5A5)),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
             }
         }
     }

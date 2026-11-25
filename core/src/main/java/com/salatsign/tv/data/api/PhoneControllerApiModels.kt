@@ -91,7 +91,49 @@ data class StatusResponse(
     val deviceId: String,
     val deviceName: String,
     val roomGroup: String,
-    val configVersion: Long
+    val configVersion: Long,
+    val pairedDeviceCount: Int = 0,
+    val lanPinLoginEnabled: Boolean = true,
+    val pairingActive: Boolean = false
+)
+
+@Serializable
+data class PairExchangeRequest(
+    val code: String = "",
+    val deviceName: String = ""
+)
+
+@Serializable
+data class PairExchangeResponse(
+    val deviceId: String,
+    val deviceName: String,
+    val role: String,
+    val token: String
+)
+
+@Serializable
+data class PairedDeviceDto(
+    val deviceId: String,
+    val deviceName: String,
+    val role: String,
+    val createdAtEpochMillis: Long,
+    val lastSeenAtEpochMillis: Long,
+    val revoked: Boolean = false
+)
+
+@Serializable
+data class PairedDevicesResponse(
+    val devices: List<PairedDeviceDto>,
+    val lanPinLoginEnabled: Boolean,
+    val tokenExpiryDays: Int
+)
+
+@Serializable
+data class AuthMeResponse(
+    val authType: String, // "PAIRED" or "PIN_SESSION"
+    val deviceId: String? = null,
+    val deviceName: String? = null,
+    val role: String
 )
 
 @Serializable

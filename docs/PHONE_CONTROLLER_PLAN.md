@@ -35,14 +35,14 @@ The TV-hosted web Phone Controller in `:app-salatsign` is the primary remote adm
 
 ---
 
-## Phase 1: Browser Pairing & Auth
+## Phase 1: Browser Pairing & Auth *(Complete)*
 
-- PIN-gated TV screen (**Settings → PIN & Remote → Pair Phone**) showing a short-lived single-use pairing code + offline QR code.
-- Browser exchanges code for a long random bearer token stored in `localStorage`; TV stores only SHA-256 hash + metadata (`deviceId`, `deviceName`, `role`, `createdAt`, `lastSeenAt`, `revokedAt`).
-- Paired devices list on the TV with instant revoke + brief on-TV notice when a new device pairs.
-- Roles: `MANAGE` (slides, settings, Silent Screen) and `NOTIFY` (Urgent Notices). (`CRITICAL` reserved for Phase 5.)
-- Per-client IP rate limiting on pairing attempts; once ≥ 1 device is paired, "Allow PIN login over LAN" defaults to OFF.
-- Optional TV-side inactivity token expiry (`Never` default, `30` / `90` days).
+- [x] PIN-gated TV screen (**Settings → PIN & Remote → Pair Phone**) showing a short-lived single-use 6-digit pairing code + offline ZXing QR code (`/#pair=<code>`).
+- [x] Browser exchanges code via `POST /api/v1/pair` for a 256-bit random bearer token stored in `localStorage`; TV stores only SHA-256 hash + metadata (`deviceId`, `deviceName`, `role`, `createdAt`, `lastSeenAt`, `revokedAt`).
+- [x] Paired devices list on the TV with instant revoke + brief 6-second on-TV notice when a new device pairs.
+- [x] Roles: `MANAGE` (slides, settings, Silent Screen, devices) and `NOTIFY` (Urgent Notices). (`CRITICAL` reserved for Phase 5.)
+- [x] Per-client IP rate limiting & progressive lockout on wrong pairing codes; once ≥ 1 device is paired, "Allow PIN login over LAN" defaults to OFF.
+- [x] Optional TV-side inactivity token expiry (`Never` default, `30` / `90` days).
 
 ---
 

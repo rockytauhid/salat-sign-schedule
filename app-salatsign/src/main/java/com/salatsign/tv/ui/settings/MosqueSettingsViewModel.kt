@@ -402,4 +402,34 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     fun restartSetupWizard() {
         viewModelScope.launch { repository.setSetupCompleted(false) }
     }
+
+    fun generatePairingCode(role: com.salatsign.tv.security.RemoteRole): com.salatsign.tv.security.ActivePairingCode {
+        val app = getApplication<SalatSignApp>()
+        if (!app.localServer.isRunning.value) {
+            app.setPhoneControllerEnabled(true)
+        }
+        return app.localServer.pairingManager.generatePairingCode(role)
+    }
+
+    fun cancelPairingCode() {
+        getApplication<SalatSignApp>().localServer.pairingManager.cancelPairingCode()
+    }
+
+    fun revokePairedDevice(deviceId: String) {
+        viewModelScope.launch {
+            repository.revokePairedDevice(deviceId, System.currentTimeMillis())
+        }
+    }
+
+    fun setLanPinLoginEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setLanPinLoginEnabled(enabled)
+        }
+    }
+
+    fun setPairedTokenExpiryDays(days: Int) {
+        viewModelScope.launch {
+            repository.setPairedTokenExpiryDays(days)
+        }
+    }
 }

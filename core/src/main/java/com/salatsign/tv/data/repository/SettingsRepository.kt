@@ -144,6 +144,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val DEVICE_NAME = stringPreferencesKey("device_name")
         val ROOM_GROUP = stringPreferencesKey("room_group")
         val CONFIG_VERSION = longPreferencesKey("config_version")
+
+        // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1)
+        val PAIRED_DEVICES_JSON = stringPreferencesKey("paired_devices_json")
+        val LAN_PIN_LOGIN_ENABLED = booleanPreferencesKey("lan_pin_login_enabled")
+        val PAIRED_TOKEN_EXPIRY_DAYS = intPreferencesKey("paired_token_expiry_days")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -364,7 +369,16 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 deviceId = preferences[PreferencesKeys.DEVICE_ID] ?: "",
                 deviceName = preferences[PreferencesKeys.DEVICE_NAME] ?: "",
                 roomGroup = preferences[PreferencesKeys.ROOM_GROUP] ?: "",
-                configVersion = (preferences[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
+                configVersion = (preferences[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L),
+                pairedDevices = preferences[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
+                    runCatching {
+                        com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PairedDeviceRecord>>(raw)
+                    }.getOrDefault(emptyList())
+                } ?: emptyList(),
+                lanPinLoginEnabled = preferences[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] ?: true,
+                pairedTokenExpiryDays = com.salatsign.tv.security.PairingManager.normalizeExpiryDays(
+                    preferences[PreferencesKeys.PAIRED_TOKEN_EXPIRY_DAYS] ?: 0
+                )
             )
         }
 
@@ -890,6 +904,74 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val clamped = version.coerceAtLeast(1L)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.CONFIG_VERSION] = clamped
+        }
+    }
+
+    override suspend fun addPairedDevice(record: com.salatsign.tv.security.PairedDeviceRecord) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
+                runCatching {
+                    com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PairedDeviceRecord>>(raw)
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val hadActive = current.any { !it.isRevoked }
+            val updated = current.filterNot { it.deviceId == record.deviceId } + record
+            prefs[PreferencesKeys.PAIRED_DEVICES_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(updated)
+            // Phase 1: once at least one device is paired, PIN login over LAN defaults to OFF
+            if (!hadActive && prefs[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] == null) {
+                prefs[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] = false
+            } else if (!hadActive) {
+                prefs[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] = false
+            }
+            val currentVer = (prefs[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
+            prefs[PreferencesKeys.CONFIG_VERSION] = currentVer + 1L
+        }
+    }
+
+    override suspend fun revokePairedDevice(deviceId: String, revokedAtEpochMillis: Long) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
+                runCatching {
+                    com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PairedDeviceRecord>>(raw)
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val updated = current.map { dev ->
+                if (dev.deviceId == deviceId && !dev.isRevoked) {
+                    dev.copy(revokedAtEpochMillis = revokedAtEpochMillis)
+                } else {
+                    dev
+                }
+            }
+            prefs[PreferencesKeys.PAIRED_DEVICES_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(updated)
+            val currentVer = (prefs[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
+            prefs[PreferencesKeys.CONFIG_VERSION] = currentVer + 1L
+        }
+    }
+
+    override suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
+                runCatching {
+                    com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PairedDeviceRecord>>(raw)
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val updated = current.map { dev ->
+                if (dev.deviceId == deviceId) dev.copy(lastSeenAtEpochMillis = lastSeenAtEpochMillis) else dev
+            }
+            prefs[PreferencesKeys.PAIRED_DEVICES_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(updated)
+        }
+    }
+
+    override suspend fun setLanPinLoginEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setPairedTokenExpiryDays(days: Int) {
+        val normalized = com.salatsign.tv.security.PairingManager.normalizeExpiryDays(days)
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PAIRED_TOKEN_EXPIRY_DAYS] = normalized
         }
     }
 }

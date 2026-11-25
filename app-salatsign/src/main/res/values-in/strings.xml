@@ -92,4 +92,27 @@
     <string name="settings_text_slide_limit_note">Rotasi penuh (6/6) — slide ini akan disimpan sebagai nonaktif.</string>
     <string name="settings_text_slide_empty_error">Harap masukkan judul atau pesan sebelum menyimpan.</string>
     <string name="settings_text_slide_save">Simpan Slide</string>
+    <!-- Phase 1: Browser Pairing & Paired Devices -->
+    <string name="pair_btn_open">Pasangkan HP (QR &amp; Kode)</string>
+    <string name="pair_btn_open_desc">Hubungkan browser HP atau laptop untuk mengatur TV ini tanpa memasukkan PIN</string>
+    <string name="pair_dialog_title">Pasangkan HP atau Laptop</string>
+    <string name="pair_role_label">Hak akses:</string>
+    <string name="pair_role_manage">Kelola (Penuh)</string>
+    <string name="pair_role_notify">Notifikasi Saja</string>
+    <string name="pair_dialog_instructions">Pindai kode QR dengan kamera HP, atau buka alamat di bawah pada Wi-Fi yang sama lalu masukkan kode sekali pakai ini:</string>
+    <string name="pair_code_expires_in">Berlaku %1$d dtk lagi</string>
+    <string name="pair_code_expired">Kode kedaluwarsa — buat kode baru</string>
+    <string name="pair_btn_new_code">Kode Baru</string>
+    <string name="pair_btn_close">Tutup</string>
+    <string name="pair_pin_login_on">Izinkan Login PIN via LAN: AKTIF</string>
+    <string name="pair_pin_login_off">Izinkan Login PIN via LAN: NONAKTIF (Hanya perangkat terpasang)</string>
+    <string name="pair_pin_login_desc">Otomatis nonaktif setelah ada HP terpasang. PIN Admin tetap membuka Pengaturan TV.</string>
+    <string name="pair_expiry_label">Kedaluwarsa Otomatis Jika Tidak Aktif</string>
+    <string name="pair_expiry_never">Tidak pernah</string>
+    <string name="pair_expiry_30d">30 hari</string>
+    <string name="pair_expiry_90d">90 hari</string>
+    <string name="pair_devices_title">Perangkat Terpasang (%1$d)</string>
+    <string name="pair_devices_empty">Belum ada perangkat terpasang. Pilih Pasangkan HP di atas untuk menghubungkan browser.</string>
+    <string name="pair_btn_revoke">Cabut</string>
+    <string name="pair_tv_notice">Perangkat baru terpasang: %1$s (%2$s)</string>
 </resources>

@@ -4,9 +4,12 @@
 package com.salatsign.tv.remote
 
 import com.salatsign.tv.data.api.ApiErrorResponse
+import com.salatsign.tv.data.api.AuthMeResponse
 import com.salatsign.tv.data.api.AuthResponse
 import com.salatsign.tv.data.api.CreateSlideResponse
 import com.salatsign.tv.data.api.FullConfigResponse
+import com.salatsign.tv.data.api.PairExchangeResponse
+import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PhoneControllerJson
 import com.salatsign.tv.data.api.StatusResponse
 import com.salatsign.tv.data.importing.ImageImporter
@@ -186,6 +189,36 @@ class SalatSignLocalServerTest {
         }
         override suspend fun setConfigVersion(version: Long) {
             state.value = state.value.copy(configVersion = version.coerceAtLeast(1L))
+        }
+        override suspend fun addPairedDevice(record: com.salatsign.tv.security.PairedDeviceRecord) {
+            val hadActive = state.value.pairedDevices.any { !it.isRevoked }
+            val updated = state.value.pairedDevices.filterNot { it.deviceId == record.deviceId } + record
+            state.value = state.value.copy(
+                pairedDevices = updated,
+                lanPinLoginEnabled = if (!hadActive) false else state.value.lanPinLoginEnabled,
+                configVersion = state.value.configVersion + 1L
+            )
+        }
+        override suspend fun revokePairedDevice(deviceId: String, revokedAtEpochMillis: Long) {
+            val updated = state.value.pairedDevices.map {
+                if (it.deviceId == deviceId && !it.isRevoked) it.copy(revokedAtEpochMillis = revokedAtEpochMillis) else it
+            }
+            state.value = state.value.copy(
+                pairedDevices = updated,
+                configVersion = state.value.configVersion + 1L
+            )
+        }
+        override suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long) {
+            val updated = state.value.pairedDevices.map {
+                if (it.deviceId == deviceId) it.copy(lastSeenAtEpochMillis = lastSeenAtEpochMillis) else it
+            }
+            state.value = state.value.copy(pairedDevices = updated)
+        }
+        override suspend fun setLanPinLoginEnabled(enabled: Boolean) {
+            state.value = state.value.copy(lanPinLoginEnabled = enabled)
+        }
+        override suspend fun setPairedTokenExpiryDays(days: Int) {
+            state.value = state.value.copy(pairedTokenExpiryDays = days)
         }
     }
 
@@ -734,5 +767,69 @@ class SalatSignLocalServerTest {
         assertEquals("Masjid Al-Noor", updatedCfg.settings.mosqueName)
         assertEquals(1, updatedCfg.slides.size)
         assertEquals("s-1", updatedCfg.slides.first().id)
+    }
+
+    @Test
+    fun phase1_browserPairingRoleEnforcementRevocationAndPinDisable() = runBlocking {
+        val (server, settingsRepo, _) = createServer()
+
+        // 1. Generate a MANAGE pairing code on the TV and pair a browser
+        val manageCode = server.pairingManager.generatePairingCode(com.salatsign.tv.security.RemoteRole.MANAGE)
+        val pairResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/pair",
+                body = """{"code":"${manageCode.code}","deviceName":"Imam iPhone"}""".toByteArray(),
+                remoteAddress = "192.168.4.50"
+            )
+        )
+        assertEquals(200, pairResp.statusCode)
+        val paired = PhoneControllerJson.decode<PairExchangeResponse>(pairResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals("Imam iPhone", paired.deviceName)
+        assertEquals("MANAGE", paired.role)
+        assertTrue(paired.token.isNotBlank())
+
+        // 2. First paired device automatically disables LAN PIN login
+        assertFalse(settingsRepo.current.lanPinLoginEnabled)
+        val pinBlocked = server.handleRequest(
+            HttpRequest("POST", "/api/v1/auth", body = """{"pin":"2468"}""".toByteArray())
+        )
+        assertEquals(403, pinBlocked.statusCode)
+        assertEquals(
+            "pin_login_disabled",
+            PhoneControllerJson.decode<ApiErrorResponse>(pinBlocked.body.toString(StandardCharsets.UTF_8)).error
+        )
+
+        // 3. Paired MANAGE device can access settings and list devices
+        val manageHeaders = mapOf("authorization" to "Bearer ${paired.token}")
+        assertEquals(200, server.handleRequest(HttpRequest("GET", "/api/v1/settings", headers = manageHeaders)).statusCode)
+        val devicesResp = server.handleRequest(HttpRequest("GET", "/api/v1/devices", headers = manageHeaders))
+        assertEquals(200, devicesResp.statusCode)
+        val devicesList = PhoneControllerJson.decode<PairedDevicesResponse>(devicesResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals(1, devicesList.devices.size)
+
+        // 4. Pair a NOTIFY-only device -> allowed on /auth/me, blocked (403) on management endpoints
+        val notifyCode = server.pairingManager.generatePairingCode(com.salatsign.tv.security.RemoteRole.NOTIFY)
+        val notifyPair = server.handleRequest(
+            HttpRequest("POST", "/api/v1/pair", body = """{"code":"${notifyCode.code}","deviceName":"Volunteer Phone"}""".toByteArray())
+        )
+        assertEquals(200, notifyPair.statusCode)
+        val notifyToken = PhoneControllerJson.decode<PairExchangeResponse>(notifyPair.body.toString(StandardCharsets.UTF_8)).token
+        val notifyHeaders = mapOf("authorization" to "Bearer $notifyToken")
+
+        val meResp = server.handleRequest(HttpRequest("GET", "/api/v1/auth/me", headers = notifyHeaders))
+        assertEquals(200, meResp.statusCode)
+        assertEquals("NOTIFY", PhoneControllerJson.decode<AuthMeResponse>(meResp.body.toString(StandardCharsets.UTF_8)).role)
+        assertEquals(
+            403,
+            server.handleRequest(HttpRequest("PATCH", "/api/v1/settings", headers = notifyHeaders, body = """{"mosqueName":"X"}""".toByteArray())).statusCode
+        )
+
+        // 5. Revoking a paired device makes its token fail immediately (401)
+        val revokeResp = server.handleRequest(
+            HttpRequest("DELETE", "/api/v1/devices/${paired.deviceId}", headers = manageHeaders)
+        )
+        assertEquals(200, revokeResp.statusCode)
+        assertEquals(401, server.handleRequest(HttpRequest("GET", "/api/v1/settings", headers = manageHeaders)).statusCode)
     }
 }

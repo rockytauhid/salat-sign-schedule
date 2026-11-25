@@ -82,6 +82,13 @@ fun MosqueSettingsScreen(
     isPhoneControllerRunning: Boolean = false,
     phoneControllerUrl: String? = null,
     onTogglePhoneController: (Boolean) -> Unit = {},
+    onGeneratePairingCode: (com.salatsign.tv.security.RemoteRole) -> com.salatsign.tv.security.ActivePairingCode = { role ->
+        com.salatsign.tv.security.ActivePairingCode("000000", role, 0L, 0L)
+    },
+    onCancelPairingCode: () -> Unit = {},
+    onRevokePairedDevice: (String) -> Unit = {},
+    onSetLanPinLoginEnabled: (Boolean) -> Unit = {},
+    onSetPairedTokenExpiryDays: (Int) -> Unit = {},
     onSetScheduleDuration: (Int) -> Unit,
     onAddTextSlide: (String, String, Int, Boolean, SlideTextAlign, List<com.salatsign.tv.data.model.SlideTextLine>) -> Unit,
     onAddImageSlide: (String, String, Int) -> Unit,
@@ -125,6 +132,7 @@ fun MosqueSettingsScreen(
     var selectedCategoryId by remember { mutableStateOf(MosqueSettingsCategoryIds.DISPLAY) }
     var activePickerKind by remember { mutableStateOf<ImportKind?>(null) }
     var showChangePinDialog by remember { mutableStateOf(false) }
+    var showPairPhoneDialog by remember { mutableStateOf(false) }
     var showAddTextSlideDialog by remember { mutableStateOf(false) }
     var editingTextSlide by remember { mutableStateOf<AnnouncementSlide?>(null) }
     var pendingImageSlideFile by remember { mutableStateOf<String?>(null) }
@@ -139,7 +147,8 @@ fun MosqueSettingsScreen(
         editingTextSlide != null ||
         pendingImageSlideFile != null ||
         editingImageSlide != null ||
-        showChangePinDialog
+        showChangePinDialog ||
+        showPairPhoneDialog
 
     LaunchedEffect(lastInteractionTime, isModalOpen) {
         delay(if (isModalOpen) 300_000L else 120_000L)
@@ -338,6 +347,22 @@ fun MosqueSettingsScreen(
                         isPhoneControllerRunning = isPhoneControllerRunning,
                         phoneControllerUrl = phoneControllerUrl,
                         onTogglePhoneController = onTogglePhoneController,
+                        onOpenPairPhone = {
+                            recordInteraction()
+                            showPairPhoneDialog = true
+                        },
+                        onRevokePairedDevice = {
+                            recordInteraction()
+                            onRevokePairedDevice(it)
+                        },
+                        onSetLanPinLoginEnabled = {
+                            recordInteraction()
+                            onSetLanPinLoginEnabled(it)
+                        },
+                        onSetPairedTokenExpiryDays = {
+                            recordInteraction()
+                            onSetPairedTokenExpiryDays(it)
+                        },
                         onOpenChangePin = { showChangePinDialog = true },
                         onResetPin = onResetPin
                     )
@@ -347,6 +372,23 @@ fun MosqueSettingsScreen(
                     MosqueAboutPane()
                 }
             }
+        }
+
+        // Modal: Pair Phone (QR & 6-digit code)
+        if (showPairPhoneDialog) {
+            PairPhoneDialog(
+                phoneControllerUrl = phoneControllerUrl,
+                pairedDeviceCount = settings.pairedDevices.count { !it.isRevoked },
+                onGenerateCode = { role ->
+                    recordInteraction()
+                    onGeneratePairingCode(role)
+                },
+                onCancelCode = onCancelPairingCode,
+                onDismiss = {
+                    recordInteraction()
+                    showPairPhoneDialog = false
+                }
+            )
         }
 
         // Modal: TV D-pad Storage File Picker

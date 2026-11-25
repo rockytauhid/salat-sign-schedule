@@ -48,6 +48,13 @@ class SalatSignApp : Application() {
     private val _phoneControllerUrl = MutableStateFlow<String?>(null)
     val phoneControllerUrl: StateFlow<String?> = _phoneControllerUrl.asStateFlow()
 
+    private val _lastPairedDeviceNotice = MutableStateFlow<com.salatsign.tv.security.PairedDeviceRecord?>(null)
+    val lastPairedDeviceNotice: StateFlow<com.salatsign.tv.security.PairedDeviceRecord?> = _lastPairedDeviceNotice.asStateFlow()
+
+    fun clearPairedDeviceNotice() {
+        _lastPairedDeviceNotice.value = null
+    }
+
     override fun onCreate() {
         super.onCreate()
         settingsRepository = SettingsRepository(this)
@@ -65,6 +72,9 @@ class SalatSignApp : Application() {
             appVersionName = BuildConfig.VERSION_NAME,
             webAssetProvider = {
                 assets.open("phone_controller/index.html").use { it.readBytes() }
+            },
+            onDevicePaired = { record ->
+                _lastPairedDeviceNotice.value = record
             }
         )
         nsdHelper = SalatSignNsdHelper(this)
