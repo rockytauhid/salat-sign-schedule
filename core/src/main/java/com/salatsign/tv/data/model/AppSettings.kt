@@ -284,7 +284,11 @@ data class AppSettings(
     val pairedDevices: List<com.salatsign.tv.security.PairedDeviceRecord> = emptyList(),
     val lanPinLoginEnabled: Boolean = true,
     val pairedTokenExpiryDays: Int = 0,
-    val phoneControllerAlwaysOn: Boolean = false
+    val phoneControllerAlwaysOn: Boolean = false,
+    // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3)
+    val groupSecretHex: String = "",
+    val peerTvs: List<com.salatsign.tv.security.PeerTvRecord> = emptyList(),
+    val activeUrgentNotice: com.salatsign.tv.security.UrgentNoticeRecord? = null
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

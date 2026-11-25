@@ -96,6 +96,19 @@ fun MosqueSignageScreen(
     val colorScheme = MaterialTheme.colorScheme
     var showAdminHint by remember { mutableStateOf(false) }
     var showExitHint by remember { mutableStateOf(false) }
+    var noticeNowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+
+    val rawUrgentNotice = uiState.settings.activeUrgentNotice
+    LaunchedEffect(rawUrgentNotice) {
+        while (rawUrgentNotice != null) {
+            noticeNowMillis = System.currentTimeMillis()
+            if (!rawUrgentNotice.isActive(noticeNowMillis)) break
+            delay(5_000L)
+        }
+    }
+    val activeUrgentNotice = rawUrgentNotice?.takeIf {
+        uiState.currentSlideState !is SlideState.SilentScreen && it.isActive(noticeNowMillis)
+    }
 
     LaunchedEffect(Unit) {
         screenFocusRequester.requestFocus()
@@ -169,6 +182,14 @@ fun MosqueSignageScreen(
                     SilentScreen(kind = slideState.kind)
                 }
             }
+        }
+
+        // Phase 3c: Full-screen Urgent Notice sits above Schedule & Slideshow, but yields to Silent Screen
+        if (activeUrgentNotice != null) {
+            UrgentNoticeScreen(
+                notice = activeUrgentNotice,
+                remainingMinutes = activeUrgentNotice.remainingMinutes(noticeNowMillis)
+            )
         }
 
         // Sliding remote-control instruction banner when user taps D-pad, OK, or Back (neutral low-glare styling)

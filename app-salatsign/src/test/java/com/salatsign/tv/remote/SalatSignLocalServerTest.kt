@@ -8,10 +8,16 @@ import com.salatsign.tv.data.api.AuthMeResponse
 import com.salatsign.tv.data.api.AuthResponse
 import com.salatsign.tv.data.api.CreateSlideResponse
 import com.salatsign.tv.data.api.FullConfigResponse
+import com.salatsign.tv.data.api.GroupJoinCodeResponse
 import com.salatsign.tv.data.api.PairExchangeResponse
 import com.salatsign.tv.data.api.PairedDevicesResponse
+import com.salatsign.tv.data.api.PeerJoinResponse
+import com.salatsign.tv.data.api.PeerListResponse
+import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PhoneControllerJson
+import com.salatsign.tv.data.api.SettingsPatchRequest
 import com.salatsign.tv.data.api.StatusResponse
+import com.salatsign.tv.data.api.UrgentNoticeResponse
 import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AnnouncementSlide
@@ -222,6 +228,22 @@ class SalatSignLocalServerTest {
         }
         override suspend fun setPhoneControllerAlwaysOn(enabled: Boolean) {
             state.value = state.value.copy(phoneControllerAlwaysOn = enabled)
+        }
+        override suspend fun setGroupSecretHex(secretHex: String) {
+            state.value = state.value.copy(groupSecretHex = secretHex)
+        }
+        override suspend fun upsertPeerTv(peer: com.salatsign.tv.security.PeerTvRecord) {
+            val updated = state.value.peerTvs.filterNot { it.deviceId == peer.deviceId } + peer
+            state.value = state.value.copy(peerTvs = updated)
+        }
+        override suspend fun setPeerTvs(peers: List<com.salatsign.tv.security.PeerTvRecord>) {
+            state.value = state.value.copy(peerTvs = peers)
+        }
+        override suspend fun setPairedDevices(devices: List<com.salatsign.tv.security.PairedDeviceRecord>) {
+            state.value = state.value.copy(pairedDevices = devices)
+        }
+        override suspend fun setActiveUrgentNotice(notice: com.salatsign.tv.security.UrgentNoticeRecord?) {
+            state.value = state.value.copy(activeUrgentNotice = notice)
         }
     }
 
@@ -834,5 +856,111 @@ class SalatSignLocalServerTest {
         )
         assertEquals(200, revokeResp.statusCode)
         assertEquals(401, server.handleRequest(HttpRequest("GET", "/api/v1/settings", headers = manageHeaders)).statusCode)
+    }
+
+    @Test
+    fun phase3_urgentNoticeForNotifyRoleAndHmacSignedPeerSyncPreservesLocalIdentity() = runBlocking {
+        val now = 1_700_000_000_000L
+        val (server, settingsRepo, _) = createServer(nowProvider = { now })
+        settingsRepo.setDeviceIdentity("Upstairs Left", "Upstairs")
+        settingsRepo.setThemeMode(ThemeMode.ALWAYS_LIGHT)
+
+        // 1. Pair a NOTIFY-only phone -> CAN send and clear Urgent Notices!
+        val notifyCode = server.pairingManager.generatePairingCode(com.salatsign.tv.security.RemoteRole.NOTIFY)
+        val notifyPair = server.handleRequest(
+            HttpRequest("POST", "/api/v1/pair", body = """{"code":"${notifyCode.code}","deviceName":"Volunteer"}""".toByteArray())
+        )
+        val notifyToken = PhoneControllerJson.decode<PairExchangeResponse>(notifyPair.body.toString(StandardCharsets.UTF_8)).token
+        val notifyHeaders = mapOf("authorization" to "Bearer $notifyToken")
+
+        val sendResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/notices",
+                headers = notifyHeaders,
+                body = """{"title":"Parking","message":"Move silver car ABC-123","durationMinutes":10}""".toByteArray()
+            )
+        )
+        assertEquals(200, sendResp.statusCode)
+        val noticeBody = PhoneControllerJson.decode<UrgentNoticeResponse>(sendResp.body.toString(StandardCharsets.UTF_8))
+        assertTrue(noticeBody.active)
+        assertEquals("Move silver car ABC-123", noticeBody.notice?.message)
+        assertEquals(now + 10 * 60_000L, settingsRepo.current.activeUrgentNotice?.expiresAtEpochMillis)
+
+        // Clear notice
+        assertEquals(200, server.handleRequest(HttpRequest("DELETE", "/api/v1/notices", headers = notifyHeaders)).statusCode)
+        assertNull(settingsRepo.current.activeUrgentNotice)
+
+        // 2. Pair a MANAGE phone -> create group join code & join peer TV B
+        val manageCode = server.pairingManager.generatePairingCode(com.salatsign.tv.security.RemoteRole.MANAGE)
+        val managePair = server.handleRequest(
+            HttpRequest("POST", "/api/v1/pair", body = """{"code":"${manageCode.code}","deviceName":"Admin"}""".toByteArray())
+        )
+        val manageHeaders = mapOf(
+            "authorization" to "Bearer ${PhoneControllerJson.decode<PairExchangeResponse>(managePair.body.toString(StandardCharsets.UTF_8)).token}"
+        )
+
+        val joinCodeResp = server.handleRequest(HttpRequest("POST", "/api/v1/peers/code", headers = manageHeaders))
+        assertEquals(200, joinCodeResp.statusCode)
+        val joinCode = PhoneControllerJson.decode<GroupJoinCodeResponse>(joinCodeResp.body.toString(StandardCharsets.UTF_8)).code
+
+        val peerJoinResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peer/join",
+                body = """{"code":"$joinCode","deviceId":"tv-downstairs-1","deviceName":"Downstairs Left","roomGroup":"Downstairs","host":"192.168.4.40","port":8088}""".toByteArray()
+            )
+        )
+        assertEquals(200, peerJoinResp.statusCode)
+        val joined = PhoneControllerJson.decode<PeerJoinResponse>(peerJoinResp.body.toString(StandardCharsets.UTF_8))
+        assertTrue(joined.groupSecretHex.length == 64)
+
+        val peersResp = server.handleRequest(HttpRequest("GET", "/api/v1/peers", headers = manageHeaders))
+        assertEquals(200, peersResp.statusCode)
+        val peerList = PhoneControllerJson.decode<PeerListResponse>(peersResp.body.toString(StandardCharsets.UTF_8))
+        assertTrue(peerList.groupLinked)
+        assertEquals(1, peerList.peers.size)
+
+        // 3. Unsigned peer sync is rejected (401)
+        val unsignedSync = server.handleRequest(HttpRequest("GET", "/api/v1/peer/sync"))
+        assertEquals(401, unsignedSync.statusCode)
+
+        // 4. Valid HMAC-signed peer sync adopts newer group config & preserves local TV identity + ThemeMode!
+        val syncPayload = PeerSyncPayload(
+            originDeviceId = "tv-downstairs-1",
+            configVersion = 99L,
+            settings = SettingsPatchRequest(
+                deviceName = "SHOULD_NOT_OVERWRITE",
+                roomGroup = "SHOULD_NOT_OVERWRITE",
+                themeMode = "ALWAYS_DARK",
+                mosqueName = "Masjid Al-Falah"
+            ),
+            slides = emptyList()
+        )
+        val syncBytes = PhoneControllerJson.encode(syncPayload).toByteArray(StandardCharsets.UTF_8)
+        val nonce = com.salatsign.tv.security.PeerHmacAuth.generateNonce()
+        val sig = com.salatsign.tv.security.PeerHmacAuth.computeSignature(
+            joined.groupSecretHex, "POST", "/api/v1/peer/sync", now, nonce, syncBytes
+        )
+        val signedSyncResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peer/sync",
+                headers = mapOf(
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_PEER_ID to "tv-downstairs-1",
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_TIMESTAMP to now.toString(),
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_NONCE to nonce,
+                    com.salatsign.tv.security.PeerHmacAuth.HEADER_SIGNATURE to sig
+                ),
+                body = syncBytes
+            )
+        )
+        assertEquals(200, signedSyncResp.statusCode)
+        assertEquals(99L, settingsRepo.current.configVersion)
+        assertEquals("Masjid Al-Falah", settingsRepo.current.mosqueName)
+        // Local-only fields MUST remain untouched (D24)
+        assertEquals("Upstairs Left", settingsRepo.current.deviceName)
+        assertEquals("Upstairs", settingsRepo.current.roomGroup)
+        assertEquals(ThemeMode.ALWAYS_LIGHT, settingsRepo.current.themeMode)
     }
 }

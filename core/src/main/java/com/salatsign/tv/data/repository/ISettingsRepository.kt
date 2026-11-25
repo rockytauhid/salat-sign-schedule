@@ -107,4 +107,10 @@ interface ISettingsRepository {
     suspend fun setLanPinLoginEnabled(enabled: Boolean)
     suspend fun setPairedTokenExpiryDays(days: Int)
     suspend fun setPhoneControllerAlwaysOn(enabled: Boolean)
+    // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3)
+    suspend fun setGroupSecretHex(secretHex: String)
+    suspend fun upsertPeerTv(peer: com.salatsign.tv.security.PeerTvRecord)
+    suspend fun setPeerTvs(peers: List<com.salatsign.tv.security.PeerTvRecord>)
+    suspend fun setPairedDevices(devices: List<com.salatsign.tv.security.PairedDeviceRecord>)
+    suspend fun setActiveUrgentNotice(notice: com.salatsign.tv.security.UrgentNoticeRecord?)
 }

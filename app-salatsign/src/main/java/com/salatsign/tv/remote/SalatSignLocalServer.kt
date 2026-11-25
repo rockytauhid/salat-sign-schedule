@@ -9,12 +9,14 @@ import com.salatsign.tv.data.api.ApiErrorResponse
 import com.salatsign.tv.data.api.AuthMeResponse
 import com.salatsign.tv.data.api.AuthRequest
 import com.salatsign.tv.data.api.AuthResponse
+import com.salatsign.tv.data.api.BrowserPeerJoinRequest
 import com.salatsign.tv.data.api.CreateSlideResponse
 import com.salatsign.tv.data.api.CreateTextSlideRequest
 import com.salatsign.tv.data.api.DailySilentPrayerDto
 import com.salatsign.tv.data.api.DeleteSlideResponse
 import com.salatsign.tv.data.api.FullConfigResponse
 import com.salatsign.tv.data.api.FullConfigWriteRequest
+import com.salatsign.tv.data.api.GroupJoinCodeResponse
 import com.salatsign.tv.data.api.LogoUploadResponse
 import com.salatsign.tv.data.api.LogoutResponse
 import com.salatsign.tv.data.api.ManualSilentResponse
@@ -25,6 +27,13 @@ import com.salatsign.tv.data.api.PairedDeviceDto
 import com.salatsign.tv.data.api.PairedDevicesResponse
 import com.salatsign.tv.data.api.PatchSlideRequest
 import com.salatsign.tv.data.api.PatchSlideResponse
+import com.salatsign.tv.data.api.PeerDeliveryStatusDto
+import com.salatsign.tv.data.api.PeerJoinRequest
+import com.salatsign.tv.data.api.PeerJoinResponse
+import com.salatsign.tv.data.api.PeerListResponse
+import com.salatsign.tv.data.api.PeerNoticeMessage
+import com.salatsign.tv.data.api.PeerSyncPayload
+import com.salatsign.tv.data.api.PeerSyncPushResultResponse
 import com.salatsign.tv.data.api.PhoneControllerJson
 import com.salatsign.tv.data.api.SettingsPatchRequest
 import com.salatsign.tv.data.api.SettingsResponse
@@ -32,6 +41,8 @@ import com.salatsign.tv.data.api.SlideDto
 import com.salatsign.tv.data.api.SlideLineDto
 import com.salatsign.tv.data.api.SlidesResponse
 import com.salatsign.tv.data.api.StatusResponse
+import com.salatsign.tv.data.api.UrgentNoticeRequest
+import com.salatsign.tv.data.api.UrgentNoticeResponse
 import com.salatsign.tv.data.importing.ImageImporter
 import com.salatsign.tv.data.importing.ImageTargetType
 import com.salatsign.tv.data.model.AnnouncementSlide
@@ -51,12 +62,17 @@ import com.salatsign.tv.data.model.ThemeMode
 import com.salatsign.tv.data.repository.IContentRepository
 import com.salatsign.tv.data.repository.ISettingsRepository
 import com.salatsign.tv.engine.SlideBudget
+import com.salatsign.tv.security.GroupJoinManager
+import com.salatsign.tv.security.GroupSyncConflictResolver
 import com.salatsign.tv.security.PairRedeemResult
 import com.salatsign.tv.security.PairedDeviceRecord
 import com.salatsign.tv.security.PairingManager
+import com.salatsign.tv.security.PeerHmacAuth
+import com.salatsign.tv.security.PeerTvRecord
 import com.salatsign.tv.security.PinHasher
 import com.salatsign.tv.security.PinVerifyResult
 import com.salatsign.tv.security.RemoteRole
+import com.salatsign.tv.security.UrgentNoticeRecord
 import com.salatsign.tv.ui.mosque.BuiltInSlideRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -146,6 +162,11 @@ class SalatSignLocalServer(
     private val jsonBodyDeadlineMillis: Long = JSON_BODY_DEADLINE_MILLIS,
     private val uploadBodyDeadlineMillis: Long = UPLOAD_BODY_DEADLINE_MILLIS,
     val pairingManager: PairingManager = PairingManager(nowMillisProvider),
+    val groupJoinManager: GroupJoinManager = GroupJoinManager(nowMillisProvider),
+    private val peerHmacAuth: PeerHmacAuth = PeerHmacAuth(nowMillisProvider),
+    private val peerSyncClient: PeerSyncClient = PeerSyncClient(nowMillisProvider),
+    private val slideImagesDir: File? = null,
+    private val logoImagesDir: File? = null,
     private val onDevicePaired: (PairedDeviceRecord) -> Unit = {}
 ) {
     companion object {
@@ -404,6 +425,21 @@ class SalatSignLocalServer(
             }
         }
 
+        // Phase 3a/3b/3c: TV-to-TV peer endpoints (join code or HMAC-SHA256 signed — browser never calls these)
+        if (method == "POST" && path == "/api/v1/peer/join") {
+            if (req.body.size > MAX_PRE_AUTH_BODY_BYTES) {
+                return errorResponse(413, "Payload Too Large", "payload_too_large", "Request body exceeds limit")
+            }
+            return try {
+                handlePeerJoin(req)
+            } catch (_: IllegalArgumentException) {
+                errorResponse(400, "Bad Request", "invalid_json", "Malformed JSON payload")
+            }
+        }
+        if (path.startsWith("/api/v1/peer/")) {
+            return handleSignedPeerRequest(method, path, req)
+        }
+
         if (method == "POST" && path == "/api/v1/auth") {
             if (req.body.size > MAX_PRE_AUTH_BODY_BYTES) {
                 return errorResponse(413, "Payload Too Large", "payload_too_large", "Request body exceeds limit")
@@ -446,9 +482,16 @@ class SalatSignLocalServer(
                     }
                     typedJsonResponse(200, "OK", LogoutResponse(loggedOut = true))
                 }
+                method == "GET" && path == "/api/v1/peers" -> handleGetPeers(currentSettings)
+                method == "GET" && path == "/api/v1/notices" -> handleGetNotice(currentSettings)
+                method == "POST" && path == "/api/v1/notices" -> handleSendNotice(req, currentSettings)
+                method == "DELETE" && path == "/api/v1/notices" -> handleClearNotice(currentSettings)
                 !authCtx.role.hasPermission(RemoteRole.MANAGE) -> {
                     errorResponse(403, "Forbidden", "insufficient_role", "This device only has Notify permission")
                 }
+                method == "POST" && path == "/api/v1/peers/code" -> handleCreateGroupJoinCode()
+                method == "POST" && path == "/api/v1/peers/join" -> handleBrowserJoinGroup(req, currentSettings)
+                method == "POST" && path == "/api/v1/peers/push" -> handlePushConfigToPeers(currentSettings)
                 method == "GET" && path == "/api/v1/devices" -> handleGetDevices(currentSettings)
                 method == "DELETE" && path.startsWith("/api/v1/devices/") -> {
                     val devId = URLDecoder.decode(path.removePrefix("/api/v1/devices/"), "UTF-8")
@@ -571,6 +614,448 @@ class SalatSignLocalServer(
         val refreshed = settingsRepository.appSettingsFlow.first()
         syncPairedHashCache(refreshed)
         return handleGetDevices(refreshed)
+    }
+
+    // --- Phase 3: Multi-TV Group Sync & Urgent Notice Handlers ---
+
+    private suspend fun selfPeerRecord(settings: AppSettings): PeerTvRecord {
+        val id = settingsRepository.ensureDeviceId()
+        val host = LocalNetworkUtils.getLocalIpv4Address() ?: "127.0.0.1"
+        return PeerTvRecord(
+            deviceId = id,
+            deviceName = settings.deviceName.ifBlank { "SalatSign TV" },
+            roomGroup = settings.roomGroup,
+            lastKnownHost = host,
+            port = port,
+            lastSeenEpochMillis = nowMillisProvider()
+        )
+    }
+
+    private suspend fun buildPeerSyncPayload(settings: AppSettings): PeerSyncPayload {
+        val self = selfPeerRecord(settings)
+        val dailyMap = listOf(Prayer.SUBUH, Prayer.ZUHUR, Prayer.ASHR, Prayer.MAGRIB, Prayer.ISYA).associate { p ->
+            val cfg = settings.silentScreen.dailyPrayers[p] ?: PrayerSilentConfig()
+            p.name to DailySilentPrayerDto(cfg.enabled, cfg.anchor.name, cfg.leadMinutes, cfg.durationMinutes)
+        }
+        // Only group-syncable fields (D24): never include deviceName, roomGroup, themeMode, or phoneControllerAlwaysOn
+        val groupPatch = SettingsPatchRequest(
+            mosqueName = settings.mosqueName.takeIf { it.isNotBlank() },
+            mosqueSubtitle = settings.mosqueSubtitle,
+            mosqueIconPreset = settings.mosqueIconPreset.name,
+            mosqueFontPreset = settings.mosqueFontPreset.name,
+            appLanguage = settings.appLanguage.name,
+            scheduleDurationSeconds = settings.scheduleDurationSeconds,
+            hijriOffsetDays = settings.hijriOffsetDays,
+            hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
+            is24HourFormat = settings.is24HourFormat,
+            showArabicPrayerNames = settings.showArabicPrayerNames,
+            showStrikeHighlight = settings.showStrikeHighlight,
+            jumuahMode = settings.jumuahMode.name,
+            jumuahTimes = settings.jumuahTimes,
+            iqamahSubuh = settings.iqamahSubuh,
+            iqamahZuhur = settings.iqamahZuhur,
+            iqamahAshr = settings.iqamahAshr,
+            iqamahMagrib = settings.iqamahMagrib,
+            iqamahIsya = settings.iqamahIsya,
+            islamicCalendarSlideEnabled = settings.islamicCalendarSlideEnabled,
+            islamicCalendarSlideDurationSeconds = settings.islamicCalendarSlideDurationSeconds,
+            quranVerseEnabled = settings.quranVerseEnabled,
+            quranShowTranslation = settings.quranShowTranslation,
+            quranVerseDurationSeconds = settings.quranVerseDurationSeconds,
+            silentJumuahEnabled = settings.silentScreen.jumuahEnabled,
+            silentJumuahLeadMinutes = settings.silentScreen.jumuahLeadMinutes,
+            silentJumuahDurationMinutes = settings.silentScreen.jumuahDurationMinutes,
+            silentDailyPrayers = dailyMap
+        )
+        val allPeers = (settings.peerTvs.filterNot { it.deviceId == self.deviceId } + self)
+        return PeerSyncPayload(
+            originDeviceId = self.deviceId,
+            originHost = self.lastKnownHost,
+            originPort = self.port,
+            configVersion = settings.configVersion,
+            settings = groupPatch,
+            slides = contentRepository.slidesFlow.value.slides.map(::slideToDto),
+            pairedDevices = settings.pairedDevices,
+            peers = allPeers
+        )
+    }
+
+    private suspend fun handleCreateGroupJoinCode(): HttpResponse {
+        val settings = settingsRepository.appSettingsFlow.first()
+        if (settings.groupSecretHex.isBlank()) {
+            settingsRepository.setGroupSecretHex(PeerHmacAuth.generateGroupSecretHex())
+        }
+        val active = groupJoinManager.generateJoinCode()
+        return typedJsonResponse(200, "OK", GroupJoinCodeResponse(active.code, active.expiresAtEpochMillis))
+    }
+
+    private suspend fun handlePeerJoin(req: HttpRequest): HttpResponse {
+        val joinReq = PhoneControllerJson.decode<PeerJoinRequest>(req.body.toString(StandardCharsets.UTF_8))
+        if (!groupJoinManager.consumeIfValid(joinReq.code)) {
+            return errorResponse(401, "Unauthorized", "invalid_join_code", "Invalid or expired TV group join code")
+        }
+        if (joinReq.deviceId.isBlank()) {
+            return errorResponse(400, "Bad Request", "missing_device_id", "Joining TV must supply deviceId")
+        }
+        var settings = settingsRepository.appSettingsFlow.first()
+        var secret = settings.groupSecretHex
+        if (secret.isBlank()) {
+            secret = PeerHmacAuth.generateGroupSecretHex()
+            settingsRepository.setGroupSecretHex(secret)
+            settings = settingsRepository.appSettingsFlow.first()
+        }
+        val peerHost = joinReq.host.trim().ifBlank { req.remoteAddress }
+        val joinedPeer = PeerTvRecord(
+            deviceId = joinReq.deviceId.trim(),
+            deviceName = joinReq.deviceName.trim().take(48),
+            roomGroup = joinReq.roomGroup.trim().take(48),
+            lastKnownHost = peerHost,
+            port = joinReq.port.coerceIn(1024, 65535),
+            lastSeenEpochMillis = nowMillisProvider()
+        )
+        settingsRepository.upsertPeerTv(joinedPeer)
+        val updatedSettings = settingsRepository.appSettingsFlow.first()
+        val self = selfPeerRecord(updatedSettings)
+        val peersForJoiner = (updatedSettings.peerTvs.filterNot { it.deviceId == self.deviceId } + self)
+        return typedJsonResponse(200, "OK", PeerJoinResponse(groupSecretHex = secret, peers = peersForJoiner))
+    }
+
+    private suspend fun handleBrowserJoinGroup(req: HttpRequest, settings: AppSettings): HttpResponse {
+        val body = PhoneControllerJson.decode<BrowserPeerJoinRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val host = body.host.trim()
+        if (host.isBlank() || body.code.filter { it.isDigit() }.length != 6) {
+            return errorResponse(400, "Bad Request", "invalid_join_request", "Host IP and 6-digit join code are required")
+        }
+        val self = selfPeerRecord(settings)
+        val result = peerSyncClient.joinGroup(host, body.port.coerceIn(1024, 65535), body.code, self)
+        val joined = result.getOrElse { err ->
+            return errorResponse(502, "Bad Gateway", "peer_join_failed", err.message ?: "Could not reach peer TV")
+        }
+        settingsRepository.setGroupSecretHex(joined.groupSecretHex)
+        val filteredPeers = joined.peers.filterNot { it.deviceId == self.deviceId }
+        settingsRepository.setPeerTvs(filteredPeers)
+        // Immediately catch up config from peers if they are ahead
+        pullNewerConfigFromPeers()
+        val refreshed = settingsRepository.appSettingsFlow.first()
+        return handleGetPeers(refreshed)
+    }
+
+    private suspend fun handleGetPeers(settings: AppSettings): HttpResponse {
+        val self = selfPeerRecord(settings)
+        val peers = settings.peerTvs.filterNot { it.deviceId == self.deviceId }
+        val groups = (listOf(self.roomGroup) + peers.map { it.roomGroup })
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+        return typedJsonResponse(
+            200, "OK",
+            PeerListResponse(
+                self = self,
+                peers = peers,
+                roomGroups = groups,
+                groupLinked = settings.groupSecretHex.isNotBlank()
+            )
+        )
+    }
+
+    private suspend fun handlePushConfigToPeers(settings: AppSettings): HttpResponse {
+        val selfId = settingsRepository.ensureDeviceId()
+        val peers = settings.peerTvs.filterNot { it.deviceId == selfId }
+        val payload = buildPeerSyncPayload(settings)
+        val deliveries = peerSyncClient.pushConfigToPeers(peers, payload, settings.groupSecretHex, selfId)
+        return typedJsonResponse(
+            200, "OK",
+            PeerSyncPushResultResponse(configVersion = settings.configVersion, deliveries = deliveries)
+        )
+    }
+
+    private suspend fun handleSignedPeerRequest(method: String, path: String, req: HttpRequest): HttpResponse {
+        val settings = settingsRepository.appSettingsFlow.first()
+        val verified = peerHmacAuth.verifyRequest(
+            groupSecretHex = settings.groupSecretHex,
+            method = method,
+            path = path,
+            timestampHeader = req.headers[PeerHmacAuth.HEADER_TIMESTAMP],
+            nonceHeader = req.headers[PeerHmacAuth.HEADER_NONCE],
+            signatureHeader = req.headers[PeerHmacAuth.HEADER_SIGNATURE],
+            body = req.body
+        )
+        if (!verified) {
+            return errorResponse(401, "Unauthorized", "invalid_peer_signature", "Invalid or replayed peer HMAC signature")
+        }
+        return try {
+            when {
+                method == "GET" && path == "/api/v1/peer/sync" -> {
+                    typedJsonResponse(200, "OK", buildPeerSyncPayload(settings))
+                }
+                method == "POST" && path == "/api/v1/peer/sync" -> {
+                    val incoming = PhoneControllerJson.decode<PeerSyncPayload>(req.body.toString(StandardCharsets.UTF_8))
+                    applyIncomingPeerSync(incoming, settings)
+                    val refreshed = settingsRepository.appSettingsFlow.first()
+                    typedJsonResponse(200, "OK", mapOf("configVersion" to refreshed.configVersion))
+                }
+                method == "POST" && path == "/api/v1/peer/notice" -> {
+                    val msg = PhoneControllerJson.decode<PeerNoticeMessage>(req.body.toString(StandardCharsets.UTF_8))
+                    applyIncomingPeerNotice(msg)
+                    typedJsonResponse(200, "OK", LogoutResponse(loggedOut = false))
+                }
+                method == "GET" && path.startsWith("/api/v1/peer/asset/") -> {
+                    handleServePeerAsset(path.removePrefix("/api/v1/peer/asset/"))
+                }
+                else -> errorResponse(404, "Not Found", "not_found", "Unknown peer endpoint")
+            }
+        } catch (_: IllegalArgumentException) {
+            errorResponse(400, "Bad Request", "invalid_json", "Malformed peer JSON payload")
+        }
+    }
+
+    private suspend fun applyIncomingPeerSync(incoming: PeerSyncPayload, current: AppSettings) {
+        val selfId = settingsRepository.ensureDeviceId()
+
+        // 1. Always merge paired devices with revocation-wins tombstones (D24)
+        val mergedDevices = GroupSyncConflictResolver.mergePairedDevices(current.pairedDevices, incoming.pairedDevices)
+        if (mergedDevices != current.pairedDevices) {
+            settingsRepository.setPairedDevices(mergedDevices)
+            syncPairedHashCache(settingsRepository.appSettingsFlow.first())
+        }
+
+        // 2. Merge peer list (excluding self)
+        if (incoming.peers.isNotEmpty()) {
+            val peerMap = current.peerTvs.associateBy { it.deviceId }.toMutableMap()
+            for (p in incoming.peers) {
+                if (p.deviceId.isNotBlank() && p.deviceId != selfId) {
+                    peerMap[p.deviceId] = p
+                }
+            }
+            settingsRepository.setPeerTvs(peerMap.values.toList())
+        }
+
+        // 3. Adopt group config & slides only if incoming wins conflict resolution
+        if (!GroupSyncConflictResolver.shouldAdoptPeerConfig(
+                localVersion = current.configVersion,
+                localDeviceId = selfId,
+                peerVersion = incoming.configVersion,
+                peerDeviceId = incoming.originDeviceId
+            )
+        ) {
+            return
+        }
+
+        // Strip local-only fields (D24) so peer sync never overwrites TV identity or theme
+        val safeGroupPatch = incoming.settings.copy(
+            deviceName = null,
+            roomGroup = null,
+            themeMode = null
+        )
+        applySettingsPatch(safeGroupPatch, current, bumpVersion = false)
+
+        // Replace slides and fetch any missing slide images from origin TV
+        val mappedSlides = incoming.slides.mapIndexed { idx, dto ->
+            val slideType = runCatching { SlideType.valueOf(dto.type.uppercase(Locale.ROOT)) }.getOrDefault(SlideType.TEXT)
+            val parsedLines = parseSlideLineDtos(dto.lines)
+            val textBody = if (parsedLines.isNotEmpty()) parsedLines.joinToString("\n") { it.text } else dto.body.trim()
+            val align = runCatching { SlideTextAlign.valueOf(dto.textAlign.uppercase(Locale.ROOT)) }.getOrNull()
+                ?: parsedLines.firstOrNull()?.align
+                ?: SlideTextAlign.CENTER
+            val targetSlideDir = slideImagesDir
+            val imageFileName = dto.imageFile
+            if (slideType == SlideType.IMAGE && !imageFileName.isNullOrBlank() && targetSlideDir != null && incoming.originHost.isNotBlank()) {
+                val localFile = File(targetSlideDir, imageFileName)
+                if (!localFile.exists()) {
+                    val bytes = peerSyncClient.downloadPeerAsset(
+                        incoming.originHost, incoming.originPort, "slide", imageFileName, current.groupSecretHex, selfId
+                    )
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        runCatching {
+                            targetSlideDir.mkdirs()
+                            localFile.writeBytes(bytes)
+                        }
+                    }
+                }
+            }
+            AnnouncementSlide(
+                id = dto.id.trim().ifEmpty { "slide_${UUID.randomUUID()}" },
+                type = slideType,
+                title = dto.title.trim(),
+                body = if (slideType == SlideType.TEXT) textBody else dto.body,
+                lines = if (slideType == SlideType.TEXT) parsedLines else emptyList(),
+                imageFile = dto.imageFile,
+                durationSeconds = dto.durationSeconds.coerceIn(3, 120),
+                enabled = dto.enabled,
+                textAlign = align,
+                sortOrder = idx
+            )
+        }
+        val rev = contentRepository.slidesFlow.value.revision
+        contentRepository.replaceAll(rev, mappedSlides)
+        settingsRepository.setConfigVersion(incoming.configVersion)
+    }
+
+    suspend fun pullNewerConfigFromPeers() {
+        val settings = settingsRepository.appSettingsFlow.first()
+        if (settings.groupSecretHex.isBlank() || settings.peerTvs.isEmpty()) return
+        val selfId = settingsRepository.ensureDeviceId()
+        for (peer in settings.peerTvs) {
+            if (peer.deviceId == selfId) continue
+            val pulled = peerSyncClient.pullConfigFromPeer(peer, settings.groupSecretHex, selfId).getOrNull() ?: continue
+            val latestLocal = settingsRepository.appSettingsFlow.first()
+            applyIncomingPeerSync(pulled, latestLocal)
+        }
+    }
+
+    private fun handleServePeerAsset(relative: String): HttpResponse {
+        val parts = relative.split("/", limit = 2)
+        if (parts.size != 2) return errorResponse(404, "Not Found", "not_found", "Asset not found")
+        val kind = parts[0]
+        val fileName = parts[1]
+        if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\') || fileName.contains("..")) {
+            return errorResponse(400, "Bad Request", "invalid_file", "Invalid asset filename")
+        }
+        val dir = when (kind) {
+            "slide" -> slideImagesDir
+            "logo" -> logoImagesDir
+            else -> null
+        } ?: return errorResponse(404, "Not Found", "not_found", "Asset directory unavailable")
+        val target = File(dir, fileName)
+        val canonicalDir = dir.canonicalPath + File.separator
+        if (!target.canonicalPath.startsWith(canonicalDir) || !target.exists() || !target.isFile) {
+            return errorResponse(404, "Not Found", "not_found", "Asset not found")
+        }
+        return HttpResponse(200, "OK", "application/octet-stream", target.readBytes())
+    }
+
+    private suspend fun applyIncomingPeerNotice(msg: PeerNoticeMessage) {
+        if (msg.clear) {
+            settingsRepository.setActiveUrgentNotice(null)
+            return
+        }
+        val now = nowMillisProvider()
+        val duration = msg.durationMinutes.coerceIn(1, 60)
+        val record = UrgentNoticeRecord(
+            id = msg.id.ifBlank { "notice_${UUID.randomUUID()}" },
+            title = msg.title.trim().take(60).ifBlank { "Urgent Notice" },
+            message = msg.message.trim().take(240),
+            createdAtEpochMillis = if (msg.createdAtEpochMillis > 0L) msg.createdAtEpochMillis else now,
+            durationMinutes = duration,
+            // Enforce expiry from LOCAL receive time so clock drift between TVs cannot extend it
+            receivedAtEpochMillis = now,
+            expiresAtEpochMillis = now + duration * 60_000L,
+            originDeviceId = msg.originDeviceId
+        )
+        if (record.message.isNotBlank()) {
+            settingsRepository.setActiveUrgentNotice(record)
+        }
+    }
+
+    private fun handleGetNotice(settings: AppSettings): HttpResponse {
+        val now = nowMillisProvider()
+        val notice = settings.activeUrgentNotice?.takeIf { it.isActive(now) }
+        return typedJsonResponse(
+            200, "OK",
+            UrgentNoticeResponse(
+                active = notice != null,
+                notice = notice,
+                remainingMinutes = notice?.remainingMinutes(now) ?: 0L
+            )
+        )
+    }
+
+    private suspend fun handleSendNotice(req: HttpRequest, settings: AppSettings): HttpResponse {
+        val body = PhoneControllerJson.decode<UrgentNoticeRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val cleanMsg = body.message.trim().take(240)
+        if (cleanMsg.isBlank()) {
+            return errorResponse(400, "Bad Request", "empty_notice", "Urgent notice message is required")
+        }
+        val now = nowMillisProvider()
+        val selfId = settingsRepository.ensureDeviceId()
+        val duration = body.durationMinutes.coerceIn(1, 60)
+        val noticeId = body.id?.trim()?.takeIf { it.isNotEmpty() } ?: "notice_${UUID.randomUUID()}"
+        val cleanTitle = body.title.trim().take(60).ifBlank { "Urgent Notice" }
+
+        val scope = body.targetScope.uppercase(Locale.ROOT)
+        val targetRoom = body.targetRoomGroup?.trim().orEmpty()
+        val targetIds = body.targetDeviceIds?.toSet().orEmpty()
+
+        val includeSelf = when (scope) {
+            "ROOM" -> targetRoom.isEmpty() || settings.roomGroup.equals(targetRoom, ignoreCase = true)
+            "SELECTED" -> targetIds.isEmpty() || selfId in targetIds
+            else -> true
+        }
+        val targetPeers = settings.peerTvs.filter { peer ->
+            peer.deviceId != selfId && when (scope) {
+                "ROOM" -> targetRoom.isEmpty() || peer.roomGroup.equals(targetRoom, ignoreCase = true)
+                "SELECTED" -> peer.deviceId in targetIds
+                else -> true
+            }
+        }
+
+        val deliveries = mutableListOf<PeerDeliveryStatusDto>()
+        var localRecord: UrgentNoticeRecord? = null
+        if (includeSelf) {
+            localRecord = UrgentNoticeRecord(
+                id = noticeId,
+                title = cleanTitle,
+                message = cleanMsg,
+                createdAtEpochMillis = now,
+                durationMinutes = duration,
+                receivedAtEpochMillis = now,
+                expiresAtEpochMillis = now + duration * 60_000L,
+                originDeviceId = selfId
+            )
+            settingsRepository.setActiveUrgentNotice(localRecord)
+            deliveries.add(
+                PeerDeliveryStatusDto(
+                    deviceId = selfId,
+                    deviceName = settings.deviceName.ifBlank { "This TV" },
+                    status = "delivered"
+                )
+            )
+        }
+
+        if (targetPeers.isNotEmpty() && settings.groupSecretHex.isNotBlank()) {
+            val peerMsg = PeerNoticeMessage(
+                clear = false,
+                id = noticeId,
+                title = cleanTitle,
+                message = cleanMsg,
+                createdAtEpochMillis = now,
+                durationMinutes = duration,
+                originDeviceId = selfId
+            )
+            deliveries.addAll(peerSyncClient.pushNoticeToPeers(targetPeers, peerMsg, settings.groupSecretHex, selfId))
+        }
+
+        return typedJsonResponse(
+            200, "OK",
+            UrgentNoticeResponse(
+                active = localRecord != null,
+                notice = localRecord,
+                remainingMinutes = localRecord?.remainingMinutes(now) ?: 0L,
+                deliveries = deliveries
+            )
+        )
+    }
+
+    private suspend fun handleClearNotice(settings: AppSettings): HttpResponse {
+        val selfId = settingsRepository.ensureDeviceId()
+        settingsRepository.setActiveUrgentNotice(null)
+        val deliveries = mutableListOf(
+            PeerDeliveryStatusDto(
+                deviceId = selfId,
+                deviceName = settings.deviceName.ifBlank { "This TV" },
+                status = "delivered"
+            )
+        )
+        val peers = settings.peerTvs.filterNot { it.deviceId == selfId }
+        if (peers.isNotEmpty() && settings.groupSecretHex.isNotBlank()) {
+            deliveries.addAll(
+                peerSyncClient.pushNoticeToPeers(peers, PeerNoticeMessage(clear = true, originDeviceId = selfId), settings.groupSecretHex, selfId)
+            )
+        }
+        return typedJsonResponse(
+            200, "OK",
+            UrgentNoticeResponse(active = false, notice = null, remainingMinutes = 0L, deliveries = deliveries)
+        )
     }
 
     private suspend fun handleAuth(req: HttpRequest): HttpResponse = authMutex.withLock {
@@ -697,6 +1182,7 @@ class SalatSignLocalServer(
     }
 
     private fun isTokenLikelyAuthenticatedForBodyLimit(headers: Map<String, String>): Boolean {
+        if (!headers[PeerHmacAuth.HEADER_SIGNATURE].isNullOrBlank()) return true
         val token = extractRawBearerToken(headers) ?: return false
         val sessionExpiry = sessions[token]
         if (sessionExpiry != null && nowMillisProvider() <= sessionExpiry) return true

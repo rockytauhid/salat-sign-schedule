@@ -54,11 +54,11 @@ The TV-hosted web Phone Controller in `:app-salatsign` is the primary remote adm
 
 ---
 
-## Phase 3: Multi-TV Group Control & Urgent Notice
+## Phase 3: Multi-TV Group Control & Urgent Notice *(Complete)*
 
-- **3a. TV Group Setup:** Link TVs via one-time group join code (shares 256-bit group secret + peer list). TV-to-TV requests signed with HMAC-SHA256 + timestamp + nonce; mDNS (`_salatsign._tcp`) re-discovers peers when IPs change.
-- **3b. Multi-TV Control:** Browser opened on any TV loads the peer list and targets all TVs, a room group, or selected TVs, showing per-TV status (`delivered`, `pending`, `failed`) with retry. Images uploaded once to the entry TV and fetched by peers via content hash. Offline catch-up pulls newer `configVersion` (tiebreaker: `deviceId`).
-- **3c. Urgent Notice:** Custom text + neutral presets, 5/10/15-min expiry or manual clear (`NOTIFY` role). Enforced locally from receive time; renders full-screen above schedule/slides and yields to Silent Screen.
+- [x] **3a. TV Group Setup:** Link TVs via one-time 6-digit group join code (`POST /api/v1/peers/code` + `POST /api/v1/peer/join`) sharing a 256-bit group secret + peer list. TV-to-TV requests signed with HMAC-SHA256 + timestamp (`±120s`) + replay-checked nonce (`PeerHmacAuth`); mDNS (`_salatsign._tcp`) discovery refreshes peer IPs automatically.
+- [x] **3b. Multi-TV Control:** Browser loads linked peer list (`GET /api/v1/peers`), targets All TVs or Room Groups, pushes config/slides with per-TV delivery status (`POST /api/v1/peers/push`), pulls missing slide/logo images once from origin TV (`GET /api/v1/peer/asset/{kind}/{file}`), and runs offline catch-up on startup (`pullNewerConfigFromPeers`) with highest-version + `deviceId` tiebreaker and revocation-wins paired-device merging while preserving local TV identity/theme/always-on.
+- [x] **3c. Urgent Notice:** Custom text + neutral presets, 5/10/15-min expiry or manual clear (`NOTIFY` or `MANAGE` role). Enforced locally from receive time; renders full-screen (`UrgentNoticeScreen`) above schedule/slides and yields to Silent Screen during active Jumu'ah/prayer.
 
 ---
 

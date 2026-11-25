@@ -350,3 +350,99 @@ data class FullConfigWriteRequest(
     val settings: SettingsPatchRequest? = null,
     val slides: List<SlideDto>? = null
 )
+
+// --- Phase 3: Multi-TV Group Sync & Urgent Notice DTOs ---
+
+@Serializable
+data class PeerJoinRequest(
+    val code: String = "",
+    val deviceId: String = "",
+    val deviceName: String = "",
+    val roomGroup: String = "",
+    val host: String = "",
+    val port: Int = ApiConstants.DEFAULT_HTTP_PORT
+)
+
+@Serializable
+data class PeerJoinResponse(
+    val groupSecretHex: String,
+    val peers: List<com.salatsign.tv.security.PeerTvRecord>
+)
+
+@Serializable
+data class GroupJoinCodeResponse(
+    val code: String,
+    val expiresAtEpochMillis: Long
+)
+
+@Serializable
+data class BrowserPeerJoinRequest(
+    val host: String = "",
+    val port: Int = ApiConstants.DEFAULT_HTTP_PORT,
+    val code: String = ""
+)
+
+@Serializable
+data class PeerListResponse(
+    val self: com.salatsign.tv.security.PeerTvRecord,
+    val peers: List<com.salatsign.tv.security.PeerTvRecord>,
+    val roomGroups: List<String>,
+    val groupLinked: Boolean
+)
+
+@Serializable
+data class PeerDeliveryStatusDto(
+    val deviceId: String,
+    val deviceName: String,
+    val status: String, // "delivered", "failed"
+    val message: String? = null
+)
+
+@Serializable
+data class PeerSyncPayload(
+    val originDeviceId: String,
+    val originHost: String = "",
+    val originPort: Int = ApiConstants.DEFAULT_HTTP_PORT,
+    val configVersion: Long,
+    val settings: SettingsPatchRequest,
+    val slides: List<SlideDto>,
+    val pairedDevices: List<com.salatsign.tv.security.PairedDeviceRecord> = emptyList(),
+    val peers: List<com.salatsign.tv.security.PeerTvRecord> = emptyList()
+)
+
+@Serializable
+data class PeerSyncPushResultResponse(
+    val configVersion: Long,
+    val deliveries: List<PeerDeliveryStatusDto>
+)
+
+@Serializable
+data class UrgentNoticeRequest(
+    val id: String? = null,
+    val title: String = "Urgent Notice",
+    val message: String = "",
+    val durationMinutes: Int = 10,
+    val targetScope: String = "ALL", // "ALL", "ROOM", "SELECTED"
+    val targetRoomGroup: String? = null,
+    val targetDeviceIds: List<String>? = null
+)
+
+@Serializable
+data class PeerNoticeMessage(
+    val clear: Boolean = false,
+    val id: String = "",
+    val title: String = "Urgent Notice",
+    val message: String = "",
+    val createdAtEpochMillis: Long = 0L,
+    val durationMinutes: Int = 10,
+    val originDeviceId: String = ""
+)
+
+@Serializable
+data class UrgentNoticeResponse(
+    val active: Boolean,
+    val notice: com.salatsign.tv.security.UrgentNoticeRecord? = null,
+    val remainingMinutes: Long = 0L,
+    val deliveries: List<PeerDeliveryStatusDto> = emptyList()
+)
+

@@ -78,6 +78,8 @@ class SalatSignApp : Application() {
             webAssetProvider = {
                 assets.open("phone_controller/index.html").use { it.readBytes() }
             },
+            slideImagesDir = slideImagesDir,
+            logoImagesDir = logoImagesDir,
             onDevicePaired = { record ->
                 _lastPairedDeviceNotice.value = record
             }
@@ -112,6 +114,26 @@ class SalatSignApp : Application() {
                         deviceName = s.deviceName,
                         roomGroup = s.roomGroup
                     )
+                    // Phase 3a: Keep peer IP addresses refreshed via mDNS discovery
+                    nsdHelper.startPeerDiscovery(deviceId) { peerId, peerName, peerGroup, peerHost, peerPort ->
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val currentPeers = settingsRepository.appSettingsFlow.first().peerTvs
+                            if (currentPeers.any { it.deviceId == peerId }) {
+                                settingsRepository.upsertPeerTv(
+                                    com.salatsign.tv.security.PeerTvRecord(
+                                        deviceId = peerId,
+                                        deviceName = peerName,
+                                        roomGroup = peerGroup,
+                                        lastKnownHost = peerHost,
+                                        port = peerPort,
+                                        lastSeenEpochMillis = System.currentTimeMillis()
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    // Phase 3b: Offline catch-up on startup
+                    runCatching { localServer.pullNewerConfigFromPeers() }
                     // Right after a TV cold boot, Wi-Fi/Ethernet may take several seconds to obtain an IP
                     var attempt = 0
                     while (isActive && _phoneControllerUrl.value == null && attempt < 15) {

@@ -150,6 +150,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val LAN_PIN_LOGIN_ENABLED = booleanPreferencesKey("lan_pin_login_enabled")
         val PAIRED_TOKEN_EXPIRY_DAYS = intPreferencesKey("paired_token_expiry_days")
         val PHONE_CONTROLLER_ALWAYS_ON = booleanPreferencesKey("phone_controller_always_on")
+
+        // Multi-TV Group Sync & Urgent Notice (SalatSign Phase 3)
+        val GROUP_SECRET_HEX = stringPreferencesKey("group_secret_hex")
+        val PEER_TVS_JSON = stringPreferencesKey("peer_tvs_json")
+        val ACTIVE_URGENT_NOTICE_JSON = stringPreferencesKey("active_urgent_notice_json")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -380,7 +385,18 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 pairedTokenExpiryDays = com.salatsign.tv.security.PairingManager.normalizeExpiryDays(
                     preferences[PreferencesKeys.PAIRED_TOKEN_EXPIRY_DAYS] ?: 0
                 ),
-                phoneControllerAlwaysOn = preferences[PreferencesKeys.PHONE_CONTROLLER_ALWAYS_ON] ?: false
+                phoneControllerAlwaysOn = preferences[PreferencesKeys.PHONE_CONTROLLER_ALWAYS_ON] ?: false,
+                groupSecretHex = preferences[PreferencesKeys.GROUP_SECRET_HEX] ?: "",
+                peerTvs = preferences[PreferencesKeys.PEER_TVS_JSON]?.let { raw ->
+                    runCatching {
+                        com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PeerTvRecord>>(raw)
+                    }.getOrDefault(emptyList())
+                } ?: emptyList(),
+                activeUrgentNotice = preferences[PreferencesKeys.ACTIVE_URGENT_NOTICE_JSON]?.let { raw ->
+                    if (raw.isBlank()) null else runCatching {
+                        com.salatsign.tv.data.api.PhoneControllerJson.decode<com.salatsign.tv.security.UrgentNoticeRecord>(raw)
+                    }.getOrNull()
+                }
             )
         }
 
@@ -980,6 +996,46 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setPhoneControllerAlwaysOn(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PHONE_CONTROLLER_ALWAYS_ON] = enabled
+        }
+    }
+
+    override suspend fun setGroupSecretHex(secretHex: String) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.GROUP_SECRET_HEX] = secretHex.trim()
+        }
+    }
+
+    override suspend fun upsertPeerTv(peer: com.salatsign.tv.security.PeerTvRecord) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.PEER_TVS_JSON]?.let { raw ->
+                runCatching {
+                    com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PeerTvRecord>>(raw)
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val updated = current.filterNot { it.deviceId == peer.deviceId } + peer
+            prefs[PreferencesKeys.PEER_TVS_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(updated)
+        }
+    }
+
+    override suspend fun setPeerTvs(peers: List<com.salatsign.tv.security.PeerTvRecord>) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PEER_TVS_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(peers)
+        }
+    }
+
+    override suspend fun setPairedDevices(devices: List<com.salatsign.tv.security.PairedDeviceRecord>) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PAIRED_DEVICES_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(devices)
+        }
+    }
+
+    override suspend fun setActiveUrgentNotice(notice: com.salatsign.tv.security.UrgentNoticeRecord?) {
+        context.dataStore.edit { prefs ->
+            if (notice == null) {
+                prefs.remove(PreferencesKeys.ACTIVE_URGENT_NOTICE_JSON)
+            } else {
+                prefs[PreferencesKeys.ACTIVE_URGENT_NOTICE_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(notice)
+            }
         }
     }
 }
