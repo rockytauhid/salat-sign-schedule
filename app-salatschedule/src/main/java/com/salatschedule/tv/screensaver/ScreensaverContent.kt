@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -343,14 +344,14 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top: Large clock (no seconds) + Gregorian & Hijri dates
+            // Top: Large clock (no seconds) + Gregorian & Hijri dates (baseline-aligned at bottom)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = slide.clockText,
+                    modifier = Modifier.alignByBaseline(),
                     style = TvTypography.ActivePrayerTime.copy(
                         fontSize = 72.sp,
                         fontWeight = FontWeight.Bold,
@@ -358,7 +359,10 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                     )
                 )
 
-                Column(horizontalAlignment = Alignment.End) {
+                Column(
+                    modifier = Modifier.alignBy(LastBaseline),
+                    horizontalAlignment = Alignment.End
+                ) {
                     if (slide.hijriDate.isNotBlank()) {
                         Text(
                             text = slide.hijriDate,
