@@ -9,8 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.salatsign.core.tv.R
 import com.salatschedule.tv.SalatScheduleApp
 import com.salatsign.tv.data.model.AppSettings
+import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimesDay
 import com.salatsign.tv.engine.DailyPrayerCacheKey
+import com.salatsign.tv.engine.PrayerCalculationEngine
 import com.salatsign.tv.engine.PrayerDayCache
 import com.salatsign.tv.ui.common.LocaleHelper
 import kotlinx.coroutines.delay
@@ -31,7 +33,8 @@ data class HomeUiState(
     val selectedDate: LocalDate = LocalDate.now(),
     val isViewingToday: Boolean = true,
     val prayerTimesDay: PrayerTimesDay? = null,
-    val settings: AppSettings = AppSettings()
+    val settings: AppSettings = AppSettings(),
+    val activeStrikePrayer: Prayer? = null
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -77,12 +80,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             hijriMonthNames = hijriMonthNames
         )
         val prayerTimes = prayerDayCache.getOrCompute(key, nowZoned)
+        val strikePrayer = if (isToday && settings.showStrikeHighlight) {
+            PrayerCalculationEngine.getPrayerAtExactTimeStrike(
+                prayerTimes,
+                nowZoned.toLocalTime(),
+                5L,
+                isMosqueMode = false
+            )
+        } else {
+            null
+        }
 
         HomeUiState(
             selectedDate = date,
             isViewingToday = isToday,
             prayerTimesDay = prayerTimes,
-            settings = settings
+            settings = settings,
+            activeStrikePrayer = strikePrayer
         )
     }.stateIn(
         scope = viewModelScope,

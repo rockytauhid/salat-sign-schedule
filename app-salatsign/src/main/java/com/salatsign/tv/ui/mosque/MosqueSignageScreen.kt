@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -43,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -68,6 +71,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.qrcode.QRCodeWriter
 import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
@@ -690,6 +697,21 @@ fun MosqueTextSlideContent(
             com.salatsign.tv.data.model.SlideFontSize.LARGE -> 1.28f
         }
 
+        fun extractQrPayload(raw: String): String? {
+            val trimmed = raw.trim()
+            if (!trimmed.startsWith("qrc:", ignoreCase = true)) return null
+            return trimmed.substring(4).trim().takeIf { it.isNotEmpty() }
+        }
+
+        fun qrBoxDpFor(size: com.salatsign.tv.data.model.SlideFontSize, step: TextSlideTypographyStep): Float {
+            val base = when (size) {
+                com.salatsign.tv.data.model.SlideFontSize.SMALL -> 150f
+                com.salatsign.tv.data.model.SlideFontSize.MEDIUM -> 190f
+                com.salatsign.tv.data.model.SlideFontSize.LARGE -> 230f
+            }
+            return (base * (step.bodySp / 32f)).coerceAtLeast(110f)
+        }
+
         val chosenStep = remember(slide.title, effectiveLines, availableWidthPx, availableHeightPx) {
             val widthConstraint = Constraints(maxWidth = availableWidthPx)
             TEXT_SLIDE_STEPS.firstOrNull { step ->
@@ -710,18 +732,22 @@ fun MosqueTextSlideContent(
                 val bodyHeight = if (hasBody) {
                     val rowGapPx = with(density) { (step.gapDp / 3).coerceAtLeast(2).dp.roundToPx() }
                     effectiveLines.sumOf { line ->
-                        val mult = sizeScale(line.fontSize)
-                        textMeasurer.measure(
-                            text = line.text.ifEmpty { " " },
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = (step.bodySp * mult).sp,
-                                lineHeight = (step.bodyLineHeightSp * mult).sp,
-                                fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
-                                textAlign = toComposeAlign(line.align),
-                                textDirection = TextDirection.ContentOrLtr
-                            ),
-                            constraints = widthConstraint
-                        ).size.height
+                        if (extractQrPayload(line.text) != null) {
+                            with(density) { (qrBoxDpFor(line.fontSize, step) + 20f).dp.roundToPx() }
+                        } else {
+                            val mult = sizeScale(line.fontSize)
+                            textMeasurer.measure(
+                                text = line.text.ifEmpty { " " },
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = (step.bodySp * mult).sp,
+                                    lineHeight = (step.bodyLineHeightSp * mult).sp,
+                                    fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
+                                    textAlign = toComposeAlign(line.align),
+                                    textDirection = TextDirection.ContentOrLtr
+                                ),
+                                constraints = widthConstraint
+                            ).size.height
+                        }
                     } + rowGapPx * (effectiveLines.size - 1).coerceAtLeast(0)
                 } else 0
 
@@ -759,18 +785,80 @@ fun MosqueTextSlideContent(
                     verticalArrangement = Arrangement.spacedBy((chosenStep.gapDp / 3).coerceAtLeast(2).dp)
                 ) {
                     for (line in effectiveLines) {
-                        val mult = sizeScale(line.fontSize)
-                        Text(
-                            text = line.text,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = (chosenStep.bodySp * mult).sp,
-                                lineHeight = (chosenStep.bodyLineHeightSp * mult).sp,
-                                fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
-                                color = colorScheme.onSurface,
-                                textAlign = toComposeAlign(line.align),
-                                textDirection = TextDirection.ContentOrLtr
+                        val qrPayload = extractQrPayload(line.text)
+                        if (qrPayload != null) {
+                            val qrSize = qrBoxDpFor(line.fontSize, chosenStep).dp
+                            val boxAlign = when (line.align) {
+                                com.salatsign.tv.data.model.SlideTextAlign.LEFT -> Alignment.CenterStart
+                                com.salatsign.tv.data.model.SlideTextAlign.CENTER -> Alignment.Center
+                                com.salatsign.tv.data.model.SlideTextAlign.RIGHT -> Alignment.CenterEnd
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = boxAlign
+                            ) {
+                                TextSlideQrCode(
+                                    payload = qrPayload,
+                                    sizeDp = qrSize
+                                )
+                            }
+                        } else {
+                            val mult = sizeScale(line.fontSize)
+                            Text(
+                                text = line.text,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = TvTypography.BodyLabel.copy(
+                                    fontSize = (chosenStep.bodySp * mult).sp,
+                                    lineHeight = (chosenStep.bodyLineHeightSp * mult).sp,
+                                    fontWeight = if (line.fontSize == com.salatsign.tv.data.model.SlideFontSize.LARGE) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = colorScheme.onSurface,
+                                    textAlign = toComposeAlign(line.align),
+                                    textDirection = TextDirection.ContentOrLtr
+                                )
                             )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TextSlideQrCode(
+    payload: String,
+    sizeDp: androidx.compose.ui.unit.Dp
+) {
+    val matrix: BitMatrix? = remember(payload) {
+        runCatching {
+            val hints = mapOf(EncodeHintType.MARGIN to 1)
+            QRCodeWriter().encode(payload, BarcodeFormat.QR_CODE, 0, 0, hints)
+        }.getOrNull()
+    }
+    if (matrix == null) return
+    Box(
+        modifier = Modifier
+            .size(sizeDp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
+            .padding(10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = matrix.width
+            val h = matrix.height
+            if (w <= 0 || h <= 0) return@Canvas
+            val cellW = size.width / w
+            val cellH = size.height / h
+            for (y in 0 until h) {
+                for (x in 0 until w) {
+                    if (matrix.get(x, y)) {
+                        drawRect(
+                            color = Color.Black,
+                            topLeft = Offset(x * cellW, y * cellH),
+                            size = Size(cellW + 0.5f, cellH + 0.5f)
                         )
                     }
                 }

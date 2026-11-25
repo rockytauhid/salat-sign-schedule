@@ -56,6 +56,7 @@ import com.salatsign.tv.ui.common.formatRelativeDaysLabel
 import com.salatsign.tv.ui.common.islamicEventNameRes
 import com.salatsign.tv.ui.common.labelRes
 import com.salatsign.tv.ui.common.overscanPadding
+import com.salatsign.tv.ui.common.pulsingGlow
 import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
@@ -162,8 +163,19 @@ fun HomeScreen(
             if (prayerTimes != null) {
                 val activePrayerItem = prayerTimes.prayers.firstOrNull { it.isActive }
                 val nextPrayerItem = prayerTimes.nextPrayer
-                // Center Spotlight Card: Current Active Prayer hero + Next Prayer live countdown
-                if (uiState.isViewingToday && nextPrayerItem != null) {
+                // Center Spotlight Card: 5-minute Prayer-Time Alert Banner on exact strike, else Current/Next Prayer hero
+                if (uiState.isViewingToday && uiState.activeStrikePrayer != null) {
+                    val strikeItem = prayerTimes.prayers.firstOrNull { it.prayer == uiState.activeStrikePrayer }
+                        ?: prayerTimes.prayers.first()
+                    HomeActiveStrikeBanner(
+                        prayer = strikeItem,
+                        is24HourFormat = uiState.settings.is24HourFormat,
+                        showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1.3f)
+                    )
+                } else if (uiState.isViewingToday && nextPrayerItem != null) {
                     NextPrayerSpotlightCard(
                         activePrayer = activePrayerItem,
                         nextPrayer = nextPrayerItem,
@@ -199,6 +211,108 @@ fun HomeScreen(
                         .weight(1.0f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun HomeActiveStrikeBanner(
+    prayer: PrayerTimeItem,
+    is24HourFormat: Boolean = false,
+    showArabicPrayerNames: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val prayerLabel = stringResource(prayer.prayer.labelRes())
+    val strikeShape = RoundedCornerShape(20.dp)
+    val accentPrimary = colorScheme.primary
+    val accentSecondary = colorScheme.secondary
+
+    Box(
+        modifier = modifier
+            .clip(strikeShape)
+            .background(colorScheme.surfaceVariant, strikeShape)
+            .pulsingGlow(shape = strikeShape, glowColor = accentPrimary)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 24.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(accentPrimary, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.mosque_strike_title),
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                            maxLines = 1,
+                            style = TvTypography.HeaderTitle.copy(
+                                fontSize = 42.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        )
+                        if (showArabicPrayerNames) {
+                            Text(
+                                text = prayer.prayer.arabicName,
+                                maxLines = 1,
+                                style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = prayer.formattedTime(is24HourFormat),
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.ActivePrayerTime.copy(
+                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                        color = accentPrimary
+                    )
+                )
+            }
+
+            // Full-width Surah 4:103 reminder extending all the way under the big prayer time
+            Text(
+                text = stringResource(R.string.mosque_strike_admonition),
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+                style = TvTypography.Subtitle.copy(
+                    fontSize = 19.sp,
+                    lineHeight = 25.sp,
+                    color = accentSecondary
+                )
+            )
         }
     }
 }

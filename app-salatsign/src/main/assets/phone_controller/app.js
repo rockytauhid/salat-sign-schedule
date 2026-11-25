@@ -438,59 +438,72 @@ function renderSlides(slides) {
 
 let textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
 
+const ALIGN_CYCLE = ['LEFT', 'CENTER', 'RIGHT'];
+const ALIGN_LABEL = { LEFT: 'L', CENTER: 'C', RIGHT: 'R' };
+const ALIGN_TITLE = { LEFT: 'Align: Left (tap to cycle)', CENTER: 'Align: Center (tap to cycle)', RIGHT: 'Align: Right (tap to cycle)' };
+const SIZE_CYCLE = ['SMALL', 'MEDIUM', 'LARGE'];
+const SIZE_CLASS = { SMALL: 'row-sz-sm', MEDIUM: 'row-sz-md', LARGE: 'row-sz-lg' };
+const SIZE_TITLE = { SMALL: 'Size: Small (tap to cycle)', MEDIUM: 'Size: Medium (tap to cycle)', LARGE: 'Size: Large (tap to cycle)' };
+const TRASH_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7zm3 3v8h2v-8H9zm4 0v8h2v-8h-2zM9 4l1-1h4l1 1h4v2H5V4h4z"/></svg>';
+
 function renderTextRows() {
   const c = document.getElementById('textRowsContainer');
   if (!c) return;
   c.innerHTML = '';
   textRows.forEach((row, idx) => {
     const wrap = document.createElement('div');
-    wrap.style.display = 'grid';
-    wrap.style.gridTemplateColumns = '1fr 84px 84px auto';
-    wrap.style.gap = '6px';
-    wrap.style.marginBottom = '6px';
-    wrap.style.alignItems = 'center';
+    wrap.className = 'text-row-grid';
 
+    const isQr = /^\s*qrc:/i.test(row.text || '');
     const inp = document.createElement('input');
     inp.type = 'text';
-    inp.maxLength = 100;
-    inp.placeholder = 'Row ' + (idx + 1) + '...';
+    inp.maxLength = 240;
+    inp.className = 'text-row-input' + (isQr ? ' qr-row-input' : '');
+    inp.placeholder = isQr ? 'qrc:https://...' : ('Row ' + (idx + 1) + ' (or qrc:URL)...');
     inp.value = row.text;
-    inp.style.marginTop = '0';
-    inp.oninput = (e) => { textRows[idx].text = e.target.value; };
+    inp.oninput = (e) => {
+      textRows[idx].text = e.target.value;
+      const nowQr = /^\s*qrc:/i.test(e.target.value || '');
+      inp.classList.toggle('qr-row-input', nowQr);
+    };
 
-    const sel = document.createElement('select');
-    sel.style.marginTop = '0';
-    [['CENTER', 'Center'], ['LEFT', 'Left'], ['RIGHT', 'Right']].forEach(([v, l]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = l;
-      if (row.align === v) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.onchange = (e) => { textRows[idx].align = e.target.value; };
+    const alignVal = ALIGN_CYCLE.includes(row.align) ? row.align : 'CENTER';
+    const alignBtn = document.createElement('button');
+    alignBtn.type = 'button';
+    alignBtn.className = 'row-toggle-btn';
+    alignBtn.textContent = ALIGN_LABEL[alignVal];
+    alignBtn.title = ALIGN_TITLE[alignVal];
+    alignBtn.onclick = () => {
+      const next = ALIGN_CYCLE[(ALIGN_CYCLE.indexOf(alignVal) + 1) % ALIGN_CYCLE.length];
+      textRows[idx].align = next;
+      renderTextRows();
+    };
 
-    const sz = document.createElement('select');
-    sz.style.marginTop = '0';
-    [['SMALL', 'Small'], ['MEDIUM', 'Medium'], ['LARGE', 'Large']].forEach(([v, l]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = l;
-      if ((row.fontSize || 'MEDIUM') === v) o.selected = true;
-      sz.appendChild(o);
-    });
-    sz.onchange = (e) => { textRows[idx].fontSize = e.target.value; };
+    const sizeVal = SIZE_CYCLE.includes(row.fontSize) ? row.fontSize : 'MEDIUM';
+    const sizeBtn = document.createElement('button');
+    sizeBtn.type = 'button';
+    sizeBtn.className = 'row-toggle-btn ' + SIZE_CLASS[sizeVal];
+    sizeBtn.textContent = 'Aa';
+    sizeBtn.title = SIZE_TITLE[sizeVal];
+    sizeBtn.onclick = () => {
+      const next = SIZE_CYCLE[(SIZE_CYCLE.indexOf(sizeVal) + 1) % SIZE_CYCLE.length];
+      textRows[idx].fontSize = next;
+      renderTextRows();
+    };
 
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'sm danger';
-    del.textContent = '✕';
-    del.style.marginTop = '0';
+    del.className = 'row-del-btn';
+    del.innerHTML = TRASH_SVG;
+    del.title = 'Delete row';
     del.disabled = textRows.length <= 1;
     del.onclick = () => {
       if (textRows.length > 1) { textRows.splice(idx, 1); renderTextRows(); }
     };
 
     wrap.appendChild(inp);
-    wrap.appendChild(sel);
-    wrap.appendChild(sz);
+    wrap.appendChild(alignBtn);
+    wrap.appendChild(sizeBtn);
     wrap.appendChild(del);
     c.appendChild(wrap);
   });
@@ -987,6 +1000,7 @@ const __clickHandlers = {
   "39": () => { dismissRenamePhoneBanner(); },
   "40": () => { saveTvIdentity(); },
   "41": () => { renameThisPhone('pairedPhoneNameInput'); },
+  "42": () => { addTextRow('qrc:', 'CENTER'); },
 };
 const __changeHandlers = {
   "37": () => { onJumuahModeChange(); },

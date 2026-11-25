@@ -1943,7 +1943,8 @@ class SalatSignLocalServer(
     private fun parseSlideLineDtos(raw: List<SlideLineDto>?): List<SlideTextLine> {
         if (raw.isNullOrEmpty()) return emptyList()
         return raw.take(10).mapNotNull { entry ->
-            val text = entry.text.replace("\n", " ").trimEnd().take(100)
+            val maxLen = if (entry.text.trimStart().startsWith("qrc:", ignoreCase = true)) 240 else 100
+            val text = entry.text.replace("\n", " ").trimEnd().take(maxLen)
             if (text.isBlank()) return@mapNotNull null
             val align = runCatching { SlideTextAlign.valueOf(entry.align.uppercase(Locale.ROOT)) }.getOrDefault(SlideTextAlign.CENTER)
             val fontSize = runCatching { SlideFontSize.valueOf(entry.fontSize.uppercase(Locale.ROOT)) }.getOrDefault(SlideFontSize.MEDIUM)
