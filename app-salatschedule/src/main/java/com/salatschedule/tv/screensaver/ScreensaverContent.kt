@@ -424,14 +424,6 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = stringResource(item.prayer.labelRes(isFriday = false)),
-                            style = TvTypography.CardTitle.copy(
-                                fontSize = 18.sp,
-                                fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isNext) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.82f)
-                            )
-                        )
                         if (slide.showArabicPrayerNames) {
                             Text(
                                 text = item.prayer.arabicName,
@@ -441,6 +433,14 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                                 )
                             )
                         }
+                        Text(
+                            text = stringResource(item.prayer.labelRes(isFriday = false)),
+                            style = TvTypography.CardTitle.copy(
+                                fontSize = 18.sp,
+                                fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isNext) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.82f)
+                            )
+                        )
                         Text(
                             text = item.formattedTime(slide.is24HourFormat),
                             style = TvTypography.HeaderTitle.copy(
@@ -461,13 +461,6 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.prayer_sunrise),
-                                style = TvTypography.CardTitle.copy(
-                                    fontSize = 17.sp,
-                                    color = colorScheme.onSurface.copy(alpha = 0.68f)
-                                )
-                            )
                             if (slide.showArabicPrayerNames) {
                                 Text(
                                     text = "الشروق",
@@ -477,6 +470,13 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                                     )
                                 )
                             }
+                            Text(
+                                text = stringResource(R.string.prayer_sunrise),
+                                style = TvTypography.CardTitle.copy(
+                                    fontSize = 17.sp,
+                                    color = colorScheme.onSurface.copy(alpha = 0.68f)
+                                )
+                            )
                             Text(
                                 text = slide.sunriseText,
                                 style = TvTypography.HeaderTitle.copy(
