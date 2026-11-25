@@ -106,4 +106,5 @@ interface ISettingsRepository {
     suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long)
     suspend fun setLanPinLoginEnabled(enabled: Boolean)
     suspend fun setPairedTokenExpiryDays(days: Int)
+    suspend fun setPhoneControllerAlwaysOn(enabled: Boolean)
 }

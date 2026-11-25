@@ -1180,6 +1180,7 @@ fun MosqueRemoteSecurityPane(
     isPhoneControllerRunning: Boolean,
     phoneControllerUrl: String?,
     onTogglePhoneController: (Boolean) -> Unit,
+    onSetPhoneControllerAlwaysOn: (Boolean) -> Unit = {},
     onOpenPairPhone: () -> Unit = {},
     onRevokePairedDevice: (String) -> Unit = {},
     onSetLanPinLoginEnabled: (Boolean) -> Unit = {},
@@ -1284,40 +1285,124 @@ fun MosqueRemoteSecurityPane(
         border = tvSelectableSurfaceBorder(selected = isPhoneControllerRunning, shape = phoneShape),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        val activeDevicesCount = settings.pairedDevices.count { !it.isRevoked }
+        val tvDisplayName = settings.deviceName.ifBlank { stringResource(AppR.string.tv_identity_unnamed) }
+            .let { n -> if (settings.roomGroup.isNotBlank()) "$n (${settings.roomGroup})" else n }
+        val shortId = settings.deviceId.take(8).ifBlank { "pending" }
+        val urlQrMatrix = remember(isPhoneControllerRunning, phoneControllerUrl) {
+            if (isPhoneControllerRunning && !phoneControllerUrl.isNullOrBlank()) {
+                runCatching {
+                    com.google.zxing.qrcode.QRCodeWriter().encode(
+                        phoneControllerUrl,
+                        com.google.zxing.BarcodeFormat.QR_CODE,
+                        0,
+                        0,
+                        mapOf(com.google.zxing.EncodeHintType.MARGIN to 1)
+                    )
+                }.getOrNull()
+            } else null
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = if (isPhoneControllerRunning) {
-                    stringResource(R.string.settings_phone_controller_on)
-                } else {
-                    stringResource(R.string.settings_phone_controller_off)
-                },
-                style = TvTypography.CardTitle.copy(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPhoneControllerRunning) colorScheme.primary else colorScheme.onSurface
-                )
-            )
-            Text(
-                text = stringResource(R.string.settings_phone_controller_desc),
-                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
-            )
-            if (isPhoneControllerRunning) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
-                    text = if (!phoneControllerUrl.isNullOrBlank()) {
-                        stringResource(R.string.settings_phone_controller_url, phoneControllerUrl)
+                    text = if (isPhoneControllerRunning) {
+                        stringResource(R.string.settings_phone_controller_on)
                     } else {
-                        stringResource(R.string.settings_phone_controller_no_wifi)
+                        stringResource(R.string.settings_phone_controller_off)
                     },
                     style = TvTypography.CardTitle.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = colorScheme.secondary
+                        color = if (isPhoneControllerRunning) colorScheme.primary else colorScheme.onSurface
                     )
                 )
+                Text(
+                    text = stringResource(AppR.string.tv_identity_summary, tvDisplayName, shortId, activeDevicesCount),
+                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.85f))
+                )
+                Text(
+                    text = stringResource(R.string.settings_phone_controller_desc),
+                    style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+                )
+                if (isPhoneControllerRunning) {
+                    Text(
+                        text = if (!phoneControllerUrl.isNullOrBlank()) {
+                            stringResource(R.string.settings_phone_controller_url, phoneControllerUrl)
+                        } else {
+                            stringResource(R.string.settings_phone_controller_no_wifi)
+                        },
+                        style = TvTypography.CardTitle.copy(
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.secondary
+                        )
+                    )
+                }
             }
+            if (urlQrMatrix != null) {
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(
+                    modifier = Modifier
+                        .size(116.dp)
+                        .background(Color.White, RoundedCornerShape(10.dp))
+                        .padding(6.dp)
+                ) {
+                    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                        val cols = urlQrMatrix.width
+                        val rows = urlQrMatrix.height
+                        val cellW = size.width / cols.toFloat()
+                        val cellH = size.height / rows.toFloat()
+                        for (y in 0 until rows) {
+                            for (x in 0 until cols) {
+                                if (urlQrMatrix[x, y]) {
+                                    drawRect(
+                                        color = Color.Black,
+                                        topLeft = androidx.compose.ui.geometry.Offset(x * cellW, y * cellH),
+                                        size = androidx.compose.ui.geometry.Size(cellW + 0.5f, cellH + 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Keep Phone Controller Always On (survives TV reboot via boot launch)
+    val alwaysOnShape = RoundedCornerShape(12.dp)
+    Surface(
+        onClick = { onSetPhoneControllerAlwaysOn(!settings.phoneControllerAlwaysOn) },
+        shape = ClickableSurfaceDefaults.shape(alwaysOnShape),
+        scale = tvSurfaceScale(1.0f),
+        colors = tvSelectableSurfaceColors(selected = settings.phoneControllerAlwaysOn),
+        border = tvSelectableSurfaceBorder(selected = settings.phoneControllerAlwaysOn, shape = alwaysOnShape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    if (settings.phoneControllerAlwaysOn) AppR.string.always_on_title_on else AppR.string.always_on_title_off
+                ),
+                style = TvTypography.CardTitle.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
+            )
+            Text(
+                text = stringResource(AppR.string.always_on_desc),
+                style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))
+            )
         }
     }
 

@@ -432,4 +432,13 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
             repository.setPairedTokenExpiryDays(days)
         }
     }
+
+    fun setPhoneControllerAlwaysOn(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setPhoneControllerAlwaysOn(enabled)
+        }
+        if (enabled) {
+            getApplication<SalatSignApp>().setPhoneControllerEnabled(true)
+        }
+    }
 }

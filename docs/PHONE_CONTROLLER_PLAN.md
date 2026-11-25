@@ -46,11 +46,11 @@ The TV-hosted web Phone Controller in `:app-salatsign` is the primary remote adm
 
 ---
 
-## Phase 2: Always-On Controller
+## Phase 2: Always-On Controller *(Complete)*
 
-- Persisted "Keep Phone Controller always on" toggle.
-- `RECEIVE_BOOT_COMPLETED` receiver auto-launches `MainActivity` on boot when enabled and starts the local server in-process (no foreground service / notifications).
-- TV Settings displays server status, paired device count, `deviceId`, `deviceName`, `roomGroup`, URL, and QR code.
+- [x] Persisted "Keep Phone Controller always on" toggle (`phoneControllerAlwaysOn`).
+- [x] `RECEIVE_BOOT_COMPLETED` / `MY_PACKAGE_REPLACED` receiver (`SalatSignBootReceiver`, `exported="false"` with action allowlist) auto-launches `MainActivity` on boot when enabled and starts the local server in-process with cold-boot IP retry (zero foreground service / notification permissions, preserving D18).
+- [x] TV Settings displays server status, paired device count, `deviceId`, `deviceName`, `roomGroup`, live URL, and compact offline URL QR code.
 
 ---
 

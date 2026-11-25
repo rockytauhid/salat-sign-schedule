@@ -82,6 +82,7 @@ fun MosqueSettingsScreen(
     isPhoneControllerRunning: Boolean = false,
     phoneControllerUrl: String? = null,
     onTogglePhoneController: (Boolean) -> Unit = {},
+    onSetPhoneControllerAlwaysOn: (Boolean) -> Unit = {},
     onGeneratePairingCode: (com.salatsign.tv.security.RemoteRole) -> com.salatsign.tv.security.ActivePairingCode = { role ->
         com.salatsign.tv.security.ActivePairingCode("000000", role, 0L, 0L)
     },
@@ -347,6 +348,10 @@ fun MosqueSettingsScreen(
                         isPhoneControllerRunning = isPhoneControllerRunning,
                         phoneControllerUrl = phoneControllerUrl,
                         onTogglePhoneController = onTogglePhoneController,
+                        onSetPhoneControllerAlwaysOn = {
+                            recordInteraction()
+                            onSetPhoneControllerAlwaysOn(it)
+                        },
                         onOpenPairPhone = {
                             recordInteraction()
                             showPairPhoneDialog = true

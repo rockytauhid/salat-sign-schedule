@@ -21,6 +21,8 @@
 
     <!-- Retained for optional local-network phone controller discovery/pairing; core signage is 100% offline -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Auto-launch signage kiosk + in-process Phone Controller after TV reboot when Always-On is enabled (D24) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".SalatSignApp"
@@ -49,6 +51,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Boot & package-replace receiver: auto-launches SalatSign when Always-On Phone Controller is enabled -->
+        <receiver
+            android:name=".remote.SalatSignBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

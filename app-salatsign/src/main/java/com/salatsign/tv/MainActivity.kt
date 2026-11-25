@@ -359,6 +359,7 @@ private fun SalatSignMainContent(
                 isPhoneControllerRunning = isPhoneControllerRunning,
                 phoneControllerUrl = phoneControllerUrl,
                 onTogglePhoneController = { settingsViewModel.setPhoneControllerEnabled(it) },
+                onSetPhoneControllerAlwaysOn = { settingsViewModel.setPhoneControllerAlwaysOn(it) },
                 onGeneratePairingCode = { role -> settingsViewModel.generatePairingCode(role) },
                 onCancelPairingCode = { settingsViewModel.cancelPairingCode() },
                 onRevokePairedDevice = { settingsViewModel.revokePairedDevice(it) },

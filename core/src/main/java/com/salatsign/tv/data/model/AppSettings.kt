@@ -280,10 +280,11 @@ data class AppSettings(
     val deviceName: String = "",
     val roomGroup: String = "",
     val configVersion: Long = 1L,
-    // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1)
+    // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1 & 2)
     val pairedDevices: List<com.salatsign.tv.security.PairedDeviceRecord> = emptyList(),
     val lanPinLoginEnabled: Boolean = true,
-    val pairedTokenExpiryDays: Int = 0
+    val pairedTokenExpiryDays: Int = 0,
+    val phoneControllerAlwaysOn: Boolean = false
 ) {
     fun adhanFor(prayer: Prayer): AdhanAudioOption {
         return when (prayer) {

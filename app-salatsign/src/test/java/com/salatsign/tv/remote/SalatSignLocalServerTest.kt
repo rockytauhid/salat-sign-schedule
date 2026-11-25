@@ -220,6 +220,9 @@ class SalatSignLocalServerTest {
         override suspend fun setPairedTokenExpiryDays(days: Int) {
             state.value = state.value.copy(pairedTokenExpiryDays = days)
         }
+        override suspend fun setPhoneControllerAlwaysOn(enabled: Boolean) {
+            state.value = state.value.copy(phoneControllerAlwaysOn = enabled)
+        }
     }
 
     private class FakeContentRepository(private val tempDir: File) : IContentRepository {

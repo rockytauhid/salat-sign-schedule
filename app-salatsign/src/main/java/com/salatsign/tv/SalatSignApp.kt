@@ -16,10 +16,13 @@ import com.salatsign.tv.remote.SalatSignLocalServer
 import com.salatsign.tv.remote.SalatSignNsdHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -51,6 +54,8 @@ class SalatSignApp : Application() {
     private val _lastPairedDeviceNotice = MutableStateFlow<com.salatsign.tv.security.PairedDeviceRecord?>(null)
     val lastPairedDeviceNotice: StateFlow<com.salatsign.tv.security.PairedDeviceRecord?> = _lastPairedDeviceNotice.asStateFlow()
 
+    private var ipRefreshJob: Job? = null
+
     fun clearPairedDeviceNotice() {
         _lastPairedDeviceNotice.value = null
     }
@@ -79,18 +84,26 @@ class SalatSignApp : Application() {
         )
         nsdHelper = SalatSignNsdHelper(this)
 
-        // Ensure mosque mode, stable TV device ID, and any legacy slide migration on startup
+        // Ensure mosque mode, stable TV device ID, any legacy slide migration, and Always-On auto-start
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
             settingsRepository.setMosqueMode(true)
             settingsRepository.ensureDeviceId()
+            val settings = settingsRepository.appSettingsFlow.first()
+            if (settings.phoneControllerAlwaysOn) {
+                setPhoneControllerEnabled(true)
+            }
         }
     }
 
     fun setPhoneControllerEnabled(enabled: Boolean) {
+        ipRefreshJob?.cancel()
+        ipRefreshJob = null
         if (enabled) {
             if (localServer.start()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                val initialIp = LocalNetworkUtils.getLocalIpv4Address()
+                _phoneControllerUrl.value = initialIp?.let { "http://$it:${localServer.port}" }
+                ipRefreshJob = CoroutineScope(Dispatchers.IO).launch {
                     val deviceId = settingsRepository.ensureDeviceId()
                     val s = settingsRepository.appSettingsFlow.first()
                     nsdHelper.register(
@@ -99,9 +112,18 @@ class SalatSignApp : Application() {
                         deviceName = s.deviceName,
                         roomGroup = s.roomGroup
                     )
+                    // Right after a TV cold boot, Wi-Fi/Ethernet may take several seconds to obtain an IP
+                    var attempt = 0
+                    while (isActive && _phoneControllerUrl.value == null && attempt < 15) {
+                        delay(2_000L)
+                        attempt++
+                        val ip = LocalNetworkUtils.getLocalIpv4Address()
+                        if (ip != null) {
+                            _phoneControllerUrl.value = "http://$ip:${localServer.port}"
+                            break
+                        }
+                    }
                 }
-                val ip = LocalNetworkUtils.getLocalIpv4Address()
-                _phoneControllerUrl.value = ip?.let { "http://$it:${localServer.port}" }
             }
         } else {
             nsdHelper.unregister()

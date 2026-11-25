@@ -145,10 +145,11 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val ROOM_GROUP = stringPreferencesKey("room_group")
         val CONFIG_VERSION = longPreferencesKey("config_version")
 
-        // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1)
+        // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1 & 2)
         val PAIRED_DEVICES_JSON = stringPreferencesKey("paired_devices_json")
         val LAN_PIN_LOGIN_ENABLED = booleanPreferencesKey("lan_pin_login_enabled")
         val PAIRED_TOKEN_EXPIRY_DAYS = intPreferencesKey("paired_token_expiry_days")
+        val PHONE_CONTROLLER_ALWAYS_ON = booleanPreferencesKey("phone_controller_always_on")
     }
 
     override val appSettingsFlow: Flow<AppSettings> = context.dataStore.data
@@ -378,7 +379,8 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 lanPinLoginEnabled = preferences[PreferencesKeys.LAN_PIN_LOGIN_ENABLED] ?: true,
                 pairedTokenExpiryDays = com.salatsign.tv.security.PairingManager.normalizeExpiryDays(
                     preferences[PreferencesKeys.PAIRED_TOKEN_EXPIRY_DAYS] ?: 0
-                )
+                ),
+                phoneControllerAlwaysOn = preferences[PreferencesKeys.PHONE_CONTROLLER_ALWAYS_ON] ?: false
             )
         }
 
@@ -972,6 +974,12 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val normalized = com.salatsign.tv.security.PairingManager.normalizeExpiryDays(days)
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.PAIRED_TOKEN_EXPIRY_DAYS] = normalized
+        }
+    }
+
+    override suspend fun setPhoneControllerAlwaysOn(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.PHONE_CONTROLLER_ALWAYS_ON] = enabled
         }
     }
 }

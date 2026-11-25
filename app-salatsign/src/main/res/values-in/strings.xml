@@ -115,4 +115,10 @@
     <string name="pair_devices_empty">Belum ada perangkat terpasang. Pilih Pasangkan HP di atas untuk menghubungkan browser.</string>
     <string name="pair_btn_revoke">Cabut</string>
     <string name="pair_tv_notice">Perangkat baru terpasang: %1$s (%2$s)</string>
+    <!-- Phase 2: Always-On Phone Controller -->
+    <string name="always_on_title_on">Biarkan Kontroler HP Selalu Aktif: AKTIF</string>
+    <string name="always_on_title_off">Biarkan Kontroler HP Selalu Aktif: NONAKTIF</string>
+    <string name="always_on_desc">Otomatis membuka SalatSign dan Kontroler HP setelah TV dinyalakan ulang atau mati listrik.</string>
+    <string name="tv_identity_summary">TV: %1$s • ID: %2$s • %3$d terpasang</string>
+    <string name="tv_identity_unnamed">TV Tanpa Nama</string>
 </resources>
