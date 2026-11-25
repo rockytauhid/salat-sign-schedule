@@ -244,52 +244,51 @@ fun NextPrayerSpotlightCard(
                     .weight(1f)
                     .padding(end = 24.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Box(
+                    modifier = Modifier
+                        .background(
+                            if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (isShowingCurrent) {
-                                stringResource(R.string.home_badge_active_prayer)
-                            } else {
-                                stringResource(R.string.home_badge_next_prayer)
-                            },
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isShowingCurrent) Color.White else accentPrimary
-                            )
+                    Text(
+                        text = if (isShowingCurrent) {
+                            stringResource(R.string.home_badge_active_prayer)
+                        } else {
+                            stringResource(R.string.home_badge_next_prayer)
+                        },
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isShowingCurrent) Color.White else accentPrimary
                         )
-                    }
-
-                    if (showArabicPrayerNames) {
-                        Text(
-                            text = heroPrayer.prayer.arabicName,
-                            maxLines = 1,
-                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp, color = accentSecondary)
-                        )
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = heroLabel,
-                    maxLines = 1,
-                    style = TvTypography.HeaderTitle.copy(
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurfaceVariant
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = heroLabel,
+                        maxLines = 1,
+                        style = TvTypography.HeaderTitle.copy(
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colorScheme.onSurfaceVariant
+                        )
                     )
-                )
+                    if (showArabicPrayerNames) {
+                        Text(
+                            text = heroPrayer.prayer.arabicName,
+                            maxLines = 1,
+                            style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

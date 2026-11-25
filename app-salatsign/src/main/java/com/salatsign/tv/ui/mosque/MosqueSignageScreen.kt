@@ -273,6 +273,7 @@ fun MosqueScheduleView(
                         prayer = prayerTimes.prayers.firstOrNull { it.prayer == uiState.interruptedActivePrayer }
                             ?: prayerTimes.prayers.first(),
                         is24HourFormat = uiState.settings.is24HourFormat,
+                        showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1.3f)
@@ -312,6 +313,7 @@ fun MosqueScheduleView(
 fun MosqueActiveStrikeBanner(
     prayer: PrayerTimeItem,
     is24HourFormat: Boolean = false,
+    showArabicPrayerNames: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -330,27 +332,27 @@ fun MosqueActiveStrikeBanner(
             .background(colorScheme.surfaceVariant, strikeShape)
             .pulsingGlow(shape = strikeShape, glowColor = accentPrimary)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp, vertical = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 32.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 24.dp),
-                verticalArrangement = Arrangement.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 24.dp),
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .background(accentPrimary, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.mosque_strike_title),
@@ -362,51 +364,61 @@ fun MosqueActiveStrikeBanner(
                         )
                     }
 
-                    Text(
-                        text = prayer.prayer.arabicName,
-                        maxLines = 1,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 28.sp, color = accentSecondary)
-                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                            maxLines = 1,
+                            style = TvTypography.HeaderTitle.copy(
+                                fontSize = 42.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        )
+                        if (showArabicPrayerNames) {
+                            Text(
+                                text = prayer.prayer.arabicName,
+                                maxLines = 1,
+                                style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                            )
+                        }
+                    }
+
+                    val formattedIqamah = prayer.formattedIqamahTime(is24HourFormat)
+                    if (formattedIqamah != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
+                            maxLines = 1,
+                            style = TvTypography.Subtitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = accentPrimary)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
-                    text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                    text = prayer.formattedTime(is24HourFormat),
                     maxLines = 1,
-                    style = TvTypography.HeaderTitle.copy(
-                        fontSize = 44.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurfaceVariant
+                    softWrap = false,
+                    style = TvTypography.ActivePrayerTime.copy(
+                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                        color = accentPrimary
                     )
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                val formattedIqamah = prayer.formattedIqamahTime(is24HourFormat)
-                if (formattedIqamah != null) {
-                    Text(
-                        text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
-                        maxLines = 1,
-                        style = TvTypography.Subtitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = accentPrimary)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-
-                Text(
-                    text = stringResource(R.string.mosque_strike_admonition),
-                    maxLines = 2,
-                    style = TvTypography.Subtitle.copy(fontSize = 20.sp, color = accentSecondary)
                 )
             }
 
+            // Full-width Surah 4:103 reminder extending all the way under the big prayer time
             Text(
-                text = prayer.formattedTime(is24HourFormat),
-                maxLines = 1,
-                softWrap = false,
-                style = TvTypography.ActivePrayerTime.copy(
-                    fontSize = if (is24HourFormat) 68.sp else 58.sp,
-                    color = accentPrimary
+                text = stringResource(R.string.mosque_strike_admonition),
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+                style = TvTypography.Subtitle.copy(
+                    fontSize = 19.sp,
+                    lineHeight = 25.sp,
+                    color = accentSecondary
                 )
             )
         }
@@ -458,52 +470,51 @@ fun MosqueNextPrayerBanner(
                     .padding(end = 24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Box(
+                    modifier = Modifier
+                        .background(
+                            if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = if (isShowingCurrent) {
-                                stringResource(R.string.home_badge_active_prayer)
-                            } else {
-                                stringResource(R.string.mosque_next_prayer_badge)
-                            },
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isShowingCurrent) Color.White else accentPrimary
-                            )
+                    Text(
+                        text = if (isShowingCurrent) {
+                            stringResource(R.string.home_badge_active_prayer)
+                        } else {
+                            stringResource(R.string.mosque_next_prayer_badge)
+                        },
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isShowingCurrent) Color.White else accentPrimary
                         )
-                    }
-
-                    if (showArabicPrayerNames) {
-                        Text(
-                            text = heroPrayer.prayer.arabicName,
-                            maxLines = 1,
-                            style = TvTypography.ArabicTitle.copy(fontSize = 24.sp, color = accentSecondary)
-                        )
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = heroLabel,
-                    maxLines = 1,
-                    style = TvTypography.HeaderTitle.copy(
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurfaceVariant
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = heroLabel,
+                        maxLines = 1,
+                        style = TvTypography.HeaderTitle.copy(
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colorScheme.onSurfaceVariant
+                        )
                     )
-                )
+                    if (showArabicPrayerNames) {
+                        Text(
+                            text = heroPrayer.prayer.arabicName,
+                            maxLines = 1,
+                            style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                        )
+                    }
+                }
 
                 val secondaryNote = heroPrayer.secondaryTimeNote
                 if (secondaryNote != null) {
