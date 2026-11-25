@@ -39,6 +39,7 @@ import com.salatsign.tv.data.api.PeerSecretRotateRequest
 import com.salatsign.tv.data.api.PeerSyncPayload
 import com.salatsign.tv.data.api.PeerSyncPushResultResponse
 import com.salatsign.tv.data.api.PhoneControllerJson
+import com.salatsign.tv.data.api.RenamePairedDeviceRequest
 import com.salatsign.tv.data.api.SettingsPatchRequest
 import com.salatsign.tv.data.api.SettingsResponse
 import com.salatsign.tv.data.api.SlideDto
@@ -501,6 +502,28 @@ class SalatSignLocalServer(
                             200, "OK",
                             AuthMeResponse(authType = "PIN_SESSION", role = authCtx.role.name)
                         )
+                    }
+                }
+                method == "PATCH" && path == "/api/v1/auth/me" -> {
+                    if (authCtx !is AuthContext.Paired) {
+                        errorResponse(400, "Bad Request", "not_paired_device", "Only paired devices can set a device name")
+                    } else {
+                        val body = PhoneControllerJson.decode<RenamePairedDeviceRequest>(req.body.toString(StandardCharsets.UTF_8))
+                        val cleanName = body.deviceName.trim().take(48)
+                        if (cleanName.isEmpty()) {
+                            errorResponse(400, "Bad Request", "empty_name", "Device name cannot be empty")
+                        } else {
+                            settingsRepository.renamePairedDevice(authCtx.device.deviceId, cleanName)
+                            typedJsonResponse(
+                                200, "OK",
+                                AuthMeResponse(
+                                    authType = "PAIRED",
+                                    deviceId = authCtx.device.deviceId,
+                                    deviceName = cleanName,
+                                    role = authCtx.role.name
+                                )
+                            )
+                        }
                     }
                 }
                 method == "POST" && path == "/api/v1/logout" -> {

@@ -216,6 +216,17 @@ class SalatSignLocalServerTest {
                 configVersion = state.value.configVersion + 1L
             )
         }
+        override suspend fun renamePairedDevice(deviceId: String, newName: String) {
+            val clean = newName.trim().take(48)
+            if (clean.isEmpty()) return
+            val updated = state.value.pairedDevices.map {
+                if (it.deviceId == deviceId) it.copy(deviceName = clean) else it
+            }
+            state.value = state.value.copy(
+                pairedDevices = updated,
+                configVersion = state.value.configVersion + 1L
+            )
+        }
         override suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long) {
             val updated = state.value.pairedDevices.map {
                 if (it.deviceId == deviceId) it.copy(lastSeenAtEpochMillis = lastSeenAtEpochMillis) else it
@@ -892,6 +903,20 @@ class SalatSignLocalServerTest {
         // Clear notice
         assertEquals(200, server.handleRequest(HttpRequest("DELETE", "/api/v1/notices", headers = notifyHeaders)).statusCode)
         assertNull(settingsRepo.current.activeUrgentNotice)
+
+        // Paired device (even NOTIFY role) can rename itself via PATCH /api/v1/auth/me
+        val renameResp = server.handleRequest(
+            HttpRequest(
+                method = "PATCH",
+                path = "/api/v1/auth/me",
+                headers = notifyHeaders,
+                body = """{"deviceName":"Rocky Pixel 9"}""".toByteArray()
+            )
+        )
+        assertEquals(200, renameResp.statusCode)
+        val renamedMe = PhoneControllerJson.decode<AuthMeResponse>(renameResp.body.toString(StandardCharsets.UTF_8))
+        assertEquals("Rocky Pixel 9", renamedMe.deviceName)
+        assertTrue(settingsRepo.current.pairedDevices.any { it.deviceName == "Rocky Pixel 9" })
 
         // 2. Pair a MANAGE phone -> create group join code & join peer TV B
         val manageCode = server.pairingManager.generatePairingCode(com.salatsign.tv.security.RemoteRole.MANAGE)

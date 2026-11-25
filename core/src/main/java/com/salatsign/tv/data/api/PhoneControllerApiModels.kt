@@ -136,6 +136,11 @@ data class AuthMeResponse(
 )
 
 @Serializable
+data class RenamePairedDeviceRequest(
+    val deviceName: String = ""
+)
+
+@Serializable
 data class AuthRequest(
     val pin: String = ""
 )

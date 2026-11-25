@@ -41,6 +41,18 @@
   </div>
 
   <div id="app" class="hidden">
+    <div id="renamePhoneBanner" class="card hidden">
+      <div class="flex-between">
+        <h2>Name This Phone</h2>
+        <button type="button" class="sm outline" data-evt-click="39">Dismiss</button>
+      </div>
+      <p class="sub u-s1">Give this phone a recognizable name so you can identify it in TV Settings.</p>
+      <div class="row">
+        <input id="quickPhoneNameInput" type="text" maxlength="48" placeholder="e.g. Imam's Phone" />
+        <button type="button" data-evt-click="38">Save Name</button>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" id="tab-slides" data-evt-click="3">Slides</button>
       <button class="tab" id="tab-schedule" data-evt-click="4">Jumu'ah</button>
@@ -365,6 +377,29 @@
           <button class="danger" data-evt-click="32">Clear Notice</button>
         </div>
         <div id="noticeDeliveries" class="sub u-s7"></div>
+      </div>
+
+      <div class="card">
+        <h2>This TV &amp; This Phone</h2>
+        <div class="row">
+          <div>
+            <label for="tvDeviceName">TV Name</label>
+            <input id="tvDeviceName" type="text" maxlength="48" placeholder="e.g. Main Hall Left" />
+          </div>
+          <div>
+            <label for="tvRoomGroup">Room Group</label>
+            <input id="tvRoomGroup" type="text" maxlength="48" placeholder="e.g. Main Hall" />
+          </div>
+        </div>
+        <button type="button" class="secondary" data-evt-click="40">Save TV Name &amp; Room</button>
+
+        <div id="pairedPhoneNameSection" class="u-s2 hidden">
+          <h3 class="u-s3">This Paired Phone</h3>
+          <div class="row">
+            <input id="pairedPhoneNameInput" type="text" maxlength="48" placeholder="e.g. Rocky's Phone" />
+            <button type="button" class="secondary" data-evt-click="41">Rename Phone</button>
+          </div>
+        </div>
       </div>
 
       <div class="card">

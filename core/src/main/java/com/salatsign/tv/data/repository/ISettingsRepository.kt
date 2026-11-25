@@ -103,6 +103,7 @@ interface ISettingsRepository {
     // Paired Phone Controller Devices & Auth Policy (SalatSign Phase 1)
     suspend fun addPairedDevice(record: com.salatsign.tv.security.PairedDeviceRecord)
     suspend fun revokePairedDevice(deviceId: String, revokedAtEpochMillis: Long)
+    suspend fun renamePairedDevice(deviceId: String, newName: String)
     suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long)
     suspend fun setLanPinLoginEnabled(enabled: Boolean)
     suspend fun setPairedTokenExpiryDays(days: Int)

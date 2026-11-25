@@ -5,9 +5,14 @@ if (token && !localStorage.getItem('salatsign_token')) {
 }
 function defaultDeviceName() {
   const ua = navigator.userAgent || '';
-  if (/iPhone/i.test(ua)) return 'iPhone Browser';
-  if (/iPad/i.test(ua)) return 'iPad Browser';
-  if (/Android/i.test(ua)) return 'Android Phone';
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Android/i.test(ua)) {
+    const m = ua.match(/Android\s[^;]+;\s*([^;)]+?)(?:\s+Build\/|[;)])/i);
+    const model = m && m[1] ? m[1].trim() : '';
+    if (model && model !== 'K' && model.length >= 2) return model.slice(0, 48);
+    return 'Android Phone';
+  }
   if (/Mac/i.test(ua)) return 'Mac Browser';
   if (/Windows/i.test(ua)) return 'Windows Browser';
   return 'Phone Browser';
@@ -66,7 +71,7 @@ async function loadStatus() {
     document.getElementById('pinDisabledNotice').classList.toggle('hidden', pinAllowed);
   }
 }
-async function pairWithCode(overrideCode) {
+async function pairWithCode(overrideCode, fromQr) {
   const raw = (overrideCode || document.getElementById('pairCodeInput').value || '').replace(/\D+/g, '');
   if (raw.length !== 6) { showMsg('Enter the 6-digit pairing code shown on the TV.', false); return; }
   const devName = (document.getElementById('deviceNameInput').value || '').trim() || defaultDeviceName();
@@ -82,8 +87,16 @@ async function pairWithCode(overrideCode) {
     document.getElementById('loginCard').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('logoutBtn').classList.remove('hidden');
-    showMsg('Paired as ' + (res.data.deviceName || devName) + ' (' + (res.data.role || 'MANAGE') + ').', true);
+    const pairedName = res.data.deviceName || devName;
+    showMsg('Paired as ' + pairedName + ' (' + (res.data.role || 'MANAGE') + ').', true);
+    if (fromQr) {
+      const quickInp = document.getElementById('quickPhoneNameInput');
+      if (quickInp) quickInp.value = pairedName;
+      const banner = document.getElementById('renamePhoneBanner');
+      if (banner) banner.classList.remove('hidden');
+    }
     await loadAll();
+    await loadAuthMe();
   } else {
     showMsg(res.data.message || 'Pairing failed.', false);
   }
@@ -104,6 +117,7 @@ async function login() {
     document.getElementById('logoutBtn').classList.remove('hidden');
     showMsg('Connected to SalatSign TV.', true);
     await loadAll();
+    await loadAuthMe();
   } else {
     showMsg(res.data.message || 'Authentication failed.', false);
   }
@@ -123,7 +137,11 @@ async function loadAll() {
   if (s.ok) {
     const d = s.data;
     document.getElementById('statusLine').textContent =
-      (d.mosqueName || 'SalatSign TV') + (d.cityName ? ' • ' + d.cityName : '');
+      (d.deviceName || d.mosqueName || 'SalatSign TV') + (d.cityName ? ' • ' + d.cityName : '');
+    const tvNameEl = document.getElementById('tvDeviceName');
+    const tvRoomEl = document.getElementById('tvRoomGroup');
+    if (tvNameEl) tvNameEl.value = d.deviceName || '';
+    if (tvRoomEl) tvRoomEl.value = d.roomGroup || '';
     document.getElementById('mosqueName').value = d.mosqueName || '';
     document.getElementById('mosqueSubtitle').value = d.mosqueSubtitle || '';
     document.getElementById('mosqueIconPreset').value = d.mosqueIconPreset || 'DOME_CRESCENT';
@@ -860,6 +878,54 @@ async function uploadLogo() {
   if (res.ok) { document.getElementById('logoFile').value = ''; await loadAll(); }
 }
 
+async function loadAuthMe() {
+  const me = await api('/api/v1/auth/me');
+  const sec = document.getElementById('pairedPhoneNameSection');
+  const inp = document.getElementById('pairedPhoneNameInput');
+  if (me.ok && me.data.authType === 'PAIRED') {
+    if (sec) sec.classList.remove('hidden');
+    if (inp && me.data.deviceName) inp.value = me.data.deviceName;
+  } else if (sec) {
+    sec.classList.add('hidden');
+  }
+}
+
+async function saveTvIdentity() {
+  const deviceName = (document.getElementById('tvDeviceName').value || '').trim();
+  const roomGroup = (document.getElementById('tvRoomGroup').value || '').trim();
+  if (!deviceName) { showMsg('Enter a TV name first.', false); return; }
+  const res = await api('/api/v1/settings', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceName, roomGroup })
+  });
+  showMsg(res.ok ? 'TV name saved as "' + deviceName + '".' : (res.data.message || 'Save failed.'), res.ok);
+  if (res.ok) await loadAll();
+}
+
+async function renameThisPhone(inputId) {
+  const inp = document.getElementById(inputId);
+  const name = (inp ? inp.value : '').trim();
+  if (!name) { showMsg('Enter a name for this phone.', false); return; }
+  const res = await api('/api/v1/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceName: name })
+  });
+  showMsg(res.ok ? 'Phone renamed to "' + name + '".' : (res.data.message || 'Rename failed.'), res.ok);
+  if (res.ok) {
+    const banner = document.getElementById('renamePhoneBanner');
+    if (banner) banner.classList.add('hidden');
+    const mainInp = document.getElementById('pairedPhoneNameInput');
+    if (mainInp) mainInp.value = name;
+  }
+}
+
+function dismissRenamePhoneBanner() {
+  const banner = document.getElementById('renamePhoneBanner');
+  if (banner) banner.classList.add('hidden');
+}
+
 renderTextRows();
 document.getElementById('deviceNameInput').placeholder = defaultDeviceName();
 loadStatus();
@@ -869,12 +935,13 @@ if (hashMatch) {
   const qrCode = hashMatch[1];
   try { history.replaceState(null, '', location.pathname); } catch (_) {}
   document.getElementById('pairCodeInput').value = qrCode;
-  pairWithCode(qrCode);
+  pairWithCode(qrCode, true);
 } else if (token) {
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('logoutBtn').classList.remove('hidden');
   loadAll();
+  loadAuthMe();
 }
 
 // Review 4 L1: Strict CSP event delegation (zero inline handlers)
@@ -916,6 +983,10 @@ const __clickHandlers = {
   "34": () => { leavePeerGroup(); },
   "35": () => { generateGroupJoinCode(); },
   "36": () => { joinPeerGroup(); },
+  "38": () => { renameThisPhone('quickPhoneNameInput'); },
+  "39": () => { dismissRenamePhoneBanner(); },
+  "40": () => { saveTvIdentity(); },
+  "41": () => { renameThisPhone('pairedPhoneNameInput'); },
 };
 const __changeHandlers = {
   "37": () => { onJumuahModeChange(); },

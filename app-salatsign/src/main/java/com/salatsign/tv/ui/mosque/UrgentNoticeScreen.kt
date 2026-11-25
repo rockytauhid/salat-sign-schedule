@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +29,7 @@ import androidx.tv.material3.Text
 import com.salatsign.tv.security.UrgentNoticeRecord
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.theme.TvTypography
+import java.util.Locale
 
 /**
  * Full-screen high-contrast Urgent Notice display (Phase 3c, D24).
@@ -40,27 +39,31 @@ import com.salatsign.tv.ui.theme.TvTypography
 @Composable
 fun UrgentNoticeScreen(
     notice: UrgentNoticeRecord,
-    remainingMinutes: Long
+    remainingSeconds: Long
 ) {
-    val bg = Color(0xFF1A1205)
     val cardBg = Color(0xFF261A08)
     val accent = Color(0xFFF59E0B)
-    val accentSoft = Color(0xFFFDE68A)
+    val dismissTextColor = Color(0xFFE5E7EB)
     val cardShape = RoundedCornerShape(24.dp)
+
+    val clampedSec = remainingSeconds.coerceAtLeast(0L)
+    val mins = clampedSec / 60L
+    val secs = clampedSec % 60L
+    val countdownLabel = String.format(Locale.US, "Dismiss in %d:%02d", mins, secs)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg)
-            .overscanPadding(),
-        contentAlignment = Alignment.Center
+            .background(Color.Black)
+            .overscanPadding()
     ) {
         Column(
             modifier = Modifier
+                .align(Alignment.Center)
                 .fillMaxWidth(0.88f)
                 .background(cardBg, cardShape)
                 .border(3.dp, accent, cardShape)
-                .padding(horizontal = 48.dp, vertical = 40.dp),
+                .padding(horizontal = 48.dp, vertical = 44.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -95,25 +98,19 @@ fun UrgentNoticeScreen(
                 ),
                 textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            val remLabel = if (remainingMinutes <= 1L) "Clears in < 1 min" else "Clears in $remainingMinutes min"
-            Box(
-                modifier = Modifier
-                    .background(accent.copy(alpha = 0.16f), RoundedCornerShape(999.dp))
-                    .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(999.dp))
-                    .padding(horizontal = 22.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = remLabel,
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = accentSoft
-                    )
-                )
-            }
         }
+
+        // Countdown in the bottom-right corner outside the yellow border
+        Text(
+            text = countdownLabel,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 4.dp, bottom = 2.dp),
+            style = TvTypography.BodyLabel.copy(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = dismissTextColor
+            )
+        )
     }
 }

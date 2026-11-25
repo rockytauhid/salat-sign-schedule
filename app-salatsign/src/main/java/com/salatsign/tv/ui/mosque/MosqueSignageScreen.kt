@@ -103,7 +103,7 @@ fun MosqueSignageScreen(
         while (rawUrgentNotice != null) {
             noticeNowMillis = System.currentTimeMillis()
             if (!rawUrgentNotice.isActive(noticeNowMillis)) break
-            delay(5_000L)
+            delay(1_000L)
         }
     }
     val activeUrgentNotice = rawUrgentNotice?.takeIf {
@@ -186,9 +186,10 @@ fun MosqueSignageScreen(
 
         // Phase 3c: Full-screen Urgent Notice sits above Schedule & Slideshow, but yields to Silent Screen
         if (activeUrgentNotice != null) {
+            val remainingSec = ((activeUrgentNotice.expiresAtEpochMillis - noticeNowMillis).coerceAtLeast(0L) + 999L) / 1000L
             UrgentNoticeScreen(
                 notice = activeUrgentNotice,
-                remainingMinutes = activeUrgentNotice.remainingMinutes(noticeNowMillis)
+                remainingSeconds = remainingSec
             )
         }
 

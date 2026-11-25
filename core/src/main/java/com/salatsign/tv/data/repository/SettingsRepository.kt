@@ -966,6 +966,24 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         }
     }
 
+    override suspend fun renamePairedDevice(deviceId: String, newName: String) {
+        val cleanName = newName.trim().take(48)
+        if (deviceId.isBlank() || cleanName.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val current = prefs[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
+                runCatching {
+                    com.salatsign.tv.data.api.PhoneControllerJson.decode<List<com.salatsign.tv.security.PairedDeviceRecord>>(raw)
+                }.getOrDefault(emptyList())
+            } ?: emptyList()
+            val updated = current.map { dev ->
+                if (dev.deviceId == deviceId) dev.copy(deviceName = cleanName) else dev
+            }
+            prefs[PreferencesKeys.PAIRED_DEVICES_JSON] = com.salatsign.tv.data.api.PhoneControllerJson.encode(updated)
+            val currentVer = (prefs[PreferencesKeys.CONFIG_VERSION] ?: 1L).coerceAtLeast(1L)
+            prefs[PreferencesKeys.CONFIG_VERSION] = currentVer + 1L
+        }
+    }
+
     override suspend fun touchPairedDeviceLastSeen(deviceId: String, lastSeenAtEpochMillis: Long) {
         context.dataStore.edit { prefs ->
             val current = prefs[PreferencesKeys.PAIRED_DEVICES_JSON]?.let { raw ->
