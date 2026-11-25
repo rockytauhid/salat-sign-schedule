@@ -20,12 +20,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
+import com.salatsign.core.tv.R
 import com.salatsign.tv.security.UrgentNoticeRecord
 import com.salatsign.tv.ui.common.overscanPadding
 import com.salatsign.tv.ui.theme.TvTypography
@@ -49,7 +51,9 @@ fun UrgentNoticeScreen(
     val clampedSec = remainingSeconds.coerceAtLeast(0L)
     val mins = clampedSec / 60L
     val secs = clampedSec % 60L
-    val countdownLabel = String.format(Locale.US, "Dismiss in %d:%02d", mins, secs)
+    // Latin digits formatted separately (Decision D9) and interpolated into localized string resource
+    val formattedTime = String.format(Locale.US, "%d:%02d", mins, secs)
+    val countdownLabel = stringResource(R.string.urgent_notice_clears_in, formattedTime)
 
     Box(
         modifier = Modifier
