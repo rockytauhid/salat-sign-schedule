@@ -538,51 +538,23 @@ fun MosqueNextPrayerBanner(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                val formattedIqamah = heroPrayer.formattedIqamahTime(is24HourFormat)
+                if (formattedIqamah != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(accentPrimary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccessTime,
-                            contentDescription = null,
-                            tint = accentSecondary,
-                            modifier = Modifier.size(22.dp)
-                        )
                         Text(
-                            text = if (isShowingCurrent) {
-                                "$nextLabel ${nextPrayer.formattedTime(is24HourFormat)} • $countdown"
-                            } else {
-                                stringResource(R.string.mosque_countdown_to_prayer, countdown)
-                            },
+                            text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
                             maxLines = 1,
-                            softWrap = false,
-                            style = TvTypography.CountdownText.copy(fontSize = 24.sp, color = accentSecondary)
-                        )
-                    }
-
-                    val formattedIqamah = heroPrayer.formattedIqamahTime(is24HourFormat)
-                    if (formattedIqamah != null) {
-                        Box(
-                            modifier = Modifier
-                                .background(accentPrimary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
-                                maxLines = 1,
-                                style = TvTypography.BodyLabel.copy(
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = accentPrimary
-                                )
+                            style = TvTypography.BodyLabel.copy(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accentPrimary
                             )
-                        }
+                        )
                     }
                 }
             }
@@ -592,12 +564,23 @@ fun MosqueNextPrayerBanner(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = heroPrayer.formattedTime(is24HourFormat),
+                    text = countdown,
                     maxLines = 1,
                     softWrap = false,
                     style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 68.sp else 58.sp,
+                        fontSize = 58.sp,
                         color = colorScheme.onSurfaceVariant
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.schedule_until_prayer, nextLabel),
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.CountdownText.copy(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accentSecondary
                     )
                 )
             }

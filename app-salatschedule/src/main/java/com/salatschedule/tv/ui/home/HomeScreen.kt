@@ -405,47 +405,7 @@ fun NextPrayerSpotlightCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        tint = accentSecondary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Text(
-                        text = if (isShowingCurrent) {
-                            "$nextLabel ${nextPrayer.formattedTime(is24HourFormat)} • $countdown"
-                        } else {
-                            stringResource(R.string.home_countdown_to_adhan, countdown)
-                        },
-                        maxLines = 1,
-                        softWrap = false,
-                        style = TvTypography.CountdownText.copy(fontSize = 24.sp, color = accentSecondary)
-                    )
-                }
-            }
-
-            // Right: Hero Prayer Time & Status Badges
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = heroPrayer.formattedTime(is24HourFormat),
-                    maxLines = 1,
-                    softWrap = false,
-                    style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
-                        color = colorScheme.onSurfaceVariant
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Reminder Badge
                 Row(
@@ -466,6 +426,35 @@ fun NextPrayerSpotlightCard(
                         style = TvTypography.BodyLabel.copy(fontSize = 14.sp, color = colorScheme.onSurface)
                     )
                 }
+            }
+
+            // Right: Big Live Countdown & "Until <Next Prayer>"
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = countdown,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.ActivePrayerTime.copy(
+                        fontSize = 58.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.schedule_until_prayer, nextLabel),
+                    maxLines = 1,
+                    softWrap = false,
+                    style = TvTypography.CountdownText.copy(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accentSecondary
+                    )
+                )
             }
         }
     }

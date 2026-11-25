@@ -88,6 +88,7 @@
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">MENUJU SHALAT BERIKUTNYA</string>
     <string name="mosque_countdown_to_prayer">Menuju Waktu Shalat: %1$s</string>
+    <string name="schedule_until_prayer">Menuju %1$s</string>
     <string name="mosque_default_name">Nama Masjid</string>
     <string name="mosque_name_placeholder">mis., Masjid Agung Al-Ikhlas</string>
     <string name="mosque_name_required_error">Harap masukkan nama masjid sebelum melanjutkan.</string>

@@ -88,6 +88,7 @@
     <string name="mosque_iqamah_prefix">الإقامة: %1$s</string>
     <string name="mosque_next_prayer_badge">الصلاة القادمة</string>
     <string name="mosque_countdown_to_prayer">الوقت المتبقي للصلاة: %1$s</string>
+    <string name="schedule_until_prayer">حتى %1$s</string>
     <string name="mosque_default_name">اسم المسجد</string>
     <string name="mosque_name_placeholder">مثال: المركز الإسلامي</string>
     <string name="mosque_name_required_error">يرجى إدخال اسم المسجد قبل المتابعة.</string>
