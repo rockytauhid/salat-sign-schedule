@@ -115,6 +115,16 @@ object PinHasher {
         return salt.isEmpty() || parsed == null
     }
 
+    /**
+     * Returns true when a configured custom PIN uses fewer PBKDF2 iterations than [CURRENT_ITERATIONS]
+     * (e.g. legacy 10,000-iteration hashes) and should be transparently re-hashed after a successful login.
+     */
+    fun needsRehash(hasCustomPin: Boolean, hashHex: String): Boolean {
+        if (!hasCustomPin) return false
+        val parsed = parseStoredHash(hashHex) ?: return false
+        return parsed.iterations < CURRENT_ITERATIONS
+    }
+
     fun createHashedPin(pin: String, iterations: Int = CURRENT_ITERATIONS): HashedPin {
         require(validatePinFormat(pin)) { "Invalid PIN format (must be $MIN_PIN_LENGTH-$MAX_PIN_LENGTH digits)" }
         require(iterations in MIN_ALLOWED_ITERATIONS..MAX_ALLOWED_ITERATIONS) { "Unsupported PBKDF2 iteration count: $iterations" }

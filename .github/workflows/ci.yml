@@ -36,8 +36,21 @@ jobs:
       - name: Assemble Debug APKs (SalatSign & SalatSchedule)
         run: ./gradlew :app-salatsign:assembleDebug :app-salatschedule:assembleDebug
 
-      - name: Assemble Release APKs (R8 Shrinking Verification)
-        run: ./gradlew :app-salatsign:assembleRelease :app-salatschedule:assembleRelease
+      - name: Generate Ephemeral CI Keystore & Assemble Release APKs (R8 Verification)
+        env:
+          RELEASE_STORE_FILE: ${{ runner.temp }}/ci-release.jks
+          RELEASE_STORE_PASSWORD: ci-ephemeral-password
+          RELEASE_KEY_ALIAS: ci-release
+          RELEASE_KEY_PASSWORD: ci-ephemeral-password
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$RELEASE_STORE_FILE" \
+            -storepass "$RELEASE_STORE_PASSWORD" \
+            -alias "$RELEASE_KEY_ALIAS" \
+            -keypass "$RELEASE_KEY_PASSWORD" \
+            -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=SalatSign CI, OU=CI, O=SalatSign, L=Canberra, ST=ACT, C=AU"
+          ./gradlew :app-salatsign:assembleRelease :app-salatschedule:assembleRelease
 
       - name: Upload Lint Reports on Failure
         if: failure()

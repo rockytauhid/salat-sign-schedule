@@ -379,6 +379,9 @@ private fun SalatSignMainContent(
             onPinSuccess = {
                 settingsViewModel.recordPinSuccess()
             },
+            onUpgradePinHash = { verifiedPin ->
+                settingsViewModel.setAdminPin(verifiedPin)
+            },
             onDismiss = onClosePinDialog
         )
     }

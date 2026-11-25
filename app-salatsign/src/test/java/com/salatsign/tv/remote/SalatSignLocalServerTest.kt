@@ -588,4 +588,41 @@ class SalatSignLocalServerTest {
             server.stop()
         }
     }
+
+    @Test
+    fun auth_upgradesLegacy10kPinHashToCurrentV2OnSuccessfulLogin() = runBlocking {
+        val pin = "4321"
+        val legacySalt = PinHasher.generateSalt()
+        val legacyHashHex = PinHasher.bytesToHex(PinHasher.hashPin(pin, legacySalt, PinHasher.LEGACY_ITERATIONS))
+        val legacySaltHex = PinHasher.bytesToHex(legacySalt)
+
+        val settingsRepo = FakeSettingsRepository(
+            AppSettings(
+                isMosqueMode = true,
+                hasCustomPin = true,
+                pinSaltHex = legacySaltHex,
+                pinHashHex = legacyHashHex
+            )
+        )
+        val dir = createTempDirectory("salatsign-rehash-test").toFile()
+        val slidesRepo = FakeContentRepository(dir)
+        val server = SalatSignLocalServer(
+            settingsRepository = settingsRepo,
+            contentRepository = slidesRepo,
+            slideImageImporter = ImageImporter(File(dir, "images")),
+            logoImageImporter = ImageImporter(File(dir, "logo")),
+            port = 0,
+            appVersionName = "1.0-test",
+            allowedHostProvider = { setOf("127.0.0.1", "localhost", "[::1]") }
+        )
+
+        assertTrue(PinHasher.needsRehash(true, settingsRepo.current.pinHashHex))
+        val resp = server.handleRequest(HttpRequest("POST", "/api/v1/auth", body = """{"pin":"$pin"}""".toByteArray()))
+        assertEquals(200, resp.statusCode)
+        assertTrue(
+            "Expected upgraded v2:${PinHasher.CURRENT_ITERATIONS} hash, got ${settingsRepo.current.pinHashHex}",
+            settingsRepo.current.pinHashHex.startsWith("v2:${PinHasher.CURRENT_ITERATIONS}:")
+        )
+        assertFalse(PinHasher.needsRehash(true, settingsRepo.current.pinHashHex))
+    }
 }

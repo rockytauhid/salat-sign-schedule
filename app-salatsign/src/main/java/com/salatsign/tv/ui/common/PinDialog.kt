@@ -82,6 +82,7 @@ fun PinDialog(
     onPinChanged: (String) -> Unit = {},
     onPinFailure: (newFailedAttempts: Int, lockedUntilEpochMillis: Long) -> Unit = { _, _ -> },
     onPinSuccess: () -> Unit = {},
+    onUpgradePinHash: (String) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -150,6 +151,9 @@ fun PinDialog(
                     is PinVerifyResult.Success -> {
                         isError = false
                         statusMessage = null
+                        if (PinHasher.needsRehash(settings.hasCustomPin, settings.pinHashHex)) {
+                            onUpgradePinHash(enteredPin)
+                        }
                         onPinSuccess()
                         onPinVerified()
                     }

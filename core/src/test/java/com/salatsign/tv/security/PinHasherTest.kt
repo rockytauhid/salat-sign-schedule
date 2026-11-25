@@ -248,6 +248,11 @@ class PinHasherTest {
 
         assertFalse(legacyHashHex.startsWith("v2:"))
         assertFalse(PinHasher.isStoredPinCorrupted(true, saltHex, legacyHashHex))
+        assertTrue("Legacy 10k hash must be flagged for rehash", PinHasher.needsRehash(true, legacyHashHex))
+
+        val currentV2 = PinHasher.createHashedPin(pin)
+        assertFalse("Current v2 120k hash must not need rehash", PinHasher.needsRehash(true, currentV2.hashHex))
+        assertFalse("Default PIN must not need rehash", PinHasher.needsRehash(false, ""))
 
         val ok = PinHasher.verifyPin(
             enteredPin = pin,

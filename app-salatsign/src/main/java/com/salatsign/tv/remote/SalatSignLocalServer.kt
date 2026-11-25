@@ -49,7 +49,6 @@ import java.security.SecureRandom
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 data class HttpRequest(
     val method: String,
@@ -128,7 +127,7 @@ class SalatSignLocalServer(
     private val secureRandom = SecureRandom()
     private val authMutex = Mutex()
     private val connectionSemaphore = Semaphore(maxConcurrentConnections)
-    private val activeConnectionsByIp = ConcurrentHashMap<String, AtomicInteger>()
+    private val activeConnectionsByIp = ConcurrentHashMap<String, Int>()
     private val sessions = ConcurrentHashMap<String, Long>()
     private val authAttemptsByIp = ConcurrentHashMap<String, MutableList<Long>>()
 
@@ -190,18 +189,23 @@ class SalatSignLocalServer(
     }
 
     private fun tryAcquireIpSlot(ip: String): Boolean {
-        val counter = activeConnectionsByIp.computeIfAbsent(ip) { AtomicInteger(0) }
-        while (true) {
-            val current = counter.get()
-            if (current >= maxConnectionsPerIp) return false
-            if (counter.compareAndSet(current, current + 1)) return true
+        var acquired = false
+        activeConnectionsByIp.compute(ip) { _, existing ->
+            val current = existing ?: 0
+            if (current >= maxConnectionsPerIp) {
+                current
+            } else {
+                acquired = true
+                current + 1
+            }
         }
+        return acquired
     }
 
     private fun releaseIpSlot(ip: String) {
-        val counter = activeConnectionsByIp[ip] ?: return
-        if (counter.decrementAndGet() <= 0) {
-            activeConnectionsByIp.remove(ip, counter)
+        activeConnectionsByIp.compute(ip) { _, existing ->
+            val next = (existing ?: 0) - 1
+            if (next <= 0) null else next
         }
     }
 
@@ -403,6 +407,9 @@ class SalatSignLocalServer(
             is PinVerifyResult.Success -> {
                 remoteFailedAttempts = 0
                 remoteLockedUntilEpochMillis = 0L
+                if (PinHasher.needsRehash(settings.hasCustomPin, settings.pinHashHex)) {
+                    settingsRepository.setCustomPin(pin)
+                }
                 val tokenBytes = ByteArray(24)
                 secureRandom.nextBytes(tokenBytes)
                 val token = PinHasher.bytesToHex(tokenBytes)
@@ -1076,10 +1083,13 @@ class SalatSignLocalServer(
         deadlineMillis: Long,
         refreshTimeout: () -> Boolean
     ): String? {
+        if (!refreshTimeout()) {
+            return LINE_TIMED_OUT
+        }
         val out = ByteArrayOutputStream()
         var prev = -1
         while (true) {
-            if (System.currentTimeMillis() >= deadlineMillis || !refreshTimeout()) {
+            if (System.currentTimeMillis() >= deadlineMillis) {
                 return LINE_TIMED_OUT
             }
             val b = input.read()
