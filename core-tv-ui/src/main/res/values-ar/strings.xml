@@ -84,7 +84,7 @@
     <!-- Mosque Signage Display -->
     <string name="mosque_strike_title">حان الآن موعد الصلاة</string>
     <string name="mosque_strike_prayer_name">صلاة %1$s</string>
-    <string name="mosque_strike_admonition">"إِنَّ ٱلصَّلَوٰةَ كَانَتْ عَلَى ٱلْمُؤْمِنِينَ كِتَٰبًا مَّوْقُوتًا" — سورة النساء ١٠٣</string>
+    <string name="mosque_strike_admonition">"إِنَّ ٱلصَّلَوٰةَ كَانَتْ عَلَى ٱلْمُؤْمِنِينَ كِتَٰبًا مَّوْقُوتًا"\n سورة النساء ١٠٣</string>
     <string name="mosque_iqamah_prefix">الإقامة: %1$s</string>
     <string name="mosque_next_prayer_badge">الصلاة القادمة</string>
     <string name="mosque_countdown_to_prayer">الوقت المتبقي للصلاة: %1$s</string>

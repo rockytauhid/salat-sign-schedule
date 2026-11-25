@@ -302,10 +302,11 @@ fun HomeActiveStrikeBanner(
                 )
             }
 
-            // Full-width Surah 4:103 reminder extending all the way under the big prayer time
+            // Full-width right-aligned Surah 4:103 reminder with reference on second row
             Text(
                 text = stringResource(R.string.mosque_strike_admonition),
-                maxLines = 2,
+                maxLines = 3,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
                 modifier = Modifier.fillMaxWidth(),
                 style = TvTypography.Subtitle.copy(
                     fontSize = 19.sp,

@@ -84,7 +84,7 @@
     <!-- Mosque Signage Display -->
     <string name="mosque_strike_title">PRAYER TIME HAS ARRIVED</string>
     <string name="mosque_strike_prayer_name">%1$s Prayer</string>
-    <string name="mosque_strike_admonition">"Indeed, prayer has been decreed upon the believers a decree of specified times." — Qur\'an 4:103</string>
+    <string name="mosque_strike_admonition">"Indeed, prayer has been decreed upon the believers a decree of specified times."\n Surah An-Nisa\' 4:103</string>
     <string name="mosque_iqamah_prefix">Iqamah: %1$s</string>
     <string name="mosque_next_prayer_badge">APPROACHING NEXT PRAYER</string>
     <string name="mosque_countdown_to_prayer">Until Prayer Time: %1$s</string>

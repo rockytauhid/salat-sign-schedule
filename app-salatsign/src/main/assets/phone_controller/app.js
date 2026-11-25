@@ -439,7 +439,12 @@ function renderSlides(slides) {
 let textRows = [{ text: '', align: 'CENTER', fontSize: 'MEDIUM' }];
 
 const ALIGN_CYCLE = ['LEFT', 'CENTER', 'RIGHT'];
-const ALIGN_LABEL = { LEFT: 'L', CENTER: 'C', RIGHT: 'R' };
+const ALIGN_ICON = {
+  LEFT: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3V5zm0 4h12v2H3V9zm0 4h18v2H3v-2zm0 4h12v2H3v-2z"/></svg>',
+  CENTER: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/></svg>',
+  RIGHT: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3V5zm6 4h12v2H9V9zm-6 4h18v2H3v-2zm6 4h12v2H9v-2z"/></svg>'
+};
+const ALIGN_INPUT_CLASS = { LEFT: 'align-left', CENTER: 'align-center', RIGHT: 'align-right' };
 const ALIGN_TITLE = { LEFT: 'Align: Left (tap to cycle)', CENTER: 'Align: Center (tap to cycle)', RIGHT: 'Align: Right (tap to cycle)' };
 const SIZE_CYCLE = ['SMALL', 'MEDIUM', 'LARGE'];
 const SIZE_CLASS = { SMALL: 'row-sz-sm', MEDIUM: 'row-sz-md', LARGE: 'row-sz-lg' };
@@ -454,11 +459,12 @@ function renderTextRows() {
     const wrap = document.createElement('div');
     wrap.className = 'text-row-grid';
 
+    const alignVal = ALIGN_CYCLE.includes(row.align) ? row.align : 'CENTER';
     const isQr = /^\s*qrc:/i.test(row.text || '');
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.maxLength = 240;
-    inp.className = 'text-row-input' + (isQr ? ' qr-row-input' : '');
+    inp.className = 'text-row-input ' + ALIGN_INPUT_CLASS[alignVal] + (isQr ? ' qr-row-input' : '');
     inp.placeholder = isQr ? 'qrc:https://...' : ('Row ' + (idx + 1) + ' (or qrc:URL)...');
     inp.value = row.text;
     inp.oninput = (e) => {
@@ -467,11 +473,10 @@ function renderTextRows() {
       inp.classList.toggle('qr-row-input', nowQr);
     };
 
-    const alignVal = ALIGN_CYCLE.includes(row.align) ? row.align : 'CENTER';
     const alignBtn = document.createElement('button');
     alignBtn.type = 'button';
     alignBtn.className = 'row-toggle-btn';
-    alignBtn.textContent = ALIGN_LABEL[alignVal];
+    alignBtn.innerHTML = ALIGN_ICON[alignVal];
     alignBtn.title = ALIGN_TITLE[alignVal];
     alignBtn.onclick = () => {
       const next = ALIGN_CYCLE[(ALIGN_CYCLE.indexOf(alignVal) + 1) % ALIGN_CYCLE.length];
