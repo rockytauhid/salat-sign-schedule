@@ -347,89 +347,73 @@ fun MosqueActiveStrikeBanner(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .background(accentPrimary, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 14.dp, vertical = 5.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 24.dp),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .background(accentPrimary, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.mosque_strike_title),
-                            style = TvTypography.BodyLabel.copy(
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        )
-                    }
+                Text(
+                    text = stringResource(R.string.mosque_strike_title),
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                )
+            }
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
-                            maxLines = 1,
-                            style = TvTypography.HeaderTitle.copy(
-                                fontSize = 42.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = colorScheme.onSurfaceVariant
-                            )
-                        )
-                        if (showArabicPrayerNames) {
-                            Text(
-                                text = prayer.prayer.arabicName,
-                                maxLines = 1,
-                                style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
-                            )
-                        }
-                    }
-
-                    val formattedIqamah = prayer.formattedIqamahTime(is24HourFormat)
-                    if (formattedIqamah != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
-                            maxLines = 1,
-                            style = TvTypography.Subtitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = accentPrimary)
-                        )
-                    }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                    maxLines = 1,
+                    style = TvTypography.HeaderTitle.copy(
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                )
+                if (showArabicPrayerNames) {
+                    Text(
+                        text = prayer.prayer.arabicName,
+                        maxLines = 1,
+                        style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                    )
                 }
-
                 Text(
                     text = prayer.formattedTime(is24HourFormat),
                     maxLines = 1,
                     softWrap = false,
                     style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                        fontSize = if (is24HourFormat) 52.sp else 46.sp,
                         color = accentPrimary
                     )
                 )
             }
 
-            // Full-width right-aligned Surah 4:103 reminder with reference on second row
+            val formattedIqamah = prayer.formattedIqamahTime(is24HourFormat)
+            if (formattedIqamah != null) {
+                Text(
+                    text = stringResource(R.string.mosque_iqamah_prefix, formattedIqamah),
+                    maxLines = 1,
+                    style = TvTypography.Subtitle.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = accentPrimary)
+                )
+            }
+
+            // Centered single-line Surah 4:103 reminder with reference on the same row
             Text(
                 text = stringResource(R.string.mosque_strike_admonition),
-                maxLines = 3,
-                textAlign = TextAlign.End,
+                maxLines = 2,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
                 style = TvTypography.Subtitle.copy(
-                    fontSize = 19.sp,
-                    lineHeight = 25.sp,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
                     color = accentSecondary
                 )
             )

@@ -74,8 +74,16 @@ class MainActivity : ComponentActivity() {
         isPinDialogOpen.value = true
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("is_settings_open", isSettingsOpen.value)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            isSettingsOpen.value = savedInstanceState.getBoolean("is_settings_open", false)
+        }
 
         val appliedLanguage = LanguageSyncCache.getLanguage(this)
 

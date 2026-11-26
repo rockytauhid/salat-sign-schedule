@@ -92,8 +92,18 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(LocaleHelper.wrap(newBase, language))
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("is_settings_open", isSettingsOpen.value)
+        outState.putBoolean("is_calendar_open", isCalendarOpen.value)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            isSettingsOpen.value = savedInstanceState.getBoolean("is_settings_open", false)
+            isCalendarOpen.value = savedInstanceState.getBoolean("is_calendar_open", false)
+        }
 
         // Request POST_NOTIFICATIONS on Android 13+ for 15-min reminders & Adhan playback notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
