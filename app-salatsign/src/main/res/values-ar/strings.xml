@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Silent Screen ("Jumu'ah / Prayer in progress") -->
+    <string name="silent_title_jumuah">صلاة الجمعة قائمة</string>
+    <string name="silent_title_prayer">الصلاة قائمة</string>
+    <string name="silent_no_talking">يرجى التزام الهدوء</string>
+    <string name="silent_phone">أغلق الهاتف أو ضعه على الصامت</string>
+    <string name="silent_icon_no_talking_desc">رمز منع الكلام</string>
+    <string name="silent_icon_phone_desc">رمز إغلاق أو إسكات الهاتف</string>
+
+    <!-- Silent Screen Settings (SalatSign only) -->
+    <string name="settings_section_silent_screen">الشاشة الصامتة</string>
+    <string name="settings_silent_manual_title">التحكم اليدوي</string>
+    <string name="settings_silent_manual_desc">عرض \"الصلاة قائمة\" فوراً على الشاشة (يعلو على الجدول والشرائح).</string>
+    <string name="settings_silent_manual_active">الشاشة الصامتة نشطة (%1$d دقيقة متبقية)</string>
+    <string name="settings_silent_show_now_mins">عرض %1$d دقيقة</string>
+    <string name="settings_silent_stop_now">إيقاف الآن</string>
+    <string name="settings_silent_jumuah_title">الشاشة الصامتة لصلاة الجمعة</string>
+    <string name="settings_silent_jumuah_desc">يعرض \"صلاة الجمعة قائمة\" تلقائياً لكل فترة جمعة مهيأة.</string>
+    <string name="settings_silent_jumuah_unconfigured">اضبط فترة جمعة واحدة على الأقل أعلاه للتفعيل.</string>
+    <string name="settings_silent_enabled">مفعل</string>
+    <string name="settings_silent_disabled">معطل</string>
+    <string name="settings_silent_lead_label">البدء قبل (دقائق)</string>
+    <string name="settings_silent_duration_label">المدة (دقائق)</string>
+    <string name="settings_silent_daily_title">الصلوات اليومية (اختياري)</string>
+    <string name="settings_silent_daily_desc">اختر صلاة لضبط شاشتها الصامتة. ظهر الجمعة يستخدم إعدادات الجمعة فقط.</string>
+    <string name="settings_silent_anchor_label">نقطة البداية</string>
+    <string name="settings_silent_anchor_iqamah">الإقامة</string>
+    <string name="settings_silent_anchor_adhan">الأذان</string>
+    <string name="settings_silent_iqamah_required">اضبط وقت الإقامة أولاً</string>
+    <string name="settings_silent_summary_off">معطل</string>
+    <string name="settings_silent_summary_on">%1$s • %2$d دقيقة</string>
+    <string name="settings_silent_copy_all">نسخ هذه الإعدادات لجميع الصلوات</string>
+    <string name="settings_silent_copied_all">تم نسخ الإعدادات لجميع الصلوات الخمس.</string>
+    <string name="settings_silent_copied_partial">تم النسخ إلى %1$d صلوات (%2$d تحتاج وقت إقامة أولاً).</string>
+    <string name="settings_silent_done">تم</string>
+
+    <!-- 6-Slide Rotation Limit (SalatSign only) -->
+    <string name="settings_slides_in_rotation">الشرائح في العرض: %1$d من %2$d</string>
+    <string name="settings_slides_stored_library">الإعلانات المحفوظة: %1$d من %2$d</string>
+    <string name="settings_slides_limit_refused">العرض محدود بـ 6 شرائح، بما في ذلك الشرائح المدمجة. عطل أو احذف شريحة أولاً.</string>
+    <string name="settings_slides_over_limit_warning">%1$d شريحة غير معروضة بسبب حد 6 شرائح: %2$s</string>
+    <string name="settings_slides_add_disabled">إضافة شريحة نصية (معطلة)</string>
+    <string name="settings_slides_status_enabled">نشط</string>
+    <string name="settings_slides_status_disabled">معطل</string>
+    <string name="settings_slides_breakdown_announcements">%1$d إعلانات</string>
+    <string name="settings_slides_breakdown_announcement_one">إعلان واحد</string>
+    <string name="settings_slides_breakdown_none">لا توجد شرائح مفعلة (الجدول فقط)</string>
+    <string name="settings_slides_builtin_islamic_calendar">التقويم الهجري</string>
+    <string name="settings_slides_builtin_quran_verse">آية قرآنية</string>
+
+    <!-- Offline Quran Verse Slide (SalatSign only) -->
+    <string name="settings_section_quran_slide">شريحة الآية القرآنية</string>
+    <string name="settings_quran_enable_title">عرض شريحة الآية القرآنية في الدورة</string>
+    <string name="settings_quran_enable_desc">يعرض آية واحدة في كل دورة من 63 آية مختارة بدون إنترنت (تستخدم خانة واحدة من 6).</string>
+    <string name="settings_quran_show_translation_title">عرض الترجمة</string>
+    <string name="settings_quran_show_translation_desc">عرض الترجمة أسفل الآية العربية (عطلها للعرض بالعربية فقط).</string>
+    <string name="settings_quran_duration_label">مدة الشريحة</string>
+    <string name="settings_quran_duration_auto">تلقائي</string>
+    <string name="settings_quran_preview_btn">معاينة آية الآن</string>
+    <string name="settings_quran_fit_check_btn">فحص ملاءمة الآيات</string>
+    <string name="settings_quran_fit_check_title">فحص ملاءمة الآيات القرآنية</string>
+    <string name="settings_quran_fit_all_ok">جميع الآيات (%1$d) تظهر كاملة في شاشة واحدة بأحجام خط لا تقل عن 40sp للعربية و24sp للترجمة.</string>
+    <string name="settings_quran_fit_overflow">%1$d آية تتجاوز شاشة واحدة بالحد الأدنى للحجم (سيتم تخطيها بأمان): %2$s</string>
+
+    <!-- Add / Edit Announcement Slide Dialogs (SalatSign only) -->
+    <string name="settings_text_slide_dialog_title">إضافة شريحة إعلان نصي</string>
+    <string name="settings_text_slide_edit_title">تعديل شريحة الإعلان النصي</string>
+    <string name="settings_image_slide_dialog_title">إضافة شريحة صورة</string>
+    <string name="settings_image_slide_edit_title">تعديل شريحة الصورة</string>
+    <string name="settings_image_slide_change_file">تغيير الصورة (USB)</string>
+    <string name="settings_image_slide_title_placeholder">مثال: ملصق حملة رمضان</string>
+    <string name="settings_image_slide_empty_title_error">يرجى إدخال عنوان الشريحة قبل الحفظ.</string>
+    <string name="settings_slide_edit_btn">تعديل</string>
+    <string name="settings_slide_save_changes">حفظ التغييرات</string>
+    <string name="settings_text_slide_title_label">العنوان</string>
+    <string name="settings_text_slide_title_placeholder">مثال: خطبة الجمعة والعشاء المجتمعي</string>
+    <string name="settings_text_slide_body_label">الرسالة (%1$d من %2$d سطور)</string>
+    <string name="settings_text_slide_qr">رمز QR</string>
+    <string name="settings_text_slide_body_placeholder">اكتب نص الإعلان هنا…</string>
+    <string name="settings_text_slide_body_hint">اضغط موافق للكتابة • استخدم Enter أو + سطر جديد أو • نقطة أو 1. رقم • اضغط رجوع عند الانتهاء</string>
+    <string name="settings_text_slide_new_line">سطر</string>
+    <string name="settings_text_slide_bullet">• نقطة</string>
+    <string name="settings_text_slide_numbered">1. رقم</string>
+    <string name="settings_text_slide_align_label">محاذاة النص</string>
+    <string name="settings_text_slide_align_left">يسار</string>
+    <string name="settings_text_slide_align_center">وسط</string>
+    <string name="settings_text_slide_align_right">يمين</string>
+    <string name="settings_text_slide_size_small">صغير</string>
+    <string name="settings_text_slide_size_medium">متوسط</string>
+    <string name="settings_text_slide_size_large">كبير</string>
+    <string name="settings_text_slide_duration_label">مدة العرض</string>
+    <string name="settings_text_slide_limit_note">الدورة ممتلئة (6/6) — سيتم حفظ هذه الشريحة كمعطلة.</string>
+    <string name="settings_text_slide_empty_error">يرجى إدخال عنوان أو رسالة قبل الحفظ.</string>
+    <string name="settings_text_slide_save">حفظ الشريحة</string>
+
+    <!-- Phase 1: Browser Pairing & Paired Devices -->
+    <string name="pair_btn_open">ربط هاتف (QR ورمز)</string>
+    <string name="pair_btn_open_desc">اربط متصفح هاتف أو حاسوب للتحكم في هذا التلفاز بدون إدخال PIN</string>
+    <string name="pair_dialog_title">ربط هاتف أو حاسوب</string>
+    <string name="pair_role_label">مستوى الصلاحية:</string>
+    <string name="pair_role_manage">إدارة (كاملة)</string>
+    <string name="pair_role_notify">تنبيهات فقط</string>
+    <string name="pair_dialog_instructions">امسح رمز QR بكاميرا هاتفك، أو افتح العنوان أدناه على نفس شبكة Wi-Fi وأدخل رمز المرة الواحدة:</string>
+    <string name="pair_code_expires_in">ينتهي خلال %1$d ثانية</string>
+    <string name="pair_code_expired">انتهى الرمز — أنشئ رمزاً جديداً</string>
+    <string name="pair_btn_new_code">رمز جديد</string>
+    <string name="pair_btn_close">إغلاق</string>
+    <string name="pair_pin_login_on">السماح بتسجيل PIN عبر الشبكة: مفعل</string>
+    <string name="pair_pin_login_off">السماح بتسجيل PIN عبر الشبكة: معطل (الأجهزة المرتبطة فقط)</string>
+    <string name="pair_pin_login_desc">يتوقف تلقائياً بمجرد ربط هاتف. يظل رمز PIN يفتح إعدادات التلفاز.</string>
+    <string name="pair_expiry_label">انتهاء الصلاحية التلقائي عند الخمول</string>
+    <string name="pair_expiry_never">أبداً</string>
+    <string name="pair_expiry_30d">30 يوماً</string>
+    <string name="pair_expiry_90d">90 يوماً</string>
+    <string name="pair_devices_title">الأجهزة المرتبطة (%1$d)</string>
+    <string name="pair_devices_empty">لا توجد أجهزة مرتبطة بعد. اختر ربط هاتف أعلاه لربط متصفح.</string>
+    <string name="pair_btn_revoke">إلغاء</string>
+    <string name="pair_tv_notice">تم ربط جهاز جديد: %1$s (%2$s)</string>
+
+    <!-- Phase 2: Always-On Phone Controller -->
+    <string name="always_on_title_on">إبقاء التحكم عبر الهاتف دائماً: مفعل</string>
+    <string name="always_on_title_off">إبقاء التحكم عبر الهاتف دائماً: معطل</string>
+    <string name="always_on_desc">يفتح SalatSign والتحكم عبر الهاتف تلقائياً بعد إعادة تشغيل التلفاز أو انقطاع الكهرباء.</string>
+    <string name="tv_identity_summary">التلفاز: %1$s • المعرف: %2$s • %3$d مرتبط</string>
+    <string name="tv_identity_unnamed">تلفاز بدون اسم</string>
+    <string name="tv_key_fingerprint">بصمة المفتاح: %1$s</string>
+</resources>

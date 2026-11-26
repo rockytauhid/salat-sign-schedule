@@ -257,7 +257,7 @@ async function loadNoticeAndPeers() {
         if (rot.state === 'pending') {
           statusText += ' • Key rotation pending (' + rot.attempts + '/' + (rot.maxAttempts || 6) + ')';
         } else if (rot.state === 'gave_up') {
-          statusText += ' • Key rotation failed — re-join this TV manually';
+          statusText += ' • Key rotation failed — re-join this TV manually (retry notice clears on restart)';
         }
       }
       if (mismatch) {

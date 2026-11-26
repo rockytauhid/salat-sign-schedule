@@ -307,7 +307,10 @@ fun PrayerCard(
             } else if (item.isNext) {
                 Box(
                     modifier = Modifier
-                        .background(accentPrimary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                        .background(
+                            if (isDark) accentPrimary.copy(alpha = 0.18f) else colorScheme.surface,
+                            RoundedCornerShape(6.dp)
+                        )
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
