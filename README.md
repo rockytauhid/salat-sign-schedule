@@ -55,7 +55,7 @@ A **strictly silent**, white-label digital signage kiosk engineered for mosques,
   - **Urgent Notice:** Full-screen high-contrast visual alert card (presets or custom text) with mandatory automatic expiry (`Clears in M:SS` countdown in English, Indonesian, and Arabic) that yields to Silent Screen during active prayer.
 - **Kiosk Protection, Admin PIN & Always-On:**
   - `FLAG_KEEP_SCREEN_ON` keeps the TV awake continuously; remote `Back` is intercepted to prevent accidental exit.
-  - Optional **Always-On** toggle auto-launches SalatSign on TV boot (`RECEIVE_BOOT_COMPLETED`, zero foreground service or notification permissions).
+  - Optional **Always-On** toggle auto-launches SalatSign on TV boot (`RECEIVE_BOOT_COMPLETED`, zero foreground service or notification permissions). *Note: Android 10+ / Google TV firmware may block background `startActivity` on boot unless "Display over other apps" is granted or a TV kiosk launcher is used; the Phone Controller HTTP server still starts automatically in-process.*
   - Hidden Admin Access (`KEYCODE_MENU` or 3-second `DPAD_CENTER` hold) gated behind a PBKDF2-salted Admin PIN (auto-upgraded to `120,000` iterations, persisted progressive lockout, 2-minute inactivity auto-close).
   - **PIN Recovery Policy:** There is deliberately no network backdoor or cloud recovery. If the admin PIN is forgotten, reset it by clearing app data via TV settings: `Android TV Settings → Apps → SalatSign → Clear data`, which restores the default PIN (`0000`).
 

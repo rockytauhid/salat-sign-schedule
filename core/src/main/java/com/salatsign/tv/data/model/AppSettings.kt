@@ -26,11 +26,6 @@ enum class JumuahMode {
     AFTER_ZUHR
 }
 
-enum class FridayAdhanTiming {
-    AT_ZUHR,
-    AT_JUMUAH
-}
-
 enum class MosqueIconPreset {
     DOME_CRESCENT,
     MINARET,
@@ -234,7 +229,6 @@ data class AppSettings(
     // Jumu'ah (Friday) settings - SalatSign only (D16)
     val jumuahMode: JumuahMode = JumuahMode.FIXED,
     val jumuahTimes: List<String> = emptyList(),
-    val fridayAdhanTiming: FridayAdhanTiming = FridayAdhanTiming.AT_ZUHR,
     // Localization & Display Options
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val is24HourFormat: Boolean = false,

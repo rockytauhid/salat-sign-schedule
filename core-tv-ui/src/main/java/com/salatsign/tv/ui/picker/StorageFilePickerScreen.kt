@@ -55,6 +55,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -91,6 +92,7 @@ fun StorageFilePickerScreen(
     onUserInteraction: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     val importer = remember { AssetImporter(context) }
     val colorScheme = MaterialTheme.colorScheme
@@ -138,7 +140,7 @@ fun StorageFilePickerScreen(
                 }
             }
         } else {
-            errorMessage = context.getString(R.string.storage_permission_denied)
+            errorMessage = resources.getString(R.string.storage_permission_denied)
         }
     }
 
@@ -159,7 +161,7 @@ fun StorageFilePickerScreen(
                     onFileImported(importedName)
                     onDismiss()
                 } else {
-                    errorMessage = result.errorMessage ?: context.getString(R.string.storage_import_failed)
+                    errorMessage = result.errorMessage ?: resources.getString(R.string.storage_import_failed)
                 }
             }
         }
@@ -604,7 +606,7 @@ fun StorageFilePickerScreen(
                                                 onFileImported(importedName)
                                                 onDismiss()
                                             } else {
-                                                errorMessage = result.errorMessage ?: context.getString(R.string.storage_import_failed)
+                                                errorMessage = result.errorMessage ?: resources.getString(R.string.storage_import_failed)
                                             }
                                         }
                                     }

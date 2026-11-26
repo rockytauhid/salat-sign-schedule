@@ -9,7 +9,6 @@ import com.salatsign.core.tv.R
 import com.salatsign.tv.data.model.AdhanAudioOption
 import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
-import com.salatsign.tv.data.model.FridayAdhanTiming
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
@@ -88,12 +87,5 @@ fun JumuahMode.labelRes(): Int {
     return when (this) {
         JumuahMode.FIXED -> R.string.settings_jumuah_mode_fixed
         JumuahMode.AFTER_ZUHR -> R.string.settings_jumuah_mode_after_zuhr
-    }
-}
-
-fun FridayAdhanTiming.labelRes(): Int {
-    return when (this) {
-        FridayAdhanTiming.AT_ZUHR -> R.string.settings_jumuah_adhan_at_zuhr
-        FridayAdhanTiming.AT_JUMUAH -> R.string.settings_jumuah_adhan_at_jumuah
     }
 }

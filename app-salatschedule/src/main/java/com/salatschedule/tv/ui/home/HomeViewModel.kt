@@ -80,16 +80,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             hijriMonthNames = hijriMonthNames
         )
         val prayerTimes = prayerDayCache.getOrCompute(key, nowZoned)
-        val strikePrayer = if (isToday && settings.showStrikeHighlight) {
-            PrayerCalculationEngine.getPrayerAtExactTimeStrike(
-                prayerTimes,
-                nowZoned.toLocalTime(),
-                5L,
-                isMosqueSignage = false
-            )
-        } else {
-            null
-        }
+        val strikePrayer = resolveActiveStrikePrayer(
+            prayerTimes = prayerTimes,
+            nowTime = nowZoned.toLocalTime(),
+            isToday = isToday,
+            showStrikeHighlight = settings.showStrikeHighlight
+        )
 
         HomeUiState(
             selectedDate = date,
@@ -116,5 +112,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun resetToToday() {
         _selectedDate.value = null
+    }
+
+    companion object {
+        internal fun resolveActiveStrikePrayer(
+            prayerTimes: PrayerTimesDay,
+            nowTime: LocalTime,
+            isToday: Boolean,
+            showStrikeHighlight: Boolean
+        ): Prayer? {
+            if (!isToday || !showStrikeHighlight) return null
+            return PrayerCalculationEngine.getPrayerAtExactTimeStrike(
+                prayerTimes,
+                nowTime,
+                5L,
+                isMosqueSignage = false
+            )
+        }
     }
 }

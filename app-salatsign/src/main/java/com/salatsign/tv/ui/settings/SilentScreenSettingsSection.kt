@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -442,6 +443,7 @@ private fun DailyPrayerSilentEditorDialog(
     val context = LocalContext.current
     val canEnable = SilentScreenCalculator.canEnableDailySilent(config.anchor, iqamahMinutes)
     val initialFocus = remember { FocusRequester() }
+    val resources = LocalResources.current
     val copiedAllText = stringResource(AppR.string.settings_silent_copied_all)
 
     LaunchedEffect(Unit) {
@@ -683,7 +685,7 @@ private fun DailyPrayerSilentEditorDialog(
                             val msg = if (result.skippedWithoutIqamah.isEmpty()) {
                                 copiedAllText
                             } else {
-                                context.getString(
+                                resources.getString(
                                     AppR.string.settings_silent_copied_partial,
                                     result.enabledCount,
                                     result.skippedWithoutIqamah.size

@@ -20,7 +20,6 @@ import com.salatsign.tv.data.model.AdhanAudioType
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
-import com.salatsign.tv.data.model.FridayAdhanTiming
 import com.salatsign.tv.data.model.IslamicEventDefinitions
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
@@ -90,7 +89,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         // Jumu'ah (Friday) settings - SalatSign only (D16)
         val JUMUAH_MODE = stringPreferencesKey("jumuah_mode")
         val JUMUAH_TIMES = stringPreferencesKey("jumuah_times")
-        val FRIDAY_ADHAN_TIMING = stringPreferencesKey("friday_adhan_timing")
 
         // Security / Admin PIN keys
         val HOME_MODE_PIN_REQUIRED = booleanPreferencesKey("home_mode_pin_required")
@@ -225,8 +223,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val jumuahMode = runCatching { JumuahMode.valueOf(jumuahModeStr) }.getOrDefault(JumuahMode.FIXED)
             val jumuahTimesRaw = preferences[PreferencesKeys.JUMUAH_TIMES] ?: ""
             val jumuahTimes = if (jumuahTimesRaw.isBlank()) emptyList() else jumuahTimesRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            val fridayAdhanTimingStr = preferences[PreferencesKeys.FRIDAY_ADHAN_TIMING] ?: FridayAdhanTiming.AT_ZUHR.name
-            val fridayAdhanTiming = runCatching { FridayAdhanTiming.valueOf(fridayAdhanTimingStr) }.getOrDefault(FridayAdhanTiming.AT_ZUHR)
 
             val homeModePinRequired = preferences[PreferencesKeys.HOME_MODE_PIN_REQUIRED] ?: false
             val hasCustomPin = preferences[PreferencesKeys.HAS_CUSTOM_PIN] ?: false
@@ -327,7 +323,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 showStrikeHighlight = showStrikeHighlight,
                 jumuahMode = jumuahMode,
                 jumuahTimes = jumuahTimes,
-                fridayAdhanTiming = fridayAdhanTiming,
                 appLanguage = appLanguage,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
@@ -709,12 +704,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setJumuahTimes(times: List<String>) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.JUMUAH_TIMES] = times.take(3).joinToString(",")
-        }
-    }
-
-    override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {
-        context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.FRIDAY_ADHAN_TIMING] = timing.name
         }
     }
 

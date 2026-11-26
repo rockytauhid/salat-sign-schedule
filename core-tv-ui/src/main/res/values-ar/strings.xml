@@ -186,10 +186,11 @@
     <string name="settings_reminder_toggle_desc">إظهار تنبيه على الشاشة قبل موعد الصلاة بـ 15 دقيقة.</string>
     <string name="settings_section_home_adhan">أصوات الأذان لكل صلاة</string>
     <string name="settings_btn_usb_file">ملف USB</string>
-    <string name="settings_mosque_strike_toggle">تنبيه وقت الصلاة المرئي (5 دقائق)</string>
-    <string name="settings_mosque_strike_on">تنبيه وقت الصلاة: مفعل (افتراضي)</string>
-    <string name="settings_mosque_strike_off">تنبيه وقت الصلاة: معطل</string>
-    <string name="settings_mosque_strike_desc">يوقف الشرائح مؤقتاً ويبرز بطاقة الصلاة لمدة 5 دقائق عند دخول وقت الصلاة.</string>
+    <string name="settings_prayer_alert_banner_toggle">تنبيه وقت الصلاة المرئي (5 دقائق)</string>
+    <string name="settings_prayer_alert_banner_on">تنبيه وقت الصلاة: مفعل (افتراضي)</string>
+    <string name="settings_prayer_alert_banner_off">تنبيه وقت الصلاة: معطل</string>
+    <string name="settings_prayer_alert_banner_desc">يبرز بطاقة الصلاة لمدة 5 دقائق عند دخول وقت الصلاة.</string>
+    <string name="settings_prayer_alert_banner_desc_mosque">يوقف الشرائح مؤقتاً ويبرز بطاقة الصلاة لمدة 5 دقائق عند دخول وقت الصلاة.</string>
     <string name="settings_section_mosque_symbol">رمز وشعار المسجد</string>
     <string name="settings_btn_import_logo_usb">اختيار شعار المسجد من ذاكرة USB</string>
     <string name="settings_custom_logo_active">الشعار المخصص مفعل</string>
@@ -271,11 +272,6 @@
     <string name="settings_jumuah_sittings_3">3 فترات</string>
     <string name="settings_jumuah_sitting_n">الفترة %1$d</string>
     <string name="settings_jumuah_zuhr_begins">يبدأ الظهر %1$s</string>
-    <string name="settings_jumuah_friday_adhan_timing_title">توقيت أذان يوم الجمعة</string>
-    <string name="settings_jumuah_adhan_at_zuhr">عند وقت الظهر</string>
-    <string name="settings_jumuah_adhan_at_zuhr_desc">رفع الأذان عند دخول وقت الظهر الفلكي (افتراضي).</string>
-    <string name="settings_jumuah_adhan_at_jumuah">عند أول فترة للجمعة</string>
-    <string name="settings_jumuah_adhan_at_jumuah_desc">رفع الأذان عند بداية الفترة الأولى لصلاة الجمعة.</string>
     <string name="settings_jumuah_warning_before_zuhr">تنبيه: الفترة %1$s قبل وقت الظهر (%2$s) في %3$s</string>
     <string name="settings_jumuah_warning_after_asr">غير صالح: الفترة %1$s توافق أو بعد العصر (%2$s) في %3$s</string>
     <string name="wizard_step_jumuah_title">الخطوة %1$d: جدول صلاة الجمعة</string>

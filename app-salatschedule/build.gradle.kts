@@ -8,12 +8,13 @@ plugins {
 
 android {
     namespace = "com.salatschedule.tv"
-    compileSdk = 35
+    compileSdk = 37
+    compileSdkMinor = 1
 
     defaultConfig {
         applicationId = "com.salatschedule.tv"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 

@@ -76,6 +76,7 @@ fun SettingsDisplayAndLanguagePane(
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
     onSetShowStrikeHighlight: (Boolean) -> Unit,
     onSetThemeMode: (ThemeMode) -> Unit,
+    bannerDescriptionRes: Int = R.string.settings_prayer_alert_banner_desc,
     extraContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -212,6 +213,7 @@ fun SettingsDisplayAndLanguagePane(
 
         PrayerTimeAlertBannerCard(
             enabled = settings.showStrikeHighlight,
+            descriptionRes = bannerDescriptionRes,
             onToggle = onSetShowStrikeHighlight
         )
 
@@ -274,6 +276,7 @@ fun SettingsDisplayAndLanguagePane(
 @Composable
 fun PrayerTimeAlertBannerCard(
     enabled: Boolean,
+    descriptionRes: Int = R.string.settings_prayer_alert_banner_desc,
     onToggle: (Boolean) -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -300,10 +303,23 @@ fun PrayerTimeAlertBannerCard(
                 modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = if (enabled) stringResource(R.string.settings_mosque_strike_on) else stringResource(R.string.settings_mosque_strike_off),
-                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-            )
+            Column {
+                Text(
+                    text = if (enabled) {
+                        stringResource(R.string.settings_prayer_alert_banner_on)
+                    } else {
+                        stringResource(R.string.settings_prayer_alert_banner_off)
+                    },
+                    style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+                )
+                Text(
+                    text = stringResource(descriptionRes),
+                    style = TvTypography.BodyLabel.copy(
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurface.copy(alpha = 0.72f)
+                    )
+                )
+            }
         }
     }
 }

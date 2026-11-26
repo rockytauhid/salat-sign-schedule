@@ -243,7 +243,8 @@ fun MosqueSettingsScreen(
                         onSet24HourFormat = onSet24HourFormat,
                         onSetShowArabicPrayerNames = onSetShowArabicPrayerNames,
                         onSetShowStrikeHighlight = onSetShowStrikeHighlight,
-                        onSetThemeMode = onSetThemeMode
+                        onSetThemeMode = onSetThemeMode,
+                        bannerDescriptionRes = R.string.settings_prayer_alert_banner_desc_mosque
                     )
                 }
 

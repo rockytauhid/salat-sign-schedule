@@ -8,7 +8,8 @@ plugins {
 
 android {
     namespace = "com.salatsign.core"
-    compileSdk = 35
+    compileSdk = 37
+    compileSdkMinor = 1
 
     defaultConfig {
         minSdk = 26

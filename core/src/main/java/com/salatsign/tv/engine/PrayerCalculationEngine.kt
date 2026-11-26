@@ -12,7 +12,6 @@ import com.batoulapps.adhan.PrayerAdjustments
 import com.batoulapps.adhan.PrayerTimes
 import com.batoulapps.adhan.data.DateComponents
 import com.salatsign.tv.data.model.AppSettings
-import com.salatsign.tv.data.model.FridayAdhanTiming
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig
@@ -431,7 +430,6 @@ object PrayerCalculationEngine {
 
     /**
      * Calculates all valid prayer events for a given calendar date as ZonedDateTime instances.
-     * Respects Friday Adhan timing (AT_ZUHR vs AT_JUMUAH).
      * Null times are omitted (P4.2).
      */
     fun getDayPrayerEvents(

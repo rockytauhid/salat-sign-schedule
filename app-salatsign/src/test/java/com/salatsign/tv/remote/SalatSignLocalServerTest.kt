@@ -29,7 +29,6 @@ import com.salatsign.tv.data.model.AnnouncementSlide
 import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.CityPreset
-import com.salatsign.tv.data.model.FridayAdhanTiming
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.MosqueFontPreset
 import com.salatsign.tv.data.model.MosqueIconPreset
@@ -119,7 +118,6 @@ class SalatSignLocalServerTest {
         override suspend fun setShowArabicPrayerNames(enabled: Boolean) { state.value = state.value.copy(showArabicPrayerNames = enabled) }
         override suspend fun setJumuahMode(mode: JumuahMode) { state.value = state.value.copy(jumuahMode = mode) }
         override suspend fun setJumuahTimes(times: List<String>) { state.value = state.value.copy(jumuahTimes = times) }
-        override suspend fun setFridayAdhanTiming(timing: FridayAdhanTiming) {}
         override suspend fun setSilentJumuahEnabled(enabled: Boolean) {
             state.value = state.value.copy(silentScreen = state.value.silentScreen.copy(jumuahEnabled = enabled))
         }

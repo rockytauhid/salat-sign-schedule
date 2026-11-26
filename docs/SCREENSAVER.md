@@ -8,6 +8,8 @@ SalatSchedule registers a strictly silent, dark-mode Android TV screensaver (`co
 
 Any remote key press or touch closes the screensaver immediately. Content shifts subtly (≤ 8 px) every minute to help protect TV panels from burn-in.
 
+> **Prayer-Time Alert Banner & Adhan Behavior:** By design, the 5-minute visual **Prayer-Time Alert Banner** only appears on SalatSchedule's main Schedule screen and does not interrupt the ambient screensaver. Scheduled **Adhan audio** and **15-minute pre-prayer notifications** continue to fire normally while the screensaver is active.
+
 ---
 
 ## How to Enable on Android TV

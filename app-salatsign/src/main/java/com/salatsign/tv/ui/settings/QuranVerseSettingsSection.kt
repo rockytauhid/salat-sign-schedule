@@ -34,6 +34,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -329,7 +330,7 @@ private fun QuranVerseFitCheckDialog(
     showTranslation: Boolean,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val colorScheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
@@ -357,7 +358,7 @@ private fun QuranVerseFitCheckDialog(
 
             val nonFittingRefs = remember(allVerses, showTranslation, usableWidthPx, usableHeightPx) {
                 allVerses.mapNotNull { verse ->
-                    val refLabel = context.getString(
+                    val refLabel = resources.getString(
                         R.string.quran_surah_reference,
                         verse.surahTransliteration,
                         verse.reference

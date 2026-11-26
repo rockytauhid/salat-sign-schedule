@@ -143,7 +143,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @android.annotation.SuppressLint("RestrictedApi")
+    @android.annotation.SuppressLint("RestrictedApi", "GestureBackNavigation")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (ignoreNextConfirmKeyUp &&
             (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||

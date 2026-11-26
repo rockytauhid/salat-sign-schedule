@@ -11,7 +11,7 @@ Always consult `PRODUCT_SPEC.md`, `docs/DECISIONS.md` (especially `D18`), and th
 
 ## Tech Stack & Dependencies
 - **Language:** Kotlin 100% (Coroutines + Flow)
-- **Minimum SDK:** API 26 (Android 8.0) | **Target SDK:** API 35 (Android 15)
+- **Minimum SDK:** API 26 (Android 8.0) | **Target SDK:** API 36 (Android 16) | **Compile SDK:** API 37.1
 - **UI Framework:** Jetpack Compose for TV (`androidx.tv:tv-foundation`, `androidx.tv:tv-material`)
 - **Architecture:** MVVM + Clean Architecture with Unidirectional Data Flow (`StateFlow`)
 - **Prayer Time Calculation:** `com.batoulapps.adhan:adhan` (offline astronomical calculations)

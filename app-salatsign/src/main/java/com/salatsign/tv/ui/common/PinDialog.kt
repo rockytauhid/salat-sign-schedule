@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,7 @@ fun PinDialog(
     onUpgradePinHash: (String) -> Unit = {},
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val colorScheme = MaterialTheme.colorScheme
     val keypadFocusRequesters = remember { List(12) { FocusRequester() } }
     val cancelFocusRequester = remember { FocusRequester() }
@@ -102,7 +103,7 @@ fun PinDialog(
     var setPinStep by remember { mutableStateOf(SetPinStep.ENTER_NEW) }
     var firstEnteredPin by remember { mutableStateOf("") }
     var statusMessage by remember(isResetRequired) {
-        mutableStateOf(if (isResetRequired) context.getString(R.string.pin_err_reset_required) else null)
+        mutableStateOf(if (isResetRequired) resources.getString(R.string.pin_err_reset_required) else null)
     }
     var isError by remember(isResetRequired) { mutableStateOf(isResetRequired) }
 
@@ -130,7 +131,7 @@ fun PinDialog(
 
         if (!PinHasher.validatePinFormat(enteredPin)) {
             isError = true
-            statusMessage = context.getString(R.string.pin_err_format)
+            statusMessage = resources.getString(R.string.pin_err_format)
             return
         }
 
@@ -165,24 +166,24 @@ fun PinDialog(
                         if (lockout.lockedUntilEpochMillis > now) {
                             val sec = ((lockout.lockedUntilEpochMillis - now + 999) / 1000).toInt()
                             lockoutSeconds = sec
-                            statusMessage = context.getString(R.string.pin_err_locked_sec, sec)
+                            statusMessage = resources.getString(R.string.pin_err_locked_sec, sec)
                         } else {
-                            statusMessage = context.getString(R.string.pin_err_incorrect_remaining, result.attemptsLeftBeforeLockout)
+                            statusMessage = resources.getString(R.string.pin_err_incorrect_remaining, result.attemptsLeftBeforeLockout)
                         }
                     }
                     is PinVerifyResult.LockedOut -> {
                         isError = true
                         lockoutSeconds = result.remainingSeconds
-                        statusMessage = context.getString(R.string.pin_err_locked_retry, result.remainingSeconds)
+                        statusMessage = resources.getString(R.string.pin_err_locked_retry, result.remainingSeconds)
                     }
                     is PinVerifyResult.InvalidFormat -> {
                         isError = true
-                        statusMessage = context.getString(R.string.pin_err_format)
+                        statusMessage = resources.getString(R.string.pin_err_format)
                     }
                     is PinVerifyResult.ResetRequired -> {
                         enteredPin = ""
                         isError = true
-                        statusMessage = context.getString(R.string.pin_err_reset_required)
+                        statusMessage = resources.getString(R.string.pin_err_reset_required)
                     }
                 }
             }
@@ -194,7 +195,7 @@ fun PinDialog(
                         enteredPin = ""
                         setPinStep = SetPinStep.CONFIRM_NEW
                         isError = false
-                        statusMessage = context.getString(R.string.pin_msg_confirm_new)
+                        statusMessage = resources.getString(R.string.pin_msg_confirm_new)
                     }
                     SetPinStep.CONFIRM_NEW -> {
                         if (enteredPin == firstEnteredPin) {
@@ -202,7 +203,7 @@ fun PinDialog(
                             onDismiss()
                         } else {
                             isError = true
-                            statusMessage = context.getString(R.string.pin_err_mismatch)
+                            statusMessage = resources.getString(R.string.pin_err_mismatch)
                             enteredPin = ""
                             firstEnteredPin = ""
                             setPinStep = SetPinStep.ENTER_NEW

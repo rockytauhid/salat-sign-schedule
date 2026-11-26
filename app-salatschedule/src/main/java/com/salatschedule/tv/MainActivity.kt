@@ -185,9 +185,9 @@ class MainActivity : ComponentActivity() {
     @android.annotation.SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         // Immediate remote stop control while Adhan is playing (MT-1.4 Procedure B)
+        // Back button is handled via OnBackPressedDispatcher (BackHandler) for Android 16+ predictive back.
         if (AdhanPlaybackService.isPlaying.value && event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {
-                KeyEvent.KEYCODE_BACK,
                 KeyEvent.KEYCODE_DPAD_CENTER,
                 KeyEvent.KEYCODE_ENTER,
                 KeyEvent.KEYCODE_MEDIA_STOP -> {
@@ -217,10 +217,10 @@ private fun SalatScheduleMainContent(
     val homeUiState by homeViewModel.uiState.collectAsState()
     val isAdhanPlaying by AdhanPlaybackService.isPlaying.collectAsState()
 
-    if (isSettingsOpen) {
-        BackHandler { onCloseSettings() }
-    } else if (isCalendarOpen) {
-        BackHandler { onCloseCalendar() }
+    when {
+        isAdhanPlaying -> BackHandler { onStopAdhan() }
+        isSettingsOpen -> BackHandler { onCloseSettings() }
+        isCalendarOpen -> BackHandler { onCloseCalendar() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

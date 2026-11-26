@@ -122,4 +122,5 @@
     <string name="always_on_desc">Otomatis membuka SalatSign dan Kontroler HP setelah TV dinyalakan ulang atau mati listrik.</string>
     <string name="tv_identity_summary">TV: %1$s • ID: %2$s • %3$d terpasang</string>
     <string name="tv_identity_unnamed">TV Tanpa Nama</string>
+    <string name="tv_key_fingerprint">Sidik Kunci: %1$s</string>
 </resources>

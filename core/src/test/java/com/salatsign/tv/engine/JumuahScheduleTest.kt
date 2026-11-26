@@ -4,7 +4,6 @@
 package com.salatsign.tv.engine
 
 import com.salatsign.tv.data.model.AppSettings
-import com.salatsign.tv.data.model.FridayAdhanTiming
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig

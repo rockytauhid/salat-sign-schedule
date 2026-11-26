@@ -1298,7 +1298,7 @@ fun MosqueRemoteSecurityPane(
                 )
                 if (keyFingerprint.isNotBlank()) {
                     Text(
-                        text = "Key Fingerprint: $keyFingerprint",
+                        text = stringResource(AppR.string.tv_key_fingerprint, keyFingerprint),
                         style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.secondary)
                     )
                 }
