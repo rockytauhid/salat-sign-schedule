@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Core Application -->
-    <string name="app_name" translatable="false">SalatSign</string>
 
     <!-- Prayer Names (Appendix A) -->
     <string name="prayer_subuh">Subuh</string>
@@ -223,8 +222,8 @@
     <string name="settings_about_app_name">SalatSign Android TV</string>
     <string name="settings_about_version">Versi %1$s (%2$d)</string>
     <string name="settings_about_license">Perangkat Lunak Bebas di bawah GNU General Public License v3.0 (GPL-3.0-or-later)</string>
-    <string name="settings_about_copyright">Hak Cipta (C) 2026 Rocky Adam Tauhid dan para kontributor SalatSign</string>
-    <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salatsign</string>
+    <string name="settings_about_copyright">Hak Cipta (C) 2026 Rocky Adam Tauhid dan para kontributor %1$s</string>
+    <string name="settings_about_source_code">GitHub: https://github.com/rockytauhid/salat-sign-schedule</string>
     <string name="settings_about_trademarks">SalatSign &amp; SalatSchedule adalah merek dagang. Lihat TRADEMARKS.md untuk kebijakan merek.</string>
     <string name="settings_about_dialog_title">Tentang</string>
     <string name="settings_about_libraries">Pustaka Open Source: Batoul Apps Adhan, Jetpack Compose TV, Coil3, Kotlin Coroutines.</string>
@@ -250,7 +249,7 @@
     <string name="wizard_pin_custom_active">PIN Kustom Aktif (Tersimpan)</string>
 
     <!-- About & Credit -->
-    <string name="about_credit">SalatSign oleh Rocky Adam Tauhid</string>
+    <string name="about_credit">%1$s oleh Rocky Adam Tauhid</string>
     <string name="about_license">Sumber terbuka di bawah GPL-3.0-or-later</string>
 
     <!-- Home Adhan Hint -->

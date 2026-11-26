@@ -740,7 +740,7 @@ fun SettingsAboutCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = stringResource(R.string.about_credit),
+                text = stringResource(R.string.about_credit, stringResource(R.string.app_name)),
                 style = TvTypography.BodyLabel.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colorScheme.primary)
             )
             Text(
@@ -748,7 +748,7 @@ fun SettingsAboutCard(
                 style = TvTypography.BodyLabel.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colorScheme.onSurface)
             )
             Text(
-                text = stringResource(R.string.settings_about_copyright),
+                text = stringResource(R.string.settings_about_copyright, stringResource(R.string.app_name)),
                 style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.8f))
             )
             Text(

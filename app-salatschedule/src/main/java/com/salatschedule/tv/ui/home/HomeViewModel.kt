@@ -77,7 +77,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             hijriOffsetDays = settings.hijriOffsetDays,
             hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
             iqamahOffsets = settings.iqamahOffsets(),
-            hijriMonthNames = hijriMonthNames
+            hijriMonthNames = hijriMonthNames,
+            appLanguage = settings.appLanguage
         )
         val prayerTimes = prayerDayCache.getOrCompute(key, nowZoned)
         val strikePrayer = resolveActiveStrikePrayer(

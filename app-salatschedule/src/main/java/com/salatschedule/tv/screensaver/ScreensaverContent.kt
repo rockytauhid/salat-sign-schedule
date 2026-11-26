@@ -164,7 +164,8 @@ fun ScreensaverHost(
                         hijriOffsetDays = settings.hijriOffsetDays,
                         hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
                         iqamahOffsets = emptyMap(),
-                        hijriMonthNames = hijriMonths
+                        hijriMonthNames = hijriMonths,
+                        appLanguage = settings.appLanguage
                     )
                     val rows = IslamicCalendarSlideRows.compute(
                         today = today,

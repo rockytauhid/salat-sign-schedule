@@ -3,6 +3,7 @@
 
 package com.salatsign.tv.engine
 
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerConfig
@@ -24,7 +25,8 @@ data class DailyPrayerCacheKey(
     val jumuahMode: JumuahMode = JumuahMode.FIXED,
     val jumuahTimes: List<String> = emptyList(),
     val is24HourFormat: Boolean = false,
-    val hijriMonthNames: List<String> = emptyList()
+    val hijriMonthNames: List<String> = emptyList(),
+    val appLanguage: AppLanguage = AppLanguage.EN
 )
 
 /**

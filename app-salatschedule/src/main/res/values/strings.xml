@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">SalatSchedule</string>
-    <string name="about_credit" translatable="false">SalatSchedule by Rocky Adam Tauhid</string>
 
     <!-- Adhan Audio Preview Controls (SalatSchedule only) -->
     <string name="settings_adhan_test_label">Test Adhan Audio</string>

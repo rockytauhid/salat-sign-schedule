@@ -167,7 +167,8 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             jumuahMode = settings.jumuahMode,
             jumuahTimes = settings.jumuahTimes,
             is24HourFormat = settings.is24HourFormat,
-            hijriMonthNames = hijriMonthNames
+            hijriMonthNames = hijriMonthNames,
+            appLanguage = settings.appLanguage
         )
         return prayerDayCache.getOrCompute(key, nowZoned)
     }

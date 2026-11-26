@@ -11,6 +11,7 @@ import com.batoulapps.adhan.Madhab
 import com.batoulapps.adhan.PrayerAdjustments
 import com.batoulapps.adhan.PrayerTimes
 import com.batoulapps.adhan.data.DateComponents
+import com.salatsign.tv.data.model.AppLanguage
 import com.salatsign.tv.data.model.AppSettings
 import com.salatsign.tv.data.model.JumuahMode
 import com.salatsign.tv.data.model.Prayer
@@ -176,7 +177,12 @@ object PrayerCalculationEngine {
             changeAtMidnight = true,
             monthNames = key.hijriMonthNames
         )
-        val gregorianFormatted = HijriCalendarEngine.formatGregorianDate(date)
+        val dateLocale = when (key.appLanguage) {
+            AppLanguage.ID -> java.util.Locale.forLanguageTag("id-ID")
+            AppLanguage.AR -> java.util.Locale.forLanguageTag("ar-u-nu-latn")
+            AppLanguage.EN, AppLanguage.SYSTEM -> java.util.Locale.forLanguageTag("en-AU")
+        }
+        val gregorianFormatted = HijriCalendarEngine.formatGregorianDate(date, dateLocale)
 
         return CachedDayTimes(
             date = date,
