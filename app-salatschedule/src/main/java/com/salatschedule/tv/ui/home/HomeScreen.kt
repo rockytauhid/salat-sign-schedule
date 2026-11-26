@@ -61,6 +61,7 @@ import com.salatsign.tv.ui.common.tvFocusable
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
 import com.salatsign.tv.ui.theme.EmeraldLight
+import com.salatsign.tv.ui.theme.LocalIsDarkTheme
 import com.salatsign.tv.ui.theme.TvTypography
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -223,6 +224,8 @@ fun HomeActiveStrikeBanner(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val isDark = LocalIsDarkTheme.current
+    val panelBg = if (isDark) colorScheme.surfaceVariant else colorScheme.surface
     val prayerLabel = stringResource(prayer.prayer.labelRes())
     val strikeShape = RoundedCornerShape(20.dp)
     val accentPrimary = colorScheme.primary
@@ -231,7 +234,7 @@ fun HomeActiveStrikeBanner(
     Box(
         modifier = modifier
             .clip(strikeShape)
-            .background(colorScheme.surfaceVariant, strikeShape)
+            .background(panelBg, strikeShape)
             .pulsingGlow(shape = strikeShape, glowColor = accentSecondary)
     ) {
         Column(
@@ -330,6 +333,9 @@ fun NextPrayerSpotlightCard(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val isDark = LocalIsDarkTheme.current
+    val panelBg = if (isDark) colorScheme.surfaceVariant else colorScheme.surface
+    val badgeBg = if (isDark) colorScheme.surface else colorScheme.surfaceVariant
     val accentPrimary = colorScheme.primary
     val accentSecondary = colorScheme.secondary
     val heroPrayer = activePrayer ?: nextPrayer
@@ -342,7 +348,7 @@ fun NextPrayerSpotlightCard(
     Box(
         modifier = modifier
             .clip(spotlightShape)
-            .background(colorScheme.surfaceVariant, spotlightShape)
+            .background(panelBg, spotlightShape)
             .border(1.5.dp, accentPrimary.copy(alpha = 0.45f), spotlightShape)
     ) {
         Row(
@@ -410,7 +416,7 @@ fun NextPrayerSpotlightCard(
                 // Reminder Badge
                 Row(
                     modifier = Modifier
-                        .background(colorScheme.surface, RoundedCornerShape(8.dp))
+                        .background(badgeBg, RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

@@ -76,6 +76,7 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import com.salatsign.core.tv.R
+import com.salatsign.tv.ui.theme.LocalIsDarkTheme
 import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.common.LiveClockHeader
@@ -332,12 +333,14 @@ fun MosqueActiveStrikeBanner(
     }
 
     val strikeShape = RoundedCornerShape(20.dp)
+    val isDark = LocalIsDarkTheme.current
+    val panelBg = if (isDark) colorScheme.surfaceVariant else colorScheme.surface
     val accentPrimary = colorScheme.primary
     val accentSecondary = colorScheme.secondary
     Box(
         modifier = modifier
             .clip(strikeShape)
-            .background(colorScheme.surfaceVariant, strikeShape)
+            .background(panelBg, strikeShape)
             .pulsingGlow(shape = strikeShape, glowColor = accentSecondary)
     ) {
         Column(
@@ -460,10 +463,12 @@ fun MosqueNextPrayerBanner(
     }
 
     val bannerShape = RoundedCornerShape(20.dp)
+    val isDark = LocalIsDarkTheme.current
+    val panelBg = if (isDark) colorScheme.surfaceVariant else colorScheme.surface
     Box(
         modifier = modifier
             .clip(bannerShape)
-            .background(colorScheme.surfaceVariant, bannerShape)
+            .background(panelBg, bannerShape)
             .border(width = 1.5.dp, color = accentPrimary.copy(alpha = 0.45f), shape = bannerShape)
     ) {
         Row(

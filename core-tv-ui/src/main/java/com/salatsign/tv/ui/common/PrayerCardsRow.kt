@@ -34,6 +34,7 @@ import com.salatsign.tv.data.model.Prayer
 import com.salatsign.tv.data.model.PrayerTimeItem
 import com.salatsign.tv.ui.theme.AccentEmerald
 import com.salatsign.tv.ui.theme.AccentGold
+import com.salatsign.tv.ui.theme.LocalIsDarkTheme
 import com.salatsign.tv.ui.theme.TvTypography
 
 @Composable
@@ -85,14 +86,16 @@ private fun SunriseCard(
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val isDark = LocalIsDarkTheme.current
     val accentPrimary = colorScheme.primary
     val accentSecondary = colorScheme.secondary
     val shape = RoundedCornerShape(16.dp)
+    val sunriseBg = if (isDark) colorScheme.surface.copy(alpha = 0.82f) else colorScheme.surfaceVariant
 
     Box(
         modifier = modifier
             .clip(shape)
-            .background(colorScheme.surface.copy(alpha = 0.82f), shape)
+            .background(sunriseBg, shape)
     ) {
         Column(
             modifier = Modifier
@@ -164,7 +167,12 @@ fun PrayerCard(
     }
 
     val shape = RoundedCornerShape(16.dp)
-    val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
+    val isDark = LocalIsDarkTheme.current
+    val containerColor = if (isDark) {
+        if (item.isActive) colorScheme.surfaceVariant else colorScheme.surface
+    } else {
+        if (item.isActive) colorScheme.surface else colorScheme.surfaceVariant
+    }
     val borderModifier = if (item.isActive) {
         Modifier.pulsingGlow(shape = shape, glowColor = accentSecondary)
     } else {
