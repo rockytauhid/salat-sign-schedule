@@ -82,6 +82,8 @@ private sealed interface ScreensaverSlideState {
         val hijriDate: String,
         val prayers: List<PrayerTimeItem>,
         val sunriseText: String,
+        val sunriseTime: java.time.LocalTime?,
+        val activePrayer: PrayerTimeItem?,
         val nextPrayer: PrayerTimeItem?,
         val minutesUntilNext: Long,
         val is24HourFormat: Boolean,
@@ -201,6 +203,7 @@ fun ScreensaverHost(
                     val nowTime = nowZoned.toLocalTime()
                     val prayers = ScreensaverRotationEngine.normalizeHomePrayers(prayerDay)
                     val nextPrayer = prayers.firstOrNull { it.time?.isAfter(nowTime) == true } ?: prayers.firstOrNull()
+                    val activePrayer = resolveActivePrayer(prayers, prayerDay.sunrise, nowTime)
                     val minsUntil = nextPrayer?.let {
                         ScreensaverRotationEngine.minutesUntilNextPrayer(nowTime, it)
                     } ?: 0L
@@ -210,6 +213,8 @@ fun ScreensaverHost(
                         hijriDate = prayerDay.hijriDate,
                         prayers = prayers,
                         sunriseText = prayerDay.formattedSunrise(settings.is24HourFormat),
+                        sunriseTime = prayerDay.sunrise,
+                        activePrayer = activePrayer,
                         nextPrayer = nextPrayer,
                         minutesUntilNext = minsUntil,
                         is24HourFormat = settings.is24HourFormat,
@@ -270,8 +275,14 @@ fun ScreensaverHost(
                     val formatted = ScreensaverRotationEngine.formatClockMinutes(refreshedNow, settings.is24HourFormat)
                     if (cur != null && cur.clockText != formatted) {
                         val nextP = cur.prayers.firstOrNull { it.time?.isAfter(refreshedNow) == true } ?: cur.prayers.firstOrNull()
+                        val activeP = resolveActivePrayer(cur.prayers, cur.sunriseTime, refreshedNow)
                         val mins = nextP?.let { ScreensaverRotationEngine.minutesUntilNextPrayer(refreshedNow, it) } ?: 0L
-                        activeSlide = cur.copy(clockText = formatted, nextPrayer = nextP, minutesUntilNext = mins)
+                        activeSlide = cur.copy(
+                            clockText = formatted,
+                            activePrayer = activeP,
+                            nextPrayer = nextP,
+                            minutesUntilNext = mins
+                        )
                     }
                 }
             }
@@ -320,6 +331,22 @@ fun ScreensaverHost(
             }
         }
     }
+}
+
+private fun resolveActivePrayer(
+    prayers: List<PrayerTimeItem>,
+    sunrise: java.time.LocalTime?,
+    nowTime: java.time.LocalTime
+): PrayerTimeItem? {
+    val fajr = prayers.firstOrNull { it.prayer == Prayer.SUBUH }
+    val dhuhr = prayers.firstOrNull { it.prayer == Prayer.ZUHUR }
+    if (sunrise != null && dhuhr?.time != null && !nowTime.isBefore(sunrise) && nowTime.isBefore(dhuhr.time)) {
+        return null
+    }
+    if (fajr?.time != null && nowTime.isBefore(fajr.time)) {
+        return prayers.firstOrNull { it.prayer == Prayer.ISYA }
+    }
+    return prayers.lastOrNull { it.time != null && !nowTime.isBefore(it.time) }
 }
 
 @Composable
@@ -402,26 +429,26 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                 }
             }
 
-            // Bottom: 5 prayers + Sunrise row with next prayer highlighted
+            // Bottom: 5 prayers + Sunrise row with current active prayer highlighted
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val cardShape = RoundedCornerShape(14.dp)
-                val nextPrayerEnum = slide.nextPrayer?.prayer
+                val activePrayerEnum = slide.activePrayer?.prayer
 
                 for (item in slide.prayers) {
-                    val isNext = item.prayer == nextPrayerEnum
+                    val isCurrent = item.prayer == activePrayerEnum
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .background(
-                                if (isNext) colorScheme.surfaceVariant.copy(alpha = 0.85f)
+                                if (isCurrent) colorScheme.surfaceVariant.copy(alpha = 0.85f)
                                 else colorScheme.surface.copy(alpha = 0.55f),
                                 cardShape
                             )
                             .then(
-                                if (isNext) Modifier.border(2.dp, colorScheme.primary, cardShape)
+                                if (isCurrent) Modifier.border(2.dp, colorScheme.secondary, cardShape)
                                 else Modifier
                             )
                             .padding(vertical = 18.dp, horizontal = 10.dp),
@@ -433,7 +460,7 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                                 text = item.prayer.arabicName,
                                 style = TvTypography.BodyLabel.copy(
                                     fontSize = 14.sp,
-                                    color = colorScheme.secondary.copy(alpha = if (isNext) 0.95f else 0.65f)
+                                    color = colorScheme.secondary.copy(alpha = if (isCurrent) 0.95f else 0.65f)
                                 )
                             )
                         }
@@ -441,8 +468,8 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                             text = stringResource(item.prayer.labelRes(isFriday = false)),
                             style = TvTypography.CardTitle.copy(
                                 fontSize = 18.sp,
-                                fontWeight = if (isNext) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isNext) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.82f)
+                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isCurrent) colorScheme.secondary else colorScheme.onSurface.copy(alpha = 0.82f)
                             )
                         )
                         Text(
@@ -450,7 +477,7 @@ private fun ScreensaverScheduleSlide(slide: ScreensaverSlideState.Schedule) {
                             style = TvTypography.HeaderTitle.copy(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isNext) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.85f)
+                                color = if (isCurrent) colorScheme.onSurface else colorScheme.onSurface.copy(alpha = 0.85f)
                             )
                         )
                     }

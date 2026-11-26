@@ -16,7 +16,7 @@ This document tracks test cases that require real Android TV hardware or emulato
 
 ### Test Procedure A: Audio Focus Preemption
 1. Open a media app (e.g., YouTube) and start playing video with active sound.
-2. Trigger live Adhan playback (either wait for exact prayer time, or open **SalatSchedule → Settings → Reminders & Adhan → Test on Schedule** and immediately switch to YouTube/Home).
+2. Trigger live Adhan playback (wait for exact prayer time while another media app such as YouTube is playing).
 3. **Verify:**
    - Background media in YouTube immediately pauses (or ducks) as SalatSchedule requests `AUDIOFOCUS_GAIN_TRANSIENT`.
    - Adhan audio plays clearly through the TV speakers.

@@ -36,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -174,6 +175,7 @@ class AdhanPlaybackService : Service() {
         val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
             .setAudioAttributes(audioAttributes)
             .setAcceptsDelayedFocusGain(false)
+            .setWillPauseWhenDucked(true)
             .setOnAudioFocusChangeListener { focusChange ->
                 when (focusChange) {
                     AudioManager.AUDIOFOCUS_LOSS,
@@ -185,6 +187,11 @@ class AdhanPlaybackService : Service() {
             }
             .build()
         audioFocusRequest = focusRequest
+
+        // Request audio focus immediately before preparing playback so foreground apps
+        // (e.g. YouTube / Plex using FLAG_HW_AV_SYNC on Fire TV) pause and release HDMI audio first.
+        val focusResult = audioManager?.requestAudioFocus(focusRequest)
+        Log.d(TAG, "Audio focus request result (pre-prepare): $focusResult")
 
         try {
             val player = MediaPlayer().apply {
@@ -215,19 +222,47 @@ class AdhanPlaybackService : Service() {
                 setRawDataSource(player, type)
             }
 
-            player.setOnPreparedListener { mp ->
-                val focusResult = audioManager?.requestAudioFocus(focusRequest)
-                Log.d(TAG, "Audio focus request result: $focusResult")
+            // Built-in beep alert (~1.65s) repeats once more so slow HDMI ARC/Fire TV sinks never swallow it
+            var remainingPlays = if (!customLoaded) 2 else 1
 
-                mp.start()
-                _isPlaying.value = true
-                Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.name}.")
+            player.setOnPreparedListener { mp ->
+                serviceScope.launch {
+                    // Brief settle delay so HDMI audio switches cleanly from paused foreground apps on Fire TV
+                    delay(450L)
+                    runCatching {
+                        if (mediaPlayer === mp) {
+                            mp.start()
+                            _isPlaying.value = true
+                            Log.d(TAG, "Adhan audio playback started asynchronously for ${prayer.name}.")
+                        }
+                    }.onFailure { e ->
+                        Log.e(TAG, "Failed to start MediaPlayer after HDMI settle delay", e)
+                        _isPlaying.value = false
+                        stopSelf()
+                    }
+                }
             }
 
-            player.setOnCompletionListener {
-                Log.d(TAG, "Adhan audio playback completed normally.")
-                _isPlaying.value = false
-                stopSelf()
+            player.setOnCompletionListener { mp ->
+                remainingPlays--
+                if (remainingPlays > 0 && mediaPlayer === mp) {
+                    serviceScope.launch {
+                        delay(350L)
+                        runCatching {
+                            if (mediaPlayer === mp) {
+                                mp.seekTo(0)
+                                mp.start()
+                            }
+                        }.onFailure {
+                            _isPlaying.value = false
+                            stopSelf()
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "Adhan audio playback completed normally.")
+                    _isPlaying.value = false
+                    stopSelf()
+                }
             }
 
             player.setOnErrorListener { _, what, extra ->
