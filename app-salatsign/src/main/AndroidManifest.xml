@@ -38,9 +38,11 @@
         android:theme="@style/Theme.SalatSign">
 
         <!-- Main Leanback TV Activity (Mosque Digital Signage) -->
+        <!-- enableOnBackInvokedCallback="false" preserves physical TV remote 3-second Back-hold kiosk exit on Android 16 (R10-1) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:enableOnBackInvokedCallback="false"
             android:launchMode="singleTask"
             android:banner="@drawable/ic_tv_banner"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation"

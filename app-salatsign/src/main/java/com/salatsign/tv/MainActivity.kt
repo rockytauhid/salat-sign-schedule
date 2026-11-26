@@ -145,7 +145,8 @@ class MainActivity : ComponentActivity() {
                     onRequestOpenSettings = { requestOpenSettings() },
                     onOpenSettingsDirect = { isSettingsOpen.value = true },
                     onCloseSettings = { isSettingsOpen.value = false },
-                    onClosePinDialog = { isPinDialogOpen.value = false }
+                    onClosePinDialog = { isPinDialogOpen.value = false },
+                    onTriggerExitHint = { exitHintTrigger.longValue = System.currentTimeMillis() }
                 )
             }
         }
@@ -253,7 +254,8 @@ private fun SalatSignMainContent(
     onRequestOpenSettings: () -> Unit,
     onOpenSettingsDirect: () -> Unit,
     onCloseSettings: () -> Unit,
-    onClosePinDialog: () -> Unit
+    onClosePinDialog: () -> Unit,
+    onTriggerExitHint: () -> Unit = {}
 ) {
     val settings by settingsViewModel.settings.collectAsState()
     val isSettingsLoaded by settingsViewModel.isSettingsLoaded.collectAsState()
@@ -282,8 +284,10 @@ private fun SalatSignMainContent(
         }
     }
 
-    if (isSettingsOpen) {
-        BackHandler { onCloseSettings() }
+    when {
+        isSettingsOpen -> BackHandler { onCloseSettings() }
+        isPinDialogOpen -> BackHandler { onClosePinDialog() }
+        settings.isSetupCompleted -> BackHandler { onTriggerExitHint() }
     }
 
     when {

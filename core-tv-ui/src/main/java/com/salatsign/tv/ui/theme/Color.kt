@@ -26,7 +26,7 @@ val AccentEmerald = Color(0xFF10B981)
 val AccentEmeraldDark = Color(0xFF046347)
 val EmeraldLight = Color(0xFF34D399)
 val AccentGold = Color(0xFFFBBF24)
-val AccentGoldDark = Color(0xFF734000) // Deep antique bronze (>=4.75:1 contrast on LightSurface & 18% chip tint)
+val AccentGoldDark = Color(0xFF734000) // Deep antique bronze (>=4.7:1 contrast on LightSurface & 18% chip tint)
 val ActivePrayerPulse = Color(0xFF059669)
 val PulseRed = Color(0xFFEF4444)
 

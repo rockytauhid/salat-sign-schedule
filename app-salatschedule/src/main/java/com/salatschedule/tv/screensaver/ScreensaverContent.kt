@@ -82,7 +82,6 @@ private sealed interface ScreensaverSlideState {
         val hijriDate: String,
         val prayers: List<PrayerTimeItem>,
         val sunriseText: String,
-        val sunriseTime: java.time.LocalTime?,
         val activePrayer: PrayerTimeItem?,
         val nextPrayer: PrayerTimeItem?,
         val minutesUntilNext: Long,
@@ -147,19 +146,19 @@ fun ScreensaverHost(
     LaunchedEffect(loadedSettings, quranRefs) {
         val settings = loadedSettings ?: return@LaunchedEffect
         var cachedDate: LocalDate? = null
-        var cachedPrayerDay: PrayerTimesDay? = null
+        var cachedKey: DailyPrayerCacheKey? = null
         var cachedCalendarRows: List<ClassifiedIslamicEvent> = emptyList()
         var slideIdx = 0
 
         suspend fun ensureDailyData(nowZoned: ZonedDateTime): Pair<PrayerTimesDay, List<ClassifiedIslamicEvent>> {
             val today = nowZoned.toLocalDate()
-            if (cachedDate != today || cachedPrayerDay == null) {
-                val (day, calRows) = withContext(Dispatchers.IO) {
+            if (cachedDate != today || cachedKey == null) {
+                val (key, calRows) = withContext(Dispatchers.IO) {
                     val hijriMonths = runCatching {
                         LocaleHelper.wrap(context, settings.appLanguage)
                             .resources.getStringArray(R.array.hijri_months).toList()
                     }.getOrDefault(emptyList())
-                    val key = DailyPrayerCacheKey(
+                    val dailyKey = DailyPrayerCacheKey(
                         date = today,
                         config = settings.prayerConfig(),
                         hijriOffsetDays = settings.hijriOffsetDays,
@@ -167,19 +166,21 @@ fun ScreensaverHost(
                         iqamahOffsets = emptyMap(),
                         hijriMonthNames = hijriMonths
                     )
-                    val computedDay = prayerDayCache.getOrCompute(key, nowZoned)
                     val rows = IslamicCalendarSlideRows.compute(
                         today = today,
                         enabledIds = settings.enabledIslamicEventIds,
                         adjustmentDays = settings.hijriOffsetDays
                     )
-                    computedDay to rows
+                    dailyKey to rows
                 }
                 cachedDate = today
-                cachedPrayerDay = day
+                cachedKey = key
                 cachedCalendarRows = calRows
             }
-            return cachedPrayerDay!! to cachedCalendarRows
+            val computedDay = withContext(Dispatchers.IO) {
+                prayerDayCache.getOrCompute(cachedKey!!, nowZoned)
+            }
+            return computedDay to cachedCalendarRows
         }
 
         while (isActive) {
@@ -202,8 +203,8 @@ fun ScreensaverHost(
                 ScreensaverSlideKind.SCHEDULE -> {
                     val nowTime = nowZoned.toLocalTime()
                     val prayers = ScreensaverRotationEngine.normalizeHomePrayers(prayerDay)
-                    val nextPrayer = prayers.firstOrNull { it.time?.isAfter(nowTime) == true } ?: prayers.firstOrNull()
-                    val activePrayer = resolveActivePrayer(prayers, prayerDay.sunrise, nowTime)
+                    val nextPrayer = prayerDay.nextPrayer ?: prayers.firstOrNull()
+                    val activePrayer = prayerDay.activePrayer
                     val minsUntil = nextPrayer?.let {
                         ScreensaverRotationEngine.minutesUntilNextPrayer(nowTime, it)
                     } ?: 0L
@@ -213,7 +214,6 @@ fun ScreensaverHost(
                         hijriDate = prayerDay.hijriDate,
                         prayers = prayers,
                         sunriseText = prayerDay.formattedSunrise(settings.is24HourFormat),
-                        sunriseTime = prayerDay.sunrise,
                         activePrayer = activePrayer,
                         nextPrayer = nextPrayer,
                         minutesUntilNext = minsUntil,
@@ -270,16 +270,22 @@ fun ScreensaverHost(
                 elapsedMs += step
                 if (overflowSkipCounter != startSkip) break
                 if (currentKind == ScreensaverSlideKind.SCHEDULE && activeKinds.size == 1) {
-                    val refreshedNow = ZonedDateTime.now(zone).toLocalTime()
+                    val refreshedZoned = ZonedDateTime.now(zone)
+                    val refreshedNow = refreshedZoned.toLocalTime()
                     val cur = activeSlide as? ScreensaverSlideState.Schedule
                     val formatted = ScreensaverRotationEngine.formatClockMinutes(refreshedNow, settings.is24HourFormat)
                     if (cur != null && cur.clockText != formatted) {
-                        val nextP = cur.prayers.firstOrNull { it.time?.isAfter(refreshedNow) == true } ?: cur.prayers.firstOrNull()
-                        val activeP = resolveActivePrayer(cur.prayers, cur.sunriseTime, refreshedNow)
+                        val (refreshedDay, _) = ensureDailyData(refreshedZoned)
+                        val refreshedPrayers = ScreensaverRotationEngine.normalizeHomePrayers(refreshedDay)
+                        val nextP = refreshedDay.nextPrayer ?: refreshedPrayers.firstOrNull()
                         val mins = nextP?.let { ScreensaverRotationEngine.minutesUntilNextPrayer(refreshedNow, it) } ?: 0L
                         activeSlide = cur.copy(
                             clockText = formatted,
-                            activePrayer = activeP,
+                            gregorianDate = refreshedDay.gregorianDate,
+                            hijriDate = refreshedDay.hijriDate,
+                            prayers = refreshedPrayers,
+                            sunriseText = refreshedDay.formattedSunrise(settings.is24HourFormat),
+                            activePrayer = refreshedDay.activePrayer,
                             nextPrayer = nextP,
                             minutesUntilNext = mins
                         )
@@ -331,22 +337,6 @@ fun ScreensaverHost(
             }
         }
     }
-}
-
-private fun resolveActivePrayer(
-    prayers: List<PrayerTimeItem>,
-    sunrise: java.time.LocalTime?,
-    nowTime: java.time.LocalTime
-): PrayerTimeItem? {
-    val fajr = prayers.firstOrNull { it.prayer == Prayer.SUBUH }
-    val dhuhr = prayers.firstOrNull { it.prayer == Prayer.ZUHUR }
-    if (sunrise != null && dhuhr?.time != null && !nowTime.isBefore(sunrise) && nowTime.isBefore(dhuhr.time)) {
-        return null
-    }
-    if (fajr?.time != null && nowTime.isBefore(fajr.time)) {
-        return prayers.firstOrNull { it.prayer == Prayer.ISYA }
-    }
-    return prayers.lastOrNull { it.time != null && !nowTime.isBefore(it.time) }
 }
 
 @Composable

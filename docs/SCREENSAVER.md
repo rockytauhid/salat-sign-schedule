@@ -2,7 +2,7 @@
 
 SalatSchedule registers a strictly silent, dark-mode Android TV screensaver (`com.salatschedule.tv.screensaver.SalatScreensaverService`) that rotates up to three slides while your TV is idle:
 
-1. **Prayer Schedule** — large clock (no seconds, 12h/24h per your app setting), Gregorian and Hijri date, 5 daily prayers + Sunrise (Friday Dhuhr stays labeled Dhuhr), with the next prayer highlighted and countdown.
+1. **Prayer Schedule** — large clock (no seconds, 12h/24h per your app setting), Gregorian and Hijri date, 5 daily prayers + Sunrise (Friday Dhuhr stays labeled Dhuhr), with the current active prayer highlighted and countdown to the next prayer.
 2. **Islamic Calendar** — recent past (within 14 days), TODAY, and upcoming Islamic dates (skipped if no events are enabled).
 3. **Quran Verse** — one offline verse per rotation from 63 curated verses (Arabic + translation in your app language, Auto duration, never truncated).
 
