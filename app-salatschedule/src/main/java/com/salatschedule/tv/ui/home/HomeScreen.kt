@@ -237,72 +237,86 @@ fun HomeActiveStrikeBanner(
             .background(panelBg, strikeShape)
             .pulsingGlow(shape = strikeShape, glowColor = accentSecondary)
     ) {
-        Column(
+        // Keep main prayer content in the exact same vertically-centered left/right position as NextPrayerSpotlightCard
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .background(accentPrimary, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 14.dp, vertical = 5.dp)
+                    .weight(1f)
+                    .padding(end = 24.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = stringResource(R.string.mosque_strike_title),
-                    style = TvTypography.BodyLabel.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
-                    maxLines = 1,
-                    style = TvTypography.HeaderTitle.copy(
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colorScheme.onSurfaceVariant
-                    )
-                )
-                if (showArabicPrayerNames) {
+                Box(
+                    modifier = Modifier
+                        .background(accentPrimary, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 5.dp)
+                ) {
                     Text(
-                        text = prayer.prayer.arabicName,
-                        maxLines = 1,
-                        style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                        text = stringResource(R.string.mosque_strike_title),
+                        style = TvTypography.BodyLabel.copy(
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     )
                 }
-                Text(
-                    text = prayer.formattedTime(is24HourFormat),
-                    maxLines = 1,
-                    softWrap = false,
-                    style = TvTypography.ActivePrayerTime.copy(
-                        fontSize = if (is24HourFormat) 52.sp else 46.sp,
-                        color = accentPrimary
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.mosque_strike_prayer_name, prayerLabel),
+                        maxLines = 1,
+                        style = TvTypography.HeaderTitle.copy(
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colorScheme.onSurfaceVariant
+                        )
                     )
-                )
+                    if (showArabicPrayerNames) {
+                        Text(
+                            text = prayer.prayer.arabicName,
+                            maxLines = 1,
+                            style = TvTypography.ArabicTitle.copy(fontSize = 30.sp, color = accentSecondary)
+                        )
+                    }
+                }
             }
 
-            // Centered single-line Surah 4:103 reminder with reference on the same row
             Text(
-                text = stringResource(R.string.mosque_strike_admonition),
-                maxLines = 2,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                style = TvTypography.Subtitle.copy(
-                    fontSize = 18.sp,
-                    lineHeight = 24.sp,
-                    color = accentSecondary
+                text = prayer.formattedTime(is24HourFormat),
+                maxLines = 1,
+                softWrap = false,
+                style = TvTypography.ActivePrayerTime.copy(
+                    fontSize = if (is24HourFormat) 64.sp else 54.sp,
+                    color = accentPrimary
                 )
             )
         }
+
+        // Centered Surah 4:103 verse anchored at bottom so the main row never shifts upward
+        Text(
+            text = stringResource(R.string.mosque_strike_admonition),
+            maxLines = 2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp, vertical = 14.dp),
+            style = TvTypography.Subtitle.copy(
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
+                color = accentSecondary
+            )
+        )
     }
 }
 
