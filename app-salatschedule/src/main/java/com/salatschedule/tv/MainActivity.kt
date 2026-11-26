@@ -258,6 +258,7 @@ private fun SalatScheduleMainContent(
                     onSetAppLanguage = { settingsViewModel.setAppLanguage(it) },
                     onSet24HourFormat = { settingsViewModel.set24HourFormat(it) },
                     onSetShowArabicPrayerNames = { settingsViewModel.setShowArabicPrayerNames(it) },
+                    onSetShowStrikeHighlight = { settingsViewModel.setShowStrikeHighlight(it) },
                     onToggleIslamicEvent = { settingsViewModel.toggleIslamicEvent(it) },
                     onSetShowNextEventOnHome = { settingsViewModel.setShowNextEventOnHome(it) },
                     onSetScreensaverScheduleEnabled = { settingsViewModel.setScreensaverScheduleEnabled(it) },

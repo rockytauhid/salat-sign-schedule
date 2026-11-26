@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
@@ -73,6 +74,7 @@ fun SettingsDisplayAndLanguagePane(
     onSetAppLanguage: (AppLanguage) -> Unit,
     onSet24HourFormat: (Boolean) -> Unit,
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
+    onSetShowStrikeHighlight: (Boolean) -> Unit,
     onSetThemeMode: (ThemeMode) -> Unit,
     extraContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
@@ -208,6 +210,11 @@ fun SettingsDisplayAndLanguagePane(
             }
         }
 
+        PrayerTimeAlertBannerCard(
+            enabled = settings.showStrikeHighlight,
+            onToggle = onSetShowStrikeHighlight
+        )
+
         if (extraContent != null) {
             extraContent()
         }
@@ -260,6 +267,43 @@ fun SettingsDisplayAndLanguagePane(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun PrayerTimeAlertBannerCard(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val strikeShape = RoundedCornerShape(10.dp)
+    Card(
+        onClick = { onToggle(!enabled) },
+        colors = CardDefaults.colors(
+            containerColor = if (enabled) colorScheme.surfaceVariant else colorScheme.surface,
+            focusedContainerColor = colorScheme.surfaceVariant
+        ),
+        shape = CardDefaults.shape(strikeShape),
+        scale = tvCardScale(1.01f),
+        border = tvSelectableCardBorder(selected = enabled, shape = strikeShape),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccessTime,
+                contentDescription = null,
+                tint = if (enabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = if (enabled) stringResource(R.string.settings_mosque_strike_on) else stringResource(R.string.settings_mosque_strike_off),
+                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
+            )
         }
     }
 }

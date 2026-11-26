@@ -153,6 +153,10 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch { repository.setShowArabicPrayerNames(enabled) }
     }
 
+    fun setShowStrikeHighlight(show: Boolean) {
+        viewModelScope.launch { repository.setShowStrikeHighlight(show) }
+    }
+
     fun toggleIslamicEvent(eventId: String) {
         val current = settings.value.enabledIslamicEventIds
         val updated = if (eventId in current) current - eventId else current + eventId

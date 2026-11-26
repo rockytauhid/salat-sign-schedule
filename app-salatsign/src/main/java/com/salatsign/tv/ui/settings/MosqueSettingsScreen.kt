@@ -242,13 +242,8 @@ fun MosqueSettingsScreen(
                         onSetAppLanguage = onSetAppLanguage,
                         onSet24HourFormat = onSet24HourFormat,
                         onSetShowArabicPrayerNames = onSetShowArabicPrayerNames,
-                        onSetThemeMode = onSetThemeMode,
-                        extraContent = {
-                            MosqueStrikeHighlightCard(
-                                enabled = settings.showStrikeHighlight,
-                                onToggle = onSetShowStrikeHighlight
-                            )
-                        }
+                        onSetShowStrikeHighlight = onSetShowStrikeHighlight,
+                        onSetThemeMode = onSetThemeMode
                     )
                 }
 

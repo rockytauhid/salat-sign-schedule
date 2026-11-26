@@ -143,43 +143,6 @@ fun MosqueDefaultPinWarningBanner(onOpenChangePin: () -> Unit) {
 }
 
 @Composable
-fun MosqueStrikeHighlightCard(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    val strikeShape = RoundedCornerShape(10.dp)
-    Card(
-        onClick = { onToggle(!enabled) },
-        colors = CardDefaults.colors(
-            containerColor = if (enabled) colorScheme.surfaceVariant else colorScheme.surface,
-            focusedContainerColor = colorScheme.surfaceVariant
-        ),
-        shape = CardDefaults.shape(strikeShape),
-        scale = tvCardScale(1.0f),
-        border = tvSelectableCardBorder(selected = enabled, shape = strikeShape),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.AccessTime,
-                contentDescription = null,
-                tint = if (enabled) colorScheme.primary else colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = if (enabled) stringResource(R.string.settings_mosque_strike_on) else stringResource(R.string.settings_mosque_strike_off),
-                style = TvTypography.CardTitle.copy(fontSize = 15.sp, color = colorScheme.onSurface)
-            )
-        }
-    }
-}
-
-@Composable
 fun MosqueIqamahAndJumuahPane(
     settings: AppSettings,
     onSetIqamahOffset: (Prayer, Int) -> Unit,

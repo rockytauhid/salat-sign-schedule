@@ -126,6 +126,7 @@ fun HomeSettingsScreen(
     onSetAppLanguage: (AppLanguage) -> Unit,
     onSet24HourFormat: (Boolean) -> Unit,
     onSetShowArabicPrayerNames: (Boolean) -> Unit,
+    onSetShowStrikeHighlight: (Boolean) -> Unit = {},
     onSetShowNextEventOnHome: (Boolean) -> Unit = {},
     onToggleIslamicEvent: (String) -> Unit = {},
     onSetScreensaverScheduleEnabled: (Boolean) -> Unit = {},
@@ -229,6 +230,7 @@ fun HomeSettingsScreen(
                         onSetAppLanguage = onSetAppLanguage,
                         onSet24HourFormat = onSet24HourFormat,
                         onSetShowArabicPrayerNames = onSetShowArabicPrayerNames,
+                        onSetShowStrikeHighlight = onSetShowStrikeHighlight,
                         onSetThemeMode = onSetThemeMode
                     )
                 }
