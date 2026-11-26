@@ -333,12 +333,19 @@ fun HomeSettingsScreen(
                     ImportKind.SLIDE_IMAGE -> stringResource(R.string.storage_title_slide_image)
                     else -> stringResource(R.string.storage_title_slide_image)
                 },
-                onFileImported = { fileName ->
+                onFileImported = {},
+                onFileImportedWithOriginalName = { fileName, originalName ->
                     recordInteraction()
                     if (activePickerKind == ImportKind.CUSTOM_ADHAN) {
                         val prayer = pickerTargetPrayer
                         if (prayer != null) {
-                            onSetCustomAdhan(prayer, fileName, "Adhan (${fileName.take(15)})")
+                            val cleanDisplay = originalName
+                                ?.substringAfterLast('/')
+                                ?.substringAfterLast('\\')
+                                ?.trim()
+                                ?.takeIf { it.isNotBlank() }
+                                ?: fileName
+                            onSetCustomAdhan(prayer, fileName, cleanDisplay)
                         }
                     }
                     activePickerKind = null

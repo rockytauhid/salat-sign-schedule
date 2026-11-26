@@ -89,6 +89,7 @@ fun StorageFilePickerScreen(
     onFileImported: (relativeFileName: String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onFileImportedWithOriginalName: ((relativeFileName: String, originalName: String?) -> Unit)? = null,
     onUserInteraction: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -159,6 +160,7 @@ fun StorageFilePickerScreen(
                 val importedName = result.relativeFileName
                 if (result.success && importedName != null) {
                     onFileImported(importedName)
+                    onFileImportedWithOriginalName?.invoke(importedName, result.originalName)
                     onDismiss()
                 } else {
                     errorMessage = result.errorMessage ?: resources.getString(R.string.storage_import_failed)
@@ -604,6 +606,7 @@ fun StorageFilePickerScreen(
                                             val importedName = result.relativeFileName
                                             if (result.success && importedName != null) {
                                                 onFileImported(importedName)
+                                                onFileImportedWithOriginalName?.invoke(importedName, result.originalName)
                                                 onDismiss()
                                             } else {
                                                 errorMessage = result.errorMessage ?: resources.getString(R.string.storage_import_failed)

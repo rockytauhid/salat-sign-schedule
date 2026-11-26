@@ -94,6 +94,40 @@ class AssetImporterTest {
 
         val targetFile = File(importer.audioDir, result.relativeFileName!!)
         assertTrue("Imported file must exist in audio directory", targetFile.exists())
+        assertEquals("adhan_makkah.mp3", result.originalName)
+    }
+
+    @Test
+    fun importCustomAdhan_sameContentTwice_deduplicatesToSingleFileOnDisk() {
+        val bytes = ByteArray(4096) { (it % 127).toByte() }
+        val file1 = tempFolder.newFile("Mishary_Adhan.mp3").apply { writeBytes(bytes) }
+        val file2 = tempFolder.newFile("Standard_Adhan.mp3").apply { writeBytes(bytes) }
+
+        val res1 = importer.importCustomAdhan(file1)
+        val res2 = importer.importCustomAdhan(file2)
+
+        assertTrue(res1.success)
+        assertTrue(res2.success)
+        assertEquals("Identical audio content must reuse the same stored file", res1.relativeFileName, res2.relativeFileName)
+        assertEquals("Mishary_Adhan.mp3", res1.originalName)
+        assertEquals("Standard_Adhan.mp3", res2.originalName)
+        assertEquals("Only one copy should exist on disk", 1, importer.audioDir.listFiles()?.size ?: 0)
+    }
+
+    @Test
+    fun importCustomAdhan_differentContentSameName_keepsBothFilesDistinct() {
+        val dirA = tempFolder.newFolder("a")
+        val dirB = tempFolder.newFolder("b")
+        val fileA = File(dirA, "adhan.mp3").apply { writeBytes(ByteArray(3000) { 1 }) }
+        val fileB = File(dirB, "adhan.mp3").apply { writeBytes(ByteArray(3000) { 2 }) }
+
+        val resA = importer.importCustomAdhan(fileA)
+        val resB = importer.importCustomAdhan(fileB)
+
+        assertTrue(resA.success)
+        assertTrue(resB.success)
+        assertTrue("Different content must not overwrite each other", resA.relativeFileName != resB.relativeFileName)
+        assertEquals(2, importer.audioDir.listFiles()?.size ?: 0)
     }
 
     @Test

@@ -8,9 +8,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.OpenableColumns
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.security.MessageDigest
 import java.util.UUID
 
 enum class ImportKind(val maxDimension: Int, val subDir: String) {
@@ -206,6 +208,15 @@ class AssetImporter(
         return importAudio(stream.readBytes(), originalName ?: "adhan.mp3")
     }
 
+    private fun resolveUriDisplayName(context: Context, uri: Uri): String? {
+        return runCatching {
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0 && cursor.moveToFirst()) cursor.getString(idx)?.takeIf { it.isNotBlank() } else null
+            }
+        }.getOrNull()
+    }
+
     fun importFromUri(
         context: Context,
         uri: Uri,
@@ -215,7 +226,10 @@ class AssetImporter(
         return try {
             val stream = context.contentResolver.openInputStream(uri)
                 ?: return ImportResult(success = false, errorMessage = "Cannot open input stream from URI")
-            val fileName = displayName ?: uri.lastPathSegment ?: "imported_file"
+            val fileName = displayName
+                ?: resolveUriDisplayName(context, uri)
+                ?: uri.lastPathSegment?.substringAfterLast('/')
+                ?: "imported_file"
             when (kind) {
                 ImportKind.SLIDE_IMAGE -> importSlideImage(stream, fileName)
                 ImportKind.MOSQUE_LOGO -> importMosqueLogo(stream, fileName)
@@ -269,8 +283,21 @@ class AssetImporter(
 
         val rawExt = originalName.substringAfterLast('.', "").lowercase()
         val ext = if (rawExt in ALLOWED_AUDIO_EXTENSIONS) rawExt else "mp3"
-        val targetFileName = "adhan_${UUID.randomUUID()}.$ext"
+        val contentHash = MessageDigest.getInstance("SHA-256")
+            .digest(bytes)
+            .joinToString("") { "%02x".format(it) }
+            .take(16)
+        val targetFileName = "adhan_${contentHash}.$ext"
         val targetFile = File(audioDir, targetFileName)
+
+        // Reuse existing identical audio file on disk (prevents duplicate copies across prayers)
+        if (targetFile.exists() && targetFile.length() == bytes.size.toLong()) {
+            return ImportResult(
+                success = true,
+                relativeFileName = targetFileName,
+                originalName = originalName
+            )
+        }
 
         return try {
             targetFile.writeBytes(bytes)
