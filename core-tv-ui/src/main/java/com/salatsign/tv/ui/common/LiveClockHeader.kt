@@ -96,9 +96,9 @@ fun LiveClockHeader(
 
     val timeFormatted = remember(currentTime, is24HourFormat) {
         if (is24HourFormat) {
-            currentTime.format(DateTimeFormatter.ofPattern("HH:mm:ss", Locale.US))
+            currentTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.US))
         } else {
-            currentTime.format(DateTimeFormatter.ofPattern("h:mm:ss a", Locale.forLanguageTag("en-AU")))
+            currentTime.format(DateTimeFormatter.ofPattern("h:mm a", Locale.forLanguageTag("en-AU")))
                 .lowercase(Locale.ENGLISH)
         }
     }

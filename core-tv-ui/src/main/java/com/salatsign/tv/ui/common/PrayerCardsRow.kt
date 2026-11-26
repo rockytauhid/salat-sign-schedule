@@ -46,6 +46,7 @@ fun PrayerCardsRow(
     modifier: Modifier = Modifier
 ) {
     val hasSunriseCard = !sunriseTime.isNullOrBlank()
+    val hasAnyActivePrayer = prayers.any { it.isActive }
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(if (hasSunriseCard) 10.dp else 14.dp)
@@ -57,6 +58,7 @@ fun PrayerCardsRow(
                 showArabicPrayerNames = showArabicPrayerNames,
                 isMosqueMode = isMosqueMode,
                 isCompactSixColumn = hasSunriseCard,
+                isArabicHighlighted = item.isActive || (!hasAnyActivePrayer && item.isNext),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
@@ -149,6 +151,7 @@ fun PrayerCard(
     showArabicPrayerNames: Boolean = true,
     isMosqueMode: Boolean = false,
     isCompactSixColumn: Boolean = false,
+    isArabicHighlighted: Boolean = item.isActive,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -163,7 +166,7 @@ fun PrayerCard(
     val shape = RoundedCornerShape(16.dp)
     val containerColor = if (item.isNext) colorScheme.surfaceVariant else colorScheme.surface
     val borderModifier = if (item.isActive) {
-        Modifier.pulsingGlow(shape = shape, glowColor = accentPrimary)
+        Modifier.pulsingGlow(shape = shape, glowColor = accentSecondary)
     } else {
         Modifier
     }
@@ -189,7 +192,11 @@ fun PrayerCard(
                     maxLines = 1,
                     style = TvTypography.ArabicTitle.copy(
                         fontSize = if (isCompactSixColumn) 17.sp else 18.sp,
-                        color = colorScheme.onSurface.copy(alpha = if (item.isNext) 0.85f else 0.65f)
+                        color = if (isArabicHighlighted) {
+                            accentSecondary
+                        } else {
+                            colorScheme.onSurface.copy(alpha = 0.65f)
+                        }
                     )
                 )
             } else {
@@ -277,7 +284,7 @@ fun PrayerCard(
             if (item.isActive) {
                 Box(
                     modifier = Modifier
-                        .background(accentPrimary, RoundedCornerShape(6.dp))
+                        .background(accentSecondary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -285,14 +292,14 @@ fun PrayerCard(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = accentSecondary
                         )
                     )
                 }
             } else if (item.isNext) {
                 Box(
                     modifier = Modifier
-                        .background(accentSecondary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+                        .background(accentPrimary.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -300,7 +307,7 @@ fun PrayerCard(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = accentSecondary
+                            color = accentPrimary
                         )
                     )
                 }

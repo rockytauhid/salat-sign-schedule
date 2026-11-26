@@ -338,7 +338,7 @@ fun MosqueActiveStrikeBanner(
         modifier = modifier
             .clip(strikeShape)
             .background(colorScheme.surfaceVariant, strikeShape)
-            .pulsingGlow(shape = strikeShape, glowColor = accentPrimary)
+            .pulsingGlow(shape = strikeShape, glowColor = accentSecondary)
     ) {
         Column(
             modifier = Modifier
@@ -482,7 +482,7 @@ fun MosqueNextPrayerBanner(
                 Box(
                     modifier = Modifier
                         .background(
-                            if (isShowingCurrent) accentPrimary else accentPrimary.copy(alpha = 0.16f),
+                            if (isShowingCurrent) accentSecondary.copy(alpha = 0.18f) else accentPrimary.copy(alpha = 0.16f),
                             RoundedCornerShape(8.dp)
                         )
                         .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -496,7 +496,7 @@ fun MosqueNextPrayerBanner(
                         style = TvTypography.BodyLabel.copy(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isShowingCurrent) Color.White else accentPrimary
+                            color = if (isShowingCurrent) accentSecondary else accentPrimary
                         )
                     )
                 }
