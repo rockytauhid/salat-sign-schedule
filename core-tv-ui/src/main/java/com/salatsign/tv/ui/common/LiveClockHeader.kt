@@ -240,20 +240,19 @@ fun LiveClockHeader(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
+                        val navShape = RoundedCornerShape(8.dp)
                         Surface(
                             onClick = onPreviousDay,
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = colorScheme.surface,
-                                focusedContainerColor = AccentEmerald
-                            ),
+                            shape = ClickableSurfaceDefaults.shape(navShape),
+                            scale = tvSurfaceScale(1.03f),
+                            colors = tvSelectableSurfaceColors(selected = false),
+                            border = tvSelectableSurfaceBorder(selected = false, shape = navShape),
                             modifier = Modifier
                                 .then(if (initialFocusRequester != null) Modifier.focusRequester(initialFocusRequester) else Modifier)
-                                .tvFocusable()
                                 .pointerInput(onPreviousDay) { detectTapGestures { onPreviousDay() } }
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -273,23 +272,21 @@ fun LiveClockHeader(
                         if (!isViewingToday) {
                             Surface(
                                 onClick = onTodayClick,
-                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                                colors = ClickableSurfaceDefaults.colors(
-                                    containerColor = AccentGold,
-                                    focusedContainerColor = AccentEmerald
-                                ),
+                                shape = ClickableSurfaceDefaults.shape(navShape),
+                                scale = tvSurfaceScale(1.03f),
+                                colors = tvSelectableSurfaceColors(selected = true),
+                                border = tvSelectableSurfaceBorder(selected = true, shape = navShape),
                                 modifier = Modifier
-                                    .tvFocusable()
                                     .pointerInput(onTodayClick) { detectTapGestures { onTodayClick() } }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Today,
                                         contentDescription = stringResource(R.string.header_nav_today),
-                                        tint = colorScheme.onSecondary,
+                                        tint = colorScheme.primary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -298,7 +295,7 @@ fun LiveClockHeader(
                                         style = TvTypography.BodyLabel.copy(
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = colorScheme.onSecondary
+                                            color = colorScheme.primary
                                         )
                                     )
                                 }
@@ -307,17 +304,15 @@ fun LiveClockHeader(
 
                         Surface(
                             onClick = onNextDay,
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = colorScheme.surface,
-                                focusedContainerColor = AccentEmerald
-                            ),
+                            shape = ClickableSurfaceDefaults.shape(navShape),
+                            scale = tvSurfaceScale(1.03f),
+                            colors = tvSelectableSurfaceColors(selected = false),
+                            border = tvSelectableSurfaceBorder(selected = false, shape = navShape),
                             modifier = Modifier
-                                .tvFocusable()
                                 .pointerInput(onNextDay) { detectTapGestures { onNextDay() } }
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -336,13 +331,12 @@ fun LiveClockHeader(
 
                         // Islamic Calendar Button in SalatSchedule
                         if (onCalendarClick != null) {
-                            val calShape = RoundedCornerShape(8.dp)
                             Surface(
                                 onClick = onCalendarClick,
-                                shape = ClickableSurfaceDefaults.shape(calShape),
+                                shape = ClickableSurfaceDefaults.shape(navShape),
                                 scale = tvSurfaceScale(1.03f),
                                 colors = tvSelectableSurfaceColors(selected = false),
-                                border = tvSelectableSurfaceBorder(selected = false, shape = calShape),
+                                border = tvSelectableSurfaceBorder(selected = false, shape = navShape),
                                 modifier = Modifier.pointerInput(onCalendarClick) { detectTapGestures { onCalendarClick() } }
                             ) {
                                 Row(
@@ -367,13 +361,11 @@ fun LiveClockHeader(
                         // Settings Icon Button in SalatSchedule
                         Surface(
                             onClick = onSettingsClick,
-                            shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
-                            colors = ClickableSurfaceDefaults.colors(
-                                containerColor = colorScheme.surface,
-                                focusedContainerColor = AccentEmerald
-                            ),
+                            shape = ClickableSurfaceDefaults.shape(navShape),
+                            scale = tvSurfaceScale(1.03f),
+                            colors = tvSelectableSurfaceColors(selected = false),
+                            border = tvSelectableSurfaceBorder(selected = false, shape = navShape),
                             modifier = Modifier
-                                .tvFocusable()
                                 .pointerInput(onSettingsClick) { detectTapGestures { onSettingsClick() } }
                         ) {
                             Box(modifier = Modifier.padding(6.dp)) {
