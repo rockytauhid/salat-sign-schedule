@@ -147,4 +147,4 @@ SalatSign and SalatSchedule are free software: you can redistribute them and/or 
 
 Copyright (C) 2026 Rocky Adam Tauhid and SalatSign contributors.
 
-The name "SalatSign" and the logo are not covered by this license; see [TRADEMARKS.md](TRADEMARKS.md). Third-party libraries, fonts, and audio credits are listed in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md) and [docs/AUDIO_SOURCES.md](docs/AUDIO_SOURCES.md).
+The names "SalatSign" and "SalatSchedule" and their logos are not covered by this license; see [TRADEMARKS.md](TRADEMARKS.md). Third-party libraries, fonts, and audio credits are listed in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md) and [docs/AUDIO_SOURCES.md](docs/AUDIO_SOURCES.md).
