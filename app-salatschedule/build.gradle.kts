@@ -120,7 +120,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":core-tv-ui"))
 
-    // Background Scheduling & Resilience (Home Mode Adhan & Reminders)
+    // Background Scheduling & Resilience (SalatSchedule Adhan & Reminders)
     implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)

@@ -64,13 +64,12 @@ import kotlin.io.path.createTempDirectory
 
 class SalatSignLocalServerTest {
 
-    private class FakeSettingsRepository(initial: AppSettings = AppSettings(isMosqueMode = true)) : ISettingsRepository {
+    private class FakeSettingsRepository(initial: AppSettings = AppSettings()) : ISettingsRepository {
         private val state = MutableStateFlow(initial)
         override val appSettingsFlow: Flow<AppSettings> = state
         val current: AppSettings get() = state.value
 
         override suspend fun setSetupCompleted(completed: Boolean) { state.value = state.value.copy(isSetupCompleted = completed) }
-        override suspend fun setMosqueMode(enabled: Boolean) { state.value = state.value.copy(isMosqueMode = enabled) }
         override suspend fun setThemeMode(mode: ThemeMode) { state.value = state.value.copy(themeMode = mode) }
         override suspend fun selectCity(city: CityPreset) { state.value = state.value.copy(cityName = city.name) }
         override suspend fun updateLocation(latitude: Double, longitude: Double, cityName: String, method: String?, zoneId: String?) {}
@@ -317,9 +316,9 @@ class SalatSignLocalServerTest {
     ): Triple<SalatSignLocalServer, FakeSettingsRepository, FakeContentRepository> {
         val initial = if (customPin != null) {
             val hashed = PinHasher.createHashedPin(customPin)
-            AppSettings(isMosqueMode = true, hasCustomPin = true, pinSaltHex = hashed.saltHex, pinHashHex = hashed.hashHex)
+            AppSettings(hasCustomPin = true, pinSaltHex = hashed.saltHex, pinHashHex = hashed.hashHex)
         } else {
-            AppSettings(isMosqueMode = true, hasCustomPin = false)
+            AppSettings(hasCustomPin = false)
         }
         val settingsRepo = FakeSettingsRepository(initial)
         val dir = createTempDirectory("salatsign-remote-test").toFile()
@@ -706,7 +705,6 @@ class SalatSignLocalServerTest {
 
         val settingsRepo = FakeSettingsRepository(
             AppSettings(
-                isMosqueMode = true,
                 hasCustomPin = true,
                 pinSaltHex = legacySaltHex,
                 pinHashHex = legacyHashHex
@@ -1249,21 +1247,35 @@ class SalatSignLocalServerTest {
         // Pinned key MUST still be preserved until admin explicitly accepts
         assertEquals("ORIGINAL_PINNED_KEY_A", settingsRepo.current.peerTvs.first().publicKeyBase64)
 
-        // GET /api/v1/peers must expose the key mismatch warning
+        // GET /api/v1/peers must expose the key mismatch warning and SHA-256 fingerprint (R8-1)
+        val expectedFp = com.salatsign.tv.security.PeerJoinCrypto.keyFingerprint("NEW_RESET_KEY_A")
         val peersResp = server.handleRequest(HttpRequest("GET", "/api/v1/peers", headers = authHeaders))
         assertEquals(200, peersResp.statusCode)
         val peersDto = PhoneControllerJson.decode<PeerListResponse>(String(peersResp.body))
         assertEquals(1, peersDto.keyMismatches.size)
         assertEquals("tv-hall-a", peersDto.keyMismatches.first().deviceId)
         assertEquals("NEW_RESET_KEY_A", peersDto.keyMismatches.first().candidatePublicKeyBase64)
+        assertEquals(expectedFp, peersDto.keyMismatches.first().candidateFingerprint)
 
-        // Explicit MANAGE admin accept replaces the pinned key and clears the mismatch
+        // R8-1: Accepting with a stale/wrong fingerprint MUST fail with 409 Conflict and preserve pinned key
+        val badAcceptResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peers/accept-key",
+                headers = authHeaders,
+                body = """{"deviceId":"tv-hall-a","expectedFingerprint":"0000-0000-0000"}""".toByteArray()
+            )
+        )
+        assertEquals(409, badAcceptResp.statusCode)
+        assertEquals("ORIGINAL_PINNED_KEY_A", settingsRepo.current.peerTvs.first().publicKeyBase64)
+
+        // Explicit MANAGE admin accept with matching fingerprint replaces the pinned key and clears the mismatch
         val acceptResp = server.handleRequest(
             HttpRequest(
                 method = "POST",
                 path = "/api/v1/peers/accept-key",
                 headers = authHeaders,
-                body = """{"deviceId":"tv-hall-a"}""".toByteArray()
+                body = """{"deviceId":"tv-hall-a","expectedFingerprint":"$expectedFp"}""".toByteArray()
             )
         )
         assertEquals(200, acceptResp.statusCode)

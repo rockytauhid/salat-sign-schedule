@@ -199,7 +199,6 @@ const val MAX_MOSQUE_TAGLINE_LENGTH = 60
 
 data class AppSettings(
     val isSetupCompleted: Boolean = false,
-    val isMosqueMode: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.ALWAYS_DARK,
     val latitude: Double = -35.2809,
     val longitude: Double = 149.1300,

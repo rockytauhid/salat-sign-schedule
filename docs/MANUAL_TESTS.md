@@ -11,14 +11,12 @@ This document tracks test cases that require real Android TV hardware or emulato
 ### Test Setup
 - Device: Android TV running API 26+ (e.g., Sony Bravia KD-55X9300D or Android TV Emulator).
 - Audio App: YouTube, Netflix, or Spotify running in the background playing continuous media.
-- App: **SalatSchedule** (`com.salatschedule.tv`) with Adhan Audio enabled for upcoming prayer.
+- TV volume: TV is **unmuted** and audible (Adhan uses `USAGE_MEDIA` + `AUDIOFOCUS_GAIN_TRANSIENT` so it follows your TV remote's volume; a muted TV remains silent by design).
+- App: **SalatSchedule** (`com.salatschedule.tv`) with Adhan Audio (Beep-Beep or imported `.mp3`/`.wav`/`.m4a`/`.ogg`) enabled for an upcoming prayer.
 
 ### Test Procedure A: Audio Focus Preemption
 1. Open a media app (e.g., YouTube) and start playing video with active sound.
-2. Trigger an Adhan alarm (either wait for exact prayer time or send an explicit test broadcast):
-   ```bash
-   adb shell am broadcast -a com.salatschedule.tv.action.PLAY_ADHAN -n com.salatschedule.tv/.service.PrayerAlarmReceiver --es extra_prayer_name "MAGRIB" --es extra_adhan_type "DEFAULT_STANDARD"
-   ```
+2. Trigger live Adhan playback (either wait for exact prayer time, or open **SalatSchedule → Settings → Reminders & Adhan → Test on Schedule** and immediately switch to YouTube/Home).
 3. **Verify:**
    - Background media in YouTube immediately pauses (or ducks) as SalatSchedule requests `AUDIOFOCUS_GAIN_TRANSIENT`.
    - Adhan audio plays clearly through the TV speakers.

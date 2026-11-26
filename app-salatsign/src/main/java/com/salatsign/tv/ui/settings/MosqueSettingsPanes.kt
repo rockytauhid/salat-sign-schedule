@@ -1289,6 +1289,9 @@ fun MosqueRemoteSecurityPane(
         val tvDisplayName = settings.deviceName.ifBlank { stringResource(AppR.string.tv_identity_unnamed) }
             .let { n -> if (settings.roomGroup.isNotBlank()) "$n (${settings.roomGroup})" else n }
         val shortId = settings.deviceId.take(8).ifBlank { "pending" }
+        val keyFingerprint = remember(settings.deviceEcPublicKeyBase64) {
+            com.salatsign.tv.security.PeerJoinCrypto.keyFingerprint(settings.deviceEcPublicKeyBase64)
+        }
         val urlQrMatrix = remember(isPhoneControllerRunning, phoneControllerUrl) {
             if (isPhoneControllerRunning && !phoneControllerUrl.isNullOrBlank()) {
                 runCatching {
@@ -1330,6 +1333,12 @@ fun MosqueRemoteSecurityPane(
                     text = stringResource(AppR.string.tv_identity_summary, tvDisplayName, shortId, activeDevicesCount),
                     style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.85f))
                 )
+                if (keyFingerprint.isNotBlank()) {
+                    Text(
+                        text = "Key Fingerprint: $keyFingerprint",
+                        style = TvTypography.BodyLabel.copy(fontSize = 12.sp, color = colorScheme.secondary)
+                    )
+                }
                 Text(
                     text = stringResource(R.string.settings_phone_controller_desc),
                     style = TvTypography.BodyLabel.copy(fontSize = 13.sp, color = colorScheme.onSurface.copy(alpha = 0.78f))

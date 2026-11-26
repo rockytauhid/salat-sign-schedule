@@ -116,7 +116,7 @@ fun HomeScreen(
         ) {
             // Dual Header (Branding + Gregorian/Hijri date + Live clock)
             LiveClockHeader(
-                isMosqueMode = false,
+                isMosqueSignage = false,
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
                 hijriDate = prayerTimes?.hijriDate ?: "",
                 cityName = uiState.settings.cityName,

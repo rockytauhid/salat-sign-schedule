@@ -95,7 +95,7 @@ object PrayerCalculationEngine {
         hijriOffsetDays: Int = 0,
         hijriChangeAtMidnight: Boolean = false,
         iqamahOffsets: Map<Prayer, Int> = emptyMap(),
-        isMosqueMode: Boolean = false,
+        isMosqueSignage: Boolean = false,
         jumuahMode: JumuahMode = JumuahMode.FIXED,
         jumuahTimes: List<String> = emptyList(),
         is24HourFormat: Boolean = false
@@ -106,7 +106,7 @@ object PrayerCalculationEngine {
             hijriOffsetDays = hijriOffsetDays,
             hijriChangeAtMidnight = hijriChangeAtMidnight,
             iqamahOffsets = iqamahOffsets,
-            isMosqueMode = isMosqueMode,
+            isMosqueSignage = isMosqueSignage,
             jumuahMode = jumuahMode,
             jumuahTimes = jumuahTimes,
             is24HourFormat = is24HourFormat
@@ -147,7 +147,7 @@ object PrayerCalculationEngine {
         val effectiveZuhurTime: LocalTime?
         val secondaryJumuahNote: String?
 
-        if (key.isMosqueMode && isFriday && zuhurTime != null) {
+        if (key.isMosqueSignage && isFriday && zuhurTime != null) {
             val zuhurZoned = ZonedDateTime.of(date, zuhurTime, config.zoneId)
             val resolvedZonedSittings = JumuahCalculator.resolveSittings(date, config, key.jumuahMode, key.jumuahTimes, zuhurZoned)
             jumuahSittings = resolvedZonedSittings.map { it.toLocalTime() }
@@ -236,7 +236,7 @@ object PrayerCalculationEngine {
             val nonNullPrayers = rawList.filter { it.second != null }
 
             // 1. Next Prayer Today (computed via ZonedDateTime durations for DST accuracy, F17)
-            if (key.isMosqueMode && isFriday && jumuahSittings.isNotEmpty()) {
+            if (key.isMosqueSignage && isFriday && jumuahSittings.isNotEmpty()) {
                 if (effectiveZuhurTime != null && referenceTime.isBefore(effectiveZuhurTime)) {
                     val upcomingBefore = nonNullPrayers.firstOrNull { (_, time) -> time!!.isAfter(referenceTime) }
                     if (upcomingBefore != null) {
@@ -311,7 +311,7 @@ object PrayerCalculationEngine {
         }
 
         val prayerItems = rawList.map { (prayer, time) ->
-            val isZuhurOnFridayMosque = key.isMosqueMode && isFriday && (prayer == Prayer.ZUHUR)
+            val isZuhurOnFridayMosque = key.isMosqueSignage && isFriday && (prayer == Prayer.ZUHUR)
             PrayerTimeItem(
                 prayer = prayer,
                 time = time,
@@ -381,11 +381,11 @@ object PrayerCalculationEngine {
         todayPrayerTimes: PrayerTimesDay,
         currentTime: LocalTime = LocalTime.now(),
         windowMinutes: Long = 5,
-        isMosqueMode: Boolean = false
+        isMosqueSignage: Boolean = false
     ): Prayer? {
         val windowSeconds = windowMinutes * 60
         val zuhurItem = todayPrayerTimes.prayers.firstOrNull { it.prayer == Prayer.ZUHUR }
-        if (isMosqueMode && zuhurItem != null && zuhurItem.isFriday && zuhurItem.jumuahSittings.isNotEmpty()) {
+        if (isMosqueSignage && zuhurItem != null && zuhurItem.isFriday && zuhurItem.jumuahSittings.isNotEmpty()) {
             for (sitting in zuhurItem.jumuahSittings) {
                 if (isWithinStrikeWindow(sitting, currentTime, windowSeconds)) {
                     return Prayer.ZUHUR
@@ -393,7 +393,7 @@ object PrayerCalculationEngine {
             }
         }
         for (item in todayPrayerTimes.prayers) {
-            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday && item.jumuahSittings.isNotEmpty()) {
+            if (isMosqueSignage && item.prayer == Prayer.ZUHUR && item.isFriday && item.jumuahSittings.isNotEmpty()) {
                 continue
             }
             val prayerTime = item.time ?: continue
@@ -411,13 +411,13 @@ object PrayerCalculationEngine {
         todayPrayerTimes: PrayerTimesDay,
         nowZoned: ZonedDateTime,
         windowMinutes: Long = 5,
-        isMosqueMode: Boolean = false
+        isMosqueSignage: Boolean = false
     ): Prayer? {
         return getPrayerAtExactTimeStrike(
             todayPrayerTimes = todayPrayerTimes,
             currentTime = nowZoned.toLocalTime(),
             windowMinutes = windowMinutes,
-            isMosqueMode = isMosqueMode
+            isMosqueSignage = isMosqueSignage
         )
     }
 
@@ -450,14 +450,8 @@ object PrayerCalculationEngine {
 
         val zuhurZoned = dateToZonedDateTime(prayerTimes.dhuhr, date, config.zoneId)
         if (zuhurZoned != null) {
-            val isFriday = (date.dayOfWeek == DayOfWeek.FRIDAY)
-            val zuhurEventTime = if (settings != null && settings.isMosqueMode && isFriday && settings.fridayAdhanTiming == FridayAdhanTiming.AT_JUMUAH) {
-                val sittings = JumuahCalculator.resolveSittings(date, config, settings.jumuahMode, settings.jumuahTimes, zuhurZoned)
-                sittings.first()
-            } else {
-                zuhurZoned
-            }
-            events.add(PrayerEvent(Prayer.ZUHUR, zuhurEventTime))
+            // SalatSchedule always schedules Friday Adhan at calculated Zuhr (D16/D18); SalatSign is strictly silent
+            events.add(PrayerEvent(Prayer.ZUHUR, zuhurZoned))
         }
 
         dateToZonedDateTime(prayerTimes.asr, date, config.zoneId)?.let { events.add(PrayerEvent(Prayer.ASHR, it)) }

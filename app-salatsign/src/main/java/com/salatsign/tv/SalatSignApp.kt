@@ -91,10 +91,9 @@ class SalatSignApp : Application() {
         )
         nsdHelper = SalatSignNsdHelper(this)
 
-        // Ensure SalatSign signage flag, stable TV device ID, any legacy slide migration, and Always-On auto-start
+        // Ensure stable TV device ID, any legacy slide migration, and Always-On auto-start
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
-            settingsRepository.setMosqueMode(true)
             settingsRepository.ensureDeviceId()
             val settings = settingsRepository.appSettingsFlow.first()
             if (settings.phoneControllerAlwaysOn) {

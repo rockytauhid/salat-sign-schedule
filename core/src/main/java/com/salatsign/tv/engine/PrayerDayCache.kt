@@ -20,7 +20,7 @@ data class DailyPrayerCacheKey(
     val hijriOffsetDays: Int = 0,
     val hijriChangeAtMidnight: Boolean = false,
     val iqamahOffsets: Map<Prayer, Int> = emptyMap(),
-    val isMosqueMode: Boolean = false,
+    val isMosqueSignage: Boolean = false,
     val jumuahMode: JumuahMode = JumuahMode.FIXED,
     val jumuahTimes: List<String> = emptyList(),
     val is24HourFormat: Boolean = false,

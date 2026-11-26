@@ -305,7 +305,7 @@ class AdhanPlaybackService : Service() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = localizedContext.getString(CoreR.string.notif_channel_adhan_desc)
-                setSound(null, null) // Audio is handled explicitly via USAGE_ALARM MediaPlayer
+                setSound(null, null) // Audio is handled explicitly via USAGE_MEDIA MediaPlayer
                 enableVibration(true)
             }
             notificationManager.createNotificationChannel(channel)

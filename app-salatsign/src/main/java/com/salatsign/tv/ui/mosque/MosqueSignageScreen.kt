@@ -258,7 +258,7 @@ fun MosqueScheduleView(
         ) {
             // White-Label Header with Custom Mosque Icon & Font Presets
             LiveClockHeader(
-                isMosqueMode = true,
+                isMosqueSignage = true,
                 gregorianDate = prayerTimes?.gregorianDate ?: "",
                 hijriDate = prayerTimes?.hijriDate ?: "",
                 cityName = uiState.settings.cityName,
@@ -307,7 +307,7 @@ fun MosqueScheduleView(
                     sunriseTime = prayerTimes.formattedSunrise(uiState.settings.is24HourFormat),
                     is24HourFormat = uiState.settings.is24HourFormat,
                     showArabicPrayerNames = uiState.settings.showArabicPrayerNames,
-                    isMosqueMode = true,
+                    isMosqueSignage = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1.0f)

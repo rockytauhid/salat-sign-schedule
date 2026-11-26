@@ -102,7 +102,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     private val settingsState = settingsRepository.appSettingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = AppSettings(isMosqueMode = true)
+        initialValue = AppSettings()
     )
 
     private val _slideState = MutableStateFlow<SlideState>(SlideState.PrayerSchedule(60))
@@ -163,7 +163,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
             hijriOffsetDays = settings.hijriOffsetDays,
             hijriChangeAtMidnight = settings.hijriChangeAtMidnight,
             iqamahOffsets = settings.iqamahOffsets(),
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = settings.jumuahMode,
             jumuahTimes = settings.jumuahTimes,
             is24HourFormat = settings.is24HourFormat,
@@ -380,7 +380,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = MosqueSignageUiState(settings = AppSettings(isMosqueMode = true))
+        initialValue = MosqueSignageUiState(settings = AppSettings())
     )
 
     companion object {
@@ -400,7 +400,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
                 prayerTimes,
                 now,
                 STRIKE_WINDOW_MINUTES,
-                isMosqueMode = true
+                isMosqueSignage = true
             )
         }
 

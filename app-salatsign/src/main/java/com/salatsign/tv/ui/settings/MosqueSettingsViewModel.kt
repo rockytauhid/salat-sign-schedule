@@ -49,7 +49,7 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
     val settings: StateFlow<AppSettings> = repository.appSettingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = AppSettings(isMosqueMode = true)
+        initialValue = AppSettings()
     )
 
     val isSettingsLoaded: StateFlow<Boolean> = repository.appSettingsFlow
@@ -394,7 +394,6 @@ class MosqueSettingsViewModel(application: Application) : AndroidViewModel(appli
 
     fun completeSetup() {
         viewModelScope.launch {
-            repository.setMosqueMode(true)
             repository.setSetupCompleted(true)
         }
     }

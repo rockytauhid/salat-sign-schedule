@@ -44,7 +44,6 @@ class DataModelAndSettingsTest {
         val settings = AppSettings()
 
         assertFalse("Setup must not be completed by default", settings.isSetupCompleted)
-        assertFalse("SalatSign flag must be false by default", settings.isMosqueMode)
         assertEquals(ThemeMode.ALWAYS_DARK, settings.themeMode)
         assertEquals(MosqueIconPreset.DOME_CRESCENT, settings.mosqueIconPreset)
         assertEquals(MosqueFontPreset.MODERN_SANS, settings.mosqueFontPreset)

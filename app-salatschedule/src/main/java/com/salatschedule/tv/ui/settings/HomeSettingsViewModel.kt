@@ -33,7 +33,7 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
     val settings: StateFlow<AppSettings> = repository.appSettingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = AppSettings(isMosqueMode = false)
+        initialValue = AppSettings()
     )
 
     val isSettingsLoaded: StateFlow<Boolean> = repository.appSettingsFlow
@@ -209,9 +209,8 @@ class HomeSettingsViewModel(application: Application) : AndroidViewModel(applica
 
     fun completeSetup() {
         viewModelScope.launch {
-            repository.setMosqueMode(false)
             repository.setSetupCompleted(true)
-            scheduler.scheduleNext(settings.value.copy(isMosqueMode = false))
+            scheduler.scheduleNext(settings.value)
         }
     }
 

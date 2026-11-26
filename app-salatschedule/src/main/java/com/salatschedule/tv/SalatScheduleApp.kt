@@ -36,7 +36,6 @@ class SalatScheduleApp : Application() {
         quranVerseRepository = AssetQuranVerseRepository(this)
 
         CoroutineScope(Dispatchers.IO).launch {
-            settingsRepository.setMosqueMode(false)
             val settings = settingsRepository.appSettingsFlow.first()
             DailyScheduleWorker.enqueueDailyWork(this@SalatScheduleApp, settings.zoneId)
             alarmScheduler.scheduleNext(settings)

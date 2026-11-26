@@ -37,7 +37,7 @@ class MosqueSignageBehaviorTest {
             date = date,
             config = canberraConfig,
             referenceZoned = nowZoned,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
         val magribTime = day.prayers.first { it.prayer == Prayer.MAGRIB }.time!!
 
@@ -62,7 +62,7 @@ class MosqueSignageBehaviorTest {
             date = date,
             config = canberraConfig,
             referenceZoned = nowZoned,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
         val subuhTime = day.prayers.first { it.prayer == Prayer.SUBUH }.time!!
 
@@ -81,7 +81,7 @@ class MosqueSignageBehaviorTest {
             date = friday,
             config = canberraConfig,
             referenceZoned = nowZoned,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("13:15", "14:00")
         )
@@ -107,7 +107,7 @@ class MosqueSignageBehaviorTest {
             date = date,
             config = canberraConfig,
             referenceZoned = nowZoned,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
 
         val overridden = MosqueSlideshowViewModel.applyActivePrayerOverride(day, Prayer.ASHR)

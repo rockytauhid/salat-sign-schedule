@@ -429,12 +429,14 @@ data class PeerHealthDto(
 data class PeerKeyMismatchDto(
     val deviceId: String,
     val candidatePublicKeyBase64: String,
+    val candidateFingerprint: String = "",
     val detectedAtEpochMillis: Long = 0L
 )
 
 @Serializable
 data class AcceptPeerKeyRequest(
-    val deviceId: String
+    val deviceId: String,
+    val expectedFingerprint: String = ""
 )
 
 @Serializable

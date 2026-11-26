@@ -42,7 +42,7 @@ fun PrayerCardsRow(
     sunriseTime: String? = null,
     is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
-    isMosqueMode: Boolean = false,
+    isMosqueSignage: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val hasSunriseCard = !sunriseTime.isNullOrBlank()
@@ -56,7 +56,7 @@ fun PrayerCardsRow(
                 item = item,
                 is24HourFormat = is24HourFormat,
                 showArabicPrayerNames = showArabicPrayerNames,
-                isMosqueMode = isMosqueMode,
+                isMosqueSignage = isMosqueSignage,
                 isCompactSixColumn = hasSunriseCard,
                 isArabicHighlighted = item.isActive || (!hasAnyActivePrayer && item.isNext),
                 modifier = Modifier
@@ -149,7 +149,7 @@ fun PrayerCard(
     item: PrayerTimeItem,
     is24HourFormat: Boolean = false,
     showArabicPrayerNames: Boolean = true,
-    isMosqueMode: Boolean = false,
+    isMosqueSignage: Boolean = false,
     isCompactSixColumn: Boolean = false,
     isArabicHighlighted: Boolean = item.isActive,
     modifier: Modifier = Modifier
@@ -157,7 +157,7 @@ fun PrayerCard(
     val colorScheme = MaterialTheme.colorScheme
     val accentPrimary = colorScheme.primary
     val accentSecondary = colorScheme.secondary
-    val prayerLabel = if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
+    val prayerLabel = if (isMosqueSignage && item.prayer == Prayer.ZUHUR && item.isFriday) {
         stringResource(R.string.prayer_jumuah)
     } else {
         stringResource(item.prayer.labelRes())
@@ -244,7 +244,7 @@ fun PrayerCard(
             )
 
             // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for SalatSign
-            if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
+            if (isMosqueSignage && item.prayer == Prayer.ZUHUR && item.isFriday) {
                 val note = item.secondaryTimeNote
                 if (note != null) {
                     Text(

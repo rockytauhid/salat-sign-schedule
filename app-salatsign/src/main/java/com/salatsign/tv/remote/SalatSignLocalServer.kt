@@ -1038,8 +1038,8 @@ class SalatSignLocalServer(
     }
 
     /**
-     * Review 7 R7-1: Explicitly accepts a changed EC public key for a known peer (e.g. after factory reset)
-     * when confirmed by a MANAGE admin in the Phone Controller.
+     * Review 7 R7-1 + Review 8 R8-1: Explicitly accepts a changed EC public key for a known peer
+     * (e.g. after factory reset) when confirmed by a MANAGE admin with a matching key fingerprint.
      */
     private suspend fun handleAcceptPeerKey(req: HttpRequest, settings: AppSettings): HttpResponse {
         val body = PhoneControllerJson.decode<AcceptPeerKeyRequest>(req.body.toString(StandardCharsets.UTF_8))
@@ -1047,8 +1047,21 @@ class SalatSignLocalServer(
         if (targetId.isBlank()) {
             return errorResponse(400, "Bad Request", "missing_device_id", "Peer deviceId is required")
         }
-        val mismatch = pendingKeyMismatchesByPeerId.remove(targetId)
+        val mismatch = pendingKeyMismatchesByPeerId[targetId]
             ?: return errorResponse(404, "Not Found", "no_key_mismatch", "No pending key change for this peer")
+        val expectedFp = body.expectedFingerprint.trim().uppercase(Locale.ROOT)
+        val actualFp = mismatch.candidateFingerprint.ifBlank {
+            PeerJoinCrypto.keyFingerprint(mismatch.candidatePublicKeyBase64)
+        }.uppercase(Locale.ROOT)
+        if (expectedFp.isEmpty() || expectedFp != actualFp) {
+            return errorResponse(
+                409,
+                "Conflict",
+                "key_fingerprint_mismatch",
+                "Candidate key changed since page load. Reload and verify the TV's Key Fingerprint before accepting."
+            )
+        }
+        pendingKeyMismatchesByPeerId.remove(targetId)
         val updatedPeers = settings.peerTvs.map { peer ->
             if (peer.deviceId == targetId) {
                 peer.copy(publicKeyBase64 = mismatch.candidatePublicKeyBase64)
@@ -1264,6 +1277,7 @@ class SalatSignLocalServer(
                         pendingKeyMismatchesByPeerId[p.deviceId] = PeerKeyMismatchDto(
                             deviceId = p.deviceId,
                             candidatePublicKeyBase64 = incomingKey,
+                            candidateFingerprint = PeerJoinCrypto.keyFingerprint(incomingKey),
                             detectedAtEpochMillis = now
                         )
                     } else if (prevKey != null && incomingKey == prevKey) {

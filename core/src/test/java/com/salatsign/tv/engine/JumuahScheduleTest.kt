@@ -96,7 +96,7 @@ class JumuahScheduleTest {
         val homeFriday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
-            isMosqueMode = false,
+            isMosqueSignage = false,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("13:00")
         )
@@ -108,7 +108,7 @@ class JumuahScheduleTest {
         val mosqueTuesday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = tuesday,
             config = config,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("13:00")
         )
@@ -120,7 +120,7 @@ class JumuahScheduleTest {
         val mosqueFriday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("13:00")
         )
@@ -205,7 +205,7 @@ class JumuahScheduleTest {
             date = friday,
             config = config,
             referenceZoned = morningRef,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("12:30", "13:30")
         )
@@ -219,7 +219,7 @@ class JumuahScheduleTest {
             date = friday,
             config = config,
             referenceZoned = midRef,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("12:30", "13:30")
         )
@@ -233,7 +233,7 @@ class JumuahScheduleTest {
             date = friday,
             config = config,
             referenceZoned = lateRef,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("12:30", "13:30")
         )
@@ -246,7 +246,7 @@ class JumuahScheduleTest {
         val day = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = emptyList() // Not configured
         )
@@ -262,7 +262,7 @@ class JumuahScheduleTest {
         val day = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
-            isMosqueMode = true,
+            isMosqueSignage = true,
             jumuahMode = JumuahMode.FIXED,
             jumuahTimes = listOf("12:30", "13:30")
         )
@@ -272,7 +272,7 @@ class JumuahScheduleTest {
             todayPrayerTimes = day,
             currentTime = LocalTime.of(12, 32),
             windowMinutes = 5,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
         assertEquals(Prayer.ZUHUR, strikeSitting1)
 
@@ -281,7 +281,7 @@ class JumuahScheduleTest {
             todayPrayerTimes = day,
             currentTime = LocalTime.of(13, 33),
             windowMinutes = 5,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
         assertEquals(Prayer.ZUHUR, strikeSitting2)
 
@@ -290,7 +290,7 @@ class JumuahScheduleTest {
             todayPrayerTimes = day,
             currentTime = LocalTime.of(13, 0),
             windowMinutes = 5,
-            isMosqueMode = true
+            isMosqueSignage = true
         )
         assertNull(noStrike)
     }

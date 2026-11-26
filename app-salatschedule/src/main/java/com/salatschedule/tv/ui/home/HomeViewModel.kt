@@ -85,7 +85,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 prayerTimes,
                 nowZoned.toLocalTime(),
                 5L,
-                isMosqueMode = false
+                isMosqueSignage = false
             )
         } else {
             null

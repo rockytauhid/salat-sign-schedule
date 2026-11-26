@@ -110,6 +110,19 @@ object PeerJoinCrypto {
     }
 
     /**
+     * Review 8 R8-1: Short human-verifiable fingerprint (`XXXX-XXXX-XXXX`, first 12 uppercase hex chars
+     * of SHA-256 over the trimmed Base64 EC public key) displayed on TV Settings and the Phone Controller.
+     */
+    fun keyFingerprint(publicKeyBase64: String): String {
+        val clean = publicKeyBase64.trim()
+        if (clean.isEmpty()) return ""
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(clean.toByteArray(StandardCharsets.UTF_8))
+        val hex12 = PinHasher.bytesToHex(digest).take(12).uppercase(java.util.Locale.ROOT)
+        return hex12.chunked(4).joinToString("-")
+    }
+
+    /**
      * Review 5 R5-2 + Review 6 R6-3: Proves knowledge of [normalizedJoinCode] bound to [deviceId],
      * [clientPublicKeyBase64], and [identityPublicKeyBase64] without sending the join code in cleartext.
      */

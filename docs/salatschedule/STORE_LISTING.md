@@ -30,7 +30,7 @@ Accurately calculates daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) and S
 • Built-in ±3-year navigable Islamic Calendar covering 16 major Hijri dates with an optional next-event summary on the home screen.
 
 3. Live Countdown, Prayer-Time Alert Banner & D-Pad Browsing
-• Center Spotlight: Displays the active/next prayer (with optional Arabic name) alongside a large live ticking countdown (HH:MM:SS) and "Until <Next Prayer>" indicator.
+• Center Spotlight: Displays the active/next prayer (with optional Arabic name) alongside a large live ticking countdown (HH:MM:SS) and "until <Next Prayer>" indicator.
 • Prayer-Time Alert Banner: 5-minute glowing visual banner featuring Surah An-Nisa' 4:103 when prayer time arrives.
 • Remote Date Navigation: Browse yesterday, today, and upcoming dates effortlessly with Left/Right D-pad keys and a one-click Today shortcut.
 
@@ -40,7 +40,7 @@ Accurately calculates daily prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) and S
 
 5. 15-Minute Pre-Prayer Reminders & Custom Adhan Audio
 • Heads-Up Reminders: Optional TV notification 15 minutes before each prayer time.
-• Custom Adhan Playback: Ships silent by default. Import your preferred Adhan audio files (.mp3, .ogg, .wav) from a USB drive or local TV storage with per-prayer audio settings that play cleanly even while using other TV apps.
+• Custom Adhan Playback & Preview: Ships silent by default. Choose the built-in Beep-Beep alert or import your preferred Adhan audio files (.mp3, .wav, .m4a, .ogg) from a USB drive or local TV storage per prayer, and preview them in Settings with Test Adhan Audio or Test on Schedule. Adhan playback pauses other media apps and follows your TV remote's volume (a muted TV remains silent).
 
 6. Designed for Android TV
 10-foot high-contrast UI, overscan-safe margins, 12/24-hour clock format (12-hour default), Dark, Light, or Auto Day/Night themes, and English, Indonesian, and Arabic support.

@@ -63,7 +63,7 @@ import java.util.Locale
 
 @Composable
 fun LiveClockHeader(
-    isMosqueMode: Boolean,
+    isMosqueSignage: Boolean,
     gregorianDate: String,
     hijriDate: String,
     cityName: String,
@@ -114,7 +114,7 @@ fun LiveClockHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left Column: Branding / Identity
-        if (isMosqueMode) {
+        if (isMosqueSignage) {
             // White-Label Mosque Branding (Zero App Logos or App Titles)
             Row(
                 modifier = Modifier

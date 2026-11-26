@@ -18,7 +18,7 @@ Always consult `PRODUCT_SPEC.md`, `docs/DECISIONS.md` (especially `D18`), and th
 - **Hijri Calendar:** `java.time.chrono.HijrahDate` (with configurable day offset `-2` to `+2`)
 - **Local Storage:** `androidx.datastore:datastore-preferences`
 - **Image Loading:** `io.coil-kt.coil3:coil-compose` (for Mosque logos and signage slides)
-- **Audio Playback (`:app-salatschedule` only):** Android `MediaPlayer` with `AudioAttributes.USAGE_ALARM`
+- **Audio Playback (`:app-salatschedule` only):** Android `MediaPlayer` with `AudioAttributes.USAGE_MEDIA` + `AUDIOFOCUS_GAIN_TRANSIENT`
 - **Background Scheduling (`:app-salatschedule` only):** `AlarmManager` (`setAlarmClock`) + `BroadcastReceiver` + `ForegroundService` + `WorkManager`
 
 ---

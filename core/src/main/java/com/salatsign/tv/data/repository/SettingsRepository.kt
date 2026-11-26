@@ -44,7 +44,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
 
     private object PreferencesKeys {
         val IS_SETUP_COMPLETED = booleanPreferencesKey("is_setup_completed")
-        val IS_MOSQUE_MODE = booleanPreferencesKey("is_mosque_mode")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val LATITUDE = doublePreferencesKey("latitude")
         val LONGITUDE = doublePreferencesKey("longitude")
@@ -167,7 +166,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         }
         .map { preferences ->
             val isSetupCompleted = preferences[PreferencesKeys.IS_SETUP_COMPLETED] ?: false
-            val isMosqueMode = preferences[PreferencesKeys.IS_MOSQUE_MODE] ?: false
             val themeModeStr = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.ALWAYS_DARK.name
             val themeMode = runCatching { ThemeMode.valueOf(themeModeStr) }.getOrDefault(ThemeMode.ALWAYS_DARK)
 
@@ -299,7 +297,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
 
             AppSettings(
                 isSetupCompleted = isSetupCompleted,
-                isMosqueMode = isMosqueMode,
                 themeMode = themeMode,
                 latitude = latitude,
                 longitude = longitude,
@@ -413,12 +410,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setSetupCompleted(completed: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PreferencesKeys.IS_SETUP_COMPLETED] = completed
-        }
-    }
-
-    override suspend fun setMosqueMode(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.IS_MOSQUE_MODE] = enabled
         }
     }
 

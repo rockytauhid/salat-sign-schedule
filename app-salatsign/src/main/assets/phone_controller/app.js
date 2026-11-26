@@ -261,7 +261,7 @@ async function loadNoticeAndPeers() {
         }
       }
       if (mismatch) {
-        statusText += ' • Key changed (factory reset?)';
+        statusText += ' • Key changed (New key: ' + (mismatch.candidateFingerprint || '?') + ')';
       }
       const box = document.createElement('div');
       box.className = 'slide-item flex-between';
@@ -275,7 +275,7 @@ async function loadNoticeAndPeers() {
         const acceptBtn = document.createElement('button');
         acceptBtn.className = 'sm secondary';
         acceptBtn.textContent = 'Accept New Key';
-        acceptBtn.onclick = () => acceptPeerKey(peer.deviceId, peer.deviceName || peer.deviceId);
+        acceptBtn.onclick = () => acceptPeerKey(peer.deviceId, peer.deviceName || peer.deviceId, mismatch.candidateFingerprint || '');
         actions.appendChild(acceptBtn);
       }
       const rmBtn = document.createElement('button');
@@ -358,12 +358,16 @@ async function joinPeerGroup() {
   }
 }
 
-async function acceptPeerKey(deviceId, label) {
-  if (!confirm('Accept the new identity key for "' + label + '"? Only do this if that TV was factory-reset or reinstalled.')) return;
+async function acceptPeerKey(deviceId, label, expectedFingerprint) {
+  const msg = 'Accept new identity key for "' + label + '"?\n\n' +
+    'New Key Fingerprint: ' + (expectedFingerprint || '(unknown)') + '\n\n' +
+    'Verify this matches Settings → PIN & Remote on "' + label + '" before continuing. ' +
+    'Note: you will also need to confirm this key change on any other linked TVs in the group.';
+  if (!confirm(msg)) return;
   const res = await api('/api/v1/peers/accept-key', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deviceId })
+    body: JSON.stringify({ deviceId, expectedFingerprint })
   });
   showMsg(res.ok ? 'Accepted new key for ' + label + '.' : (res.data.message || 'Accept key failed.'), res.ok);
   if (res.ok) await loadNoticeAndPeers();

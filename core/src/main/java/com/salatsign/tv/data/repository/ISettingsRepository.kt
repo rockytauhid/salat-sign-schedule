@@ -26,7 +26,6 @@ interface ISettingsRepository {
     val appSettingsFlow: Flow<AppSettings>
 
     suspend fun setSetupCompleted(completed: Boolean)
-    suspend fun setMosqueMode(enabled: Boolean)
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun selectCity(city: CityPreset)
     suspend fun updateLocation(
