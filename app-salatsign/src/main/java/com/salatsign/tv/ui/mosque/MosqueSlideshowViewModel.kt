@@ -388,7 +388,7 @@ class MosqueSlideshowViewModel(application: Application) : AndroidViewModel(appl
 
         /**
          * Evaluates whether [now] falls within the silent visual strike window for any prayer
-         * (including Friday Jumu'ah sittings, since SalatSign is strictly Mosque Mode).
+         * (including Friday Jumu'ah sittings for SalatSign).
          */
         fun evaluateStrike(
             prayerTimes: PrayerTimesDay,

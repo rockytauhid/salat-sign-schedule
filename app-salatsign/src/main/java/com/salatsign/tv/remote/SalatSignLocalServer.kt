@@ -4,6 +4,7 @@
 package com.salatsign.tv.remote
 
 import android.util.Log
+import com.salatsign.tv.data.api.AcceptPeerKeyRequest
 import com.salatsign.tv.data.api.ApiConstants
 import com.salatsign.tv.data.api.ApiErrorResponse
 import com.salatsign.tv.data.api.AuthMeResponse
@@ -33,8 +34,10 @@ import com.salatsign.tv.data.api.PeerHealthDto
 import com.salatsign.tv.data.api.PeerJoinRequest
 import com.salatsign.tv.data.api.PeerJoinResponse
 import com.salatsign.tv.data.api.PeerJoinSecretPayload
+import com.salatsign.tv.data.api.PeerKeyMismatchDto
 import com.salatsign.tv.data.api.PeerListResponse
 import com.salatsign.tv.data.api.PeerNoticeMessage
+import com.salatsign.tv.data.api.PeerRotationStatusDto
 import com.salatsign.tv.data.api.PeerSecretRotatePayload
 import com.salatsign.tv.data.api.PeerSecretRotateRequest
 import com.salatsign.tv.data.api.PeerSyncAckResponse
@@ -197,6 +200,7 @@ class SalatSignLocalServer(
         private const val SESSION_TTL_MILLIS = 30 * 60 * 1000L
         private const val RATE_LIMIT_WINDOW_MILLIS = 60_000L
         private const val RATE_LIMIT_MAX_AUTH_PER_IP = 15
+        internal const val MAX_ROTATION_RETRY_ATTEMPTS = 6
 
         private val defaultJvmWebAssetProvider: () -> ByteArray = {
             val candidates = listOf(
@@ -229,14 +233,18 @@ class SalatSignLocalServer(
     private val peerHealthById = ConcurrentHashMap<String, PeerHealthDto>()
     // Review 5 R5-4: Cache slide image SHA-256 by (length, lastModified) to avoid repeated disk hashing
     private val slideSha256Cache = ConcurrentHashMap<String, Triple<Long, Long, String>>()
-    // Review 6 R6-4: Short retry queue for undelivered ECIES secret rotations (retried during periodic sync)
+    // Review 6 R6-4 + Review 7 R7-2: Retry queue & visible status for undelivered ECIES secret rotations
     private data class PendingRotation(
         val peer: PeerTvRecord,
         val payload: PeerSecretRotatePayload,
         val oldGroupSecretHex: String,
-        val attempts: Int = 1
+        val attempts: Int = 1,
+        val updatedAtEpochMillis: Long = 0L
     )
     private val pendingRotationsByPeerId = ConcurrentHashMap<String, PendingRotation>()
+    private val rotationGaveUpByPeerId = ConcurrentHashMap<String, PeerRotationStatusDto>()
+    // Review 7 R7-1: Track mismatched peer EC keys so a MANAGE admin can explicitly accept a reset TV's new key
+    private val pendingKeyMismatchesByPeerId = ConcurrentHashMap<String, PeerKeyMismatchDto>()
 
     private sealed interface AuthContext {
         val role: RemoteRole
@@ -555,6 +563,7 @@ class SalatSignLocalServer(
                 method == "POST" && path == "/api/v1/peers/join" -> handleBrowserJoinGroup(req, currentSettings)
                 method == "POST" && path == "/api/v1/peers/push" -> handlePushConfigToPeers(currentSettings)
                 method == "POST" && path == "/api/v1/peers/remove" -> handleRemovePeerAndRotate(req, currentSettings)
+                method == "POST" && path == "/api/v1/peers/accept-key" -> handleAcceptPeerKey(req, currentSettings)
                 method == "POST" && path == "/api/v1/peers/leave" -> handleLeaveGroup()
                 method == "GET" && path == "/api/v1/devices" -> handleGetDevices(currentSettings)
                 method == "DELETE" && path.startsWith("/api/v1/devices/") -> {
@@ -894,6 +903,26 @@ class SalatSignLocalServer(
             .filter { it.isNotEmpty() }
             .distinct()
         val health = peers.mapNotNull { peerHealthById[it.deviceId] }
+        val peerIds = peers.map { it.deviceId }.toSet()
+        val keyMismatches = peerIds.mapNotNull { pendingKeyMismatchesByPeerId[it] }
+        val rotationStatuses = buildList {
+            for (id in peerIds) {
+                val pending = pendingRotationsByPeerId[id]
+                if (pending != null) {
+                    add(
+                        PeerRotationStatusDto(
+                            deviceId = id,
+                            state = "pending",
+                            attempts = pending.attempts,
+                            maxAttempts = MAX_ROTATION_RETRY_ATTEMPTS,
+                            updatedAtEpochMillis = pending.updatedAtEpochMillis
+                        )
+                    )
+                } else {
+                    rotationGaveUpByPeerId[id]?.let { add(it) }
+                }
+            }
+        }
         return typedJsonResponse(
             200, "OK",
             PeerListResponse(
@@ -903,7 +932,9 @@ class SalatSignLocalServer(
                 groupLinked = settings.groupSecretHex.isNotBlank(),
                 configVersion = settings.configVersion,
                 peerHealth = health,
-                deliveries = deliveries
+                deliveries = deliveries,
+                keyMismatches = keyMismatches,
+                rotationStatuses = rotationStatuses
             )
         )
     }
@@ -963,18 +994,31 @@ class SalatSignLocalServer(
                 oldGroupSecretHex = oldSecret,
                 selfDeviceId = self.deviceId
             ).also { results ->
-                // Review 6 R6-4: Queue unreachable peers for short retry during periodic sync
+                // Review 6 R6-4 + Review 7 R7-2: Queue unreachable peers for retry and track gave-up state
+                val now = nowMillisProvider()
                 for (r in results) {
                     if (r.status == "delivered") {
                         pendingRotationsByPeerId.remove(r.deviceId)
+                        rotationGaveUpByPeerId.remove(r.deviceId)
                     } else {
                         val failedPeer = remainingPeers.firstOrNull { it.deviceId == r.deviceId }
                         if (failedPeer != null && failedPeer.publicKeyBase64.isNotBlank()) {
+                            rotationGaveUpByPeerId.remove(r.deviceId)
                             pendingRotationsByPeerId[r.deviceId] = PendingRotation(
                                 peer = failedPeer,
                                 payload = rotatePayload,
                                 oldGroupSecretHex = oldSecret,
-                                attempts = 1
+                                attempts = 1,
+                                updatedAtEpochMillis = now
+                            )
+                        } else if (failedPeer != null) {
+                            pendingRotationsByPeerId.remove(r.deviceId)
+                            rotationGaveUpByPeerId[r.deviceId] = PeerRotationStatusDto(
+                                deviceId = r.deviceId,
+                                state = "gave_up",
+                                attempts = 1,
+                                maxAttempts = MAX_ROTATION_RETRY_ATTEMPTS,
+                                updatedAtEpochMillis = now
                             )
                         }
                     }
@@ -987,8 +1031,34 @@ class SalatSignLocalServer(
         settingsRepository.setGroupSecretHex(if (remainingPeers.isEmpty()) "" else newSecret)
         peerHealthById.remove(targetId)
         pendingRotationsByPeerId.remove(targetId)
+        rotationGaveUpByPeerId.remove(targetId)
+        pendingKeyMismatchesByPeerId.remove(targetId)
         val refreshed = settingsRepository.appSettingsFlow.first()
         return handleGetPeers(refreshed, deliveries = deliveries)
+    }
+
+    /**
+     * Review 7 R7-1: Explicitly accepts a changed EC public key for a known peer (e.g. after factory reset)
+     * when confirmed by a MANAGE admin in the Phone Controller.
+     */
+    private suspend fun handleAcceptPeerKey(req: HttpRequest, settings: AppSettings): HttpResponse {
+        val body = PhoneControllerJson.decode<AcceptPeerKeyRequest>(req.body.toString(StandardCharsets.UTF_8))
+        val targetId = body.deviceId.trim()
+        if (targetId.isBlank()) {
+            return errorResponse(400, "Bad Request", "missing_device_id", "Peer deviceId is required")
+        }
+        val mismatch = pendingKeyMismatchesByPeerId.remove(targetId)
+            ?: return errorResponse(404, "Not Found", "no_key_mismatch", "No pending key change for this peer")
+        val updatedPeers = settings.peerTvs.map { peer ->
+            if (peer.deviceId == targetId) {
+                peer.copy(publicKeyBase64 = mismatch.candidatePublicKeyBase64)
+            } else {
+                peer
+            }
+        }
+        settingsRepository.setPeerTvs(updatedPeers)
+        val refreshed = settingsRepository.appSettingsFlow.first()
+        return handleGetPeers(refreshed)
     }
 
     /**
@@ -1006,6 +1076,9 @@ class SalatSignLocalServer(
         settingsRepository.setGroupSecretHex("")
         settingsRepository.setPeerTvs(emptyList())
         peerHealthById.clear()
+        pendingRotationsByPeerId.clear()
+        rotationGaveUpByPeerId.clear()
+        pendingKeyMismatchesByPeerId.clear()
         val refreshed = settingsRepository.appSettingsFlow.first()
         return handleGetPeers(refreshed)
     }
@@ -1177,13 +1250,26 @@ class SalatSignLocalServer(
             syncPairedHashCache(settingsRepository.appSettingsFlow.first())
         }
 
-        // 2. Merge peer list (excluding self) — Review 6 R6-2: pin non-blank EC public keys on first sight!
+        // 2. Merge peer list (excluding self) — Review 6 R6-2 + Review 7 R7-1:
+        // Pin non-blank EC public keys on first sight, and record mismatches for explicit admin acceptance.
         if (incoming.peers.isNotEmpty()) {
             val peerMap = current.peerTvs.associateBy { it.deviceId }.toMutableMap()
+            val now = nowMillisProvider()
             for (p in incoming.peers) {
                 if (p.deviceId.isNotBlank() && p.deviceId != selfId) {
                     val prev = peerMap[p.deviceId]
-                    val pinnedKey = prev?.publicKeyBase64?.takeIf { it.isNotBlank() } ?: p.publicKeyBase64
+                    val prevKey = prev?.publicKeyBase64?.takeIf { it.isNotBlank() }
+                    val incomingKey = p.publicKeyBase64.takeIf { it.isNotBlank() }
+                    if (prevKey != null && incomingKey != null && incomingKey != prevKey) {
+                        pendingKeyMismatchesByPeerId[p.deviceId] = PeerKeyMismatchDto(
+                            deviceId = p.deviceId,
+                            candidatePublicKeyBase64 = incomingKey,
+                            detectedAtEpochMillis = now
+                        )
+                    } else if (prevKey != null && incomingKey == prevKey) {
+                        pendingKeyMismatchesByPeerId.remove(p.deviceId)
+                    }
+                    val pinnedKey = prevKey ?: p.publicKeyBase64
                     peerMap[p.deviceId] = p.copy(publicKeyBase64 = pinnedKey)
                 }
             }
@@ -1313,27 +1399,44 @@ class SalatSignLocalServer(
         return isPng || isJpeg || isWebp
     }
 
+    internal suspend fun retryPendingRotations(selfId: String) {
+        if (pendingRotationsByPeerId.isEmpty()) return
+        val now = nowMillisProvider()
+        for ((peerId, pending) in pendingRotationsByPeerId.entries.toList()) {
+            val res = peerSyncClient.rotateSecretOnPeers(
+                peers = listOf(pending.peer),
+                payload = pending.payload,
+                oldGroupSecretHex = pending.oldGroupSecretHex,
+                selfDeviceId = selfId
+            ).firstOrNull()
+            if (res?.status == "delivered") {
+                pendingRotationsByPeerId.remove(peerId)
+                rotationGaveUpByPeerId.remove(peerId)
+            } else if (pending.attempts >= MAX_ROTATION_RETRY_ATTEMPTS) {
+                pendingRotationsByPeerId.remove(peerId)
+                rotationGaveUpByPeerId[peerId] = PeerRotationStatusDto(
+                    deviceId = peerId,
+                    state = "gave_up",
+                    attempts = pending.attempts,
+                    maxAttempts = MAX_ROTATION_RETRY_ATTEMPTS,
+                    updatedAtEpochMillis = now
+                )
+            } else {
+                pendingRotationsByPeerId[peerId] = pending.copy(
+                    attempts = pending.attempts + 1,
+                    updatedAtEpochMillis = now
+                )
+            }
+        }
+    }
+
     suspend fun pullNewerConfigFromPeers() {
         val settings = settingsRepository.appSettingsFlow.first()
         if (settings.groupSecretHex.isBlank() || settings.peerTvs.isEmpty()) return
         val selfId = settingsRepository.ensureDeviceId()
 
-        // Review 6 R6-4: Retry any pending secret rotations for previously-offline peers (max 6 attempts)
-        if (pendingRotationsByPeerId.isNotEmpty()) {
-            for ((peerId, pending) in pendingRotationsByPeerId.entries.toList()) {
-                val res = peerSyncClient.rotateSecretOnPeers(
-                    peers = listOf(pending.peer),
-                    payload = pending.payload,
-                    oldGroupSecretHex = pending.oldGroupSecretHex,
-                    selfDeviceId = selfId
-                ).firstOrNull()
-                if (res?.status == "delivered" || pending.attempts >= 6) {
-                    pendingRotationsByPeerId.remove(peerId)
-                } else {
-                    pendingRotationsByPeerId[peerId] = pending.copy(attempts = pending.attempts + 1)
-                }
-            }
-        }
+        // Review 6 R6-4 + Review 7 R7-2: Retry any pending secret rotations for previously-offline peers
+        retryPendingRotations(selfId)
 
         val targetSlideDir = slideImagesDir
 

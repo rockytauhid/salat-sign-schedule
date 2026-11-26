@@ -230,11 +230,9 @@ data class AppSettings(
     val iqamahAshr: Int = 0,
     val iqamahMagrib: Int = 0,
     val iqamahIsya: Int = 0,
-    // Mosque Mode Quiet-by-default (P4.7)
-    val mosqueModeAdhanEnabled: Boolean = false,
-    val mosqueModeRemindersEnabled: Boolean = false,
+    // Visual strike highlight at prayer time
     val showStrikeHighlight: Boolean = true,
-    // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+    // Jumu'ah (Friday) settings - SalatSign only (D16)
     val jumuahMode: JumuahMode = JumuahMode.FIXED,
     val jumuahTimes: List<String> = emptyList(),
     val fridayAdhanTiming: FridayAdhanTiming = FridayAdhanTiming.AT_ZUHR,
@@ -257,19 +255,19 @@ data class AppSettings(
     val pinFailedAttempts: Int = 0,
     val pinLockedUntilEpochMillis: Long = 0L,
     val defaultPinPromptDismissed: Boolean = false,
-    // Silent Screen ("Jumu'ah / Prayer in progress") - SalatSign Mosque Mode only
+    // Silent Screen ("Jumu'ah / Prayer in progress") - SalatSign only
     val silentScreen: SilentScreenConfig = SilentScreenConfig(),
-    // Islamic Calendar Events (shared event toggles; Home next-event line; Mosque calendar slide)
+    // Islamic Calendar Events (shared event toggles; SalatSchedule next-event line; SalatSign calendar slide)
     val enabledIslamicEventIds: Set<String> = IslamicEventDefinitions.defaultEnabledIds,
     val showNextEventOnHome: Boolean = true,
     val islamicCalendarSlideEnabled: Boolean = false,
     val islamicCalendarSlideDurationSeconds: Int = IslamicEventDefinitions.DEFAULT_SLIDE_DURATION_SECONDS,
-    // Offline Quran Verse Slide (SalatSign Mosque Mode only)
+    // Offline Quran Verse Slide (SalatSign only)
     val quranVerseEnabled: Boolean = false,
     val quranShowTranslation: Boolean = true,
     val quranVerseDurationSeconds: Int = QuranSlideDefaults.DURATION_AUTO,
     val quranShuffleBagState: String = "",
-    // Android TV Screensaver (SalatSchedule Home Mode only)
+    // Android TV Screensaver (SalatSchedule only)
     val screensaverScheduleEnabled: Boolean = true,
     val screensaverCalendarEnabled: Boolean = true,
     val screensaverQuranEnabled: Boolean = true,

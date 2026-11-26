@@ -126,7 +126,7 @@ object ScreensaverRotationEngine {
 
     /**
      * Returns the Home-mode prayer list for the screensaver, ensuring Friday Zuhr keeps
-     * the plain Zuhr label (`isFriday = false` for Home mode).
+     * the plain Zuhr label (`isFriday = false` for SalatSchedule).
      */
     fun normalizeHomePrayers(prayerTimesDay: PrayerTimesDay): List<PrayerTimeItem> =
         prayerTimesDay.prayers.map { it.copy(isFriday = false) }

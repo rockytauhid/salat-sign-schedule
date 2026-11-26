@@ -44,7 +44,7 @@ class DataModelAndSettingsTest {
         val settings = AppSettings()
 
         assertFalse("Setup must not be completed by default", settings.isSetupCompleted)
-        assertFalse("Mosque Mode must be disabled by default", settings.isMosqueMode)
+        assertFalse("SalatSign flag must be false by default", settings.isMosqueMode)
         assertEquals(ThemeMode.ALWAYS_DARK, settings.themeMode)
         assertEquals(MosqueIconPreset.DOME_CRESCENT, settings.mosqueIconPreset)
         assertEquals(MosqueFontPreset.MODERN_SANS, settings.mosqueFontPreset)
@@ -57,8 +57,6 @@ class DataModelAndSettingsTest {
         assertEquals(0, settings.offsetSubuh)
         assertEquals(0, settings.iqamahSubuh)
         assertFalse(settings.hijriChangeAtMidnight)
-        assertFalse("Mosque Mode Adhan must be false by default (quiet)", settings.mosqueModeAdhanEnabled)
-        assertFalse("Mosque Mode Reminders must be false by default (quiet)", settings.mosqueModeRemindersEnabled)
         assertTrue("Visual strike highlight should be true by default", settings.showStrikeHighlight)
         assertEquals(AppLanguage.SYSTEM, settings.appLanguage)
         assertFalse("12-hour format should be default for en-AU (D2)", settings.is24HourFormat)

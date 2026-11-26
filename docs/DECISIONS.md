@@ -1,10 +1,10 @@
 # SalatSign — Architecture & Product Decisions
 
-This document records the confirmed product and architectural decisions (**D1–D17**) and working assumptions for **SalatSign** (`com.salatsign.tv`).
+This document records the confirmed product and architectural decisions (**D1–D25**) and working assumptions for **SalatSign** (`com.salatsign.tv`) and **SalatSchedule** (`com.salatschedule.tv`).
 
 ---
 
-## Confirmed Decisions (D1–D17)
+## Confirmed Decisions (D1–D25)
 
 | # | Decision | Value |
 |---|---|---|
@@ -21,10 +21,10 @@ This document records the confirmed product and architectural decisions (**D1–
 | **D11** | License | **Copyleft: GPL-3.0-or-later** (`LICENSE`), plus a trademark/branding policy for the name "SalatSign" (`TRADEMARKS.md`). Copyright holder: Rocky Adam Tauhid (`rockytauhid@gmail.com`). |
 | **D12** | Application ID | **`com.salatsign.tv` is final (confirmed by the owner).** Used for both `namespace` and `applicationId`; do not change either. |
 | **D13** | Madhab | Chosen in the **setup wizard** and changeable in **Settings** (`SHAFI` / `HANAFI`). |
-| **D14** | Mosque mode audio/notifications | **Quiet by default:** no adhan sound, no reminders, no notifications. Optional toggles in Settings allow mosques to opt in. |
-| **D15** | Adhan audio files | Placeholder WAVs are silent; per-prayer default is `AdhanAudioType.SILENT` with a one-time Home-mode hint until open-licensed/public-domain or commissioned recordings (a **standard** adhan and a **Fajr** adhan) are supplied (human task H1). |
-| **D16** | Jumu'ah (Friday) time | **Set by each mosque, not calculated. Mosque mode only.** Configurable mode (`FIXED` clock time or `AFTER_ZUHR` minute offset) with up to 3 sittings inside the Zuhr-to-Asr window, validated across the next 53 Fridays (handling DST shifts). Home mode always shows Friday as plain "Zuhr" with the calculated time. |
-| **D17** | Product focus | **Home mode stays the default** and both Home Mode and Mosque Mode remain first-class equal modes. Home-mode alarm reliability and real adhan audio are release-blocking. |
+| **D14** | SalatSign audio/notifications | **Strictly silent** (superseded into compile-time isolation by D18): `:app-salatsign` declares zero audio, alarm, notification, or foreground-service permissions or code. |
+| **D15** | Adhan audio files | Built-in `beep_beep.wav` alert plus per-prayer USB/local audio import (`MP3`/`WAV`/`M4A`/`OGG`) in **SalatSchedule** (`:app-salatschedule`), defaulting to `AdhanAudioType.SILENT` until the user selects Beep-Beep or imports a custom Adhan file. |
+| **D16** | Jumu'ah (Friday) time | **Set by each mosque, not calculated. SalatSign only.** Configurable mode (`FIXED` clock time or `AFTER_ZUHR` minute offset) with up to 3 sittings inside the Zuhr-to-Asr window, validated across the next 53 Fridays (handling DST shifts). **SalatSchedule** always shows Friday as plain "Zuhr" with the calculated time. |
+| **D17** | Two-app product focus | **SalatSchedule** (`com.salatschedule.tv`) and **SalatSign** (`com.salatsign.tv`) are two independent, first-class Android TV apps sharing `:core` and `:core-tv-ui` (see D18). SalatSchedule alarm reliability and real Adhan audio (`USAGE_MEDIA` + `AUDIOFOCUS_GAIN_TRANSIENT`) are release-blocking; SalatSign remains strictly silent with zero audio permissions. |
 | **D18** | Multi-module product split | Split into two separate Android TV apps in a multi-module monorepo: **SalatSign** (`com.salatsign.tv`, `:app-salatsign`) is a **strictly silent** Mosque digital signage app (no audio/alarm/notification services or permissions; Jumu'ah, Iqamah, slides, branding, PIN, `FLAG_KEEP_SCREEN_ON`); **SalatSchedule** (`com.salatschedule.tv`, `:app-salatschedule`) is a dedicated Home prayer times app (Adhan audio, 15-min reminders, D-pad date browsing; no PIN, Iqamah, Mosque branding, slides, or Jumu'ah). Shared non-UI logic lives in `:core` (reusable by a future Android phone SalatSign controller) and shared Compose TV UI lives in `:core-tv-ui`. Per-app Play Store metadata lives in `docs/salatsign/STORE_LISTING.md` and `docs/salatschedule/STORE_LISTING.md`. |
 | **D19** | Mosque Silent Screen (`:app-salatsign` only) | Always near-black (`#0E1110`) with soft near-white icons/text (≥ 7:1 contrast) even when Light Theme is active, using calm restrained sizing (`42 sp` title, `136 dp` icons, `24 sp` labels) and a `±6 px` burn-in pixel shift every 60 seconds so the TV does not draw attention during prayer. Uses `"Jumu'ah in progress"` for Friday Jumu'ah windows (shared duration `30–120 min`, default `45 min`, default ON when at least one sitting is configured) and `"Prayer in progress"` for optional per-prayer daily windows (default OFF, Friday Zuhr handled by Jumu'ah only) and manual override (`15 / 30 / 45 min`, persisted across restarts, available in both TV Settings and the Local Phone Controller). Starting manual mode from TV Settings auto-closes Settings immediately; tapping a remote key shows the neutral 4-second admin hint banner. Smart "Copy to all prayers" copies anchor/lead/duration to all 5 prayers and enables only prayers with a valid anchor (skipping `IQAMAH`-anchored prayers with `iqamah = 0`). |
 | **D20** | 6-Slide Rotation Limit (`:app-salatsign`) | Total active slides in the Mosque slideshow rotation are capped at `MAX_ROTATION_SLIDES = 6` (`SlideBudget`), counting enabled announcement slides plus enabled built-in slides (Islamic Calendar = 1 slot, Quran Verse = 1 slot). The Prayer Schedule screen and Silent Screen do not count toward the 6. Stored library capacity remains 30 (`ContentRepository.MAX_SLIDES`) so admins can keep disabled slides. Legacy installs with > 6 enabled slides are never deleted; `SlideshowRotationBuilder` runs only the first 6 slots in order (announcements by `sortOrder`, then built-in slides) and Settings displays a warning listing hidden slides. |
@@ -38,7 +38,7 @@ This document records the confirmed product and architectural decisions (**D1–
 
 ## Working Assumptions
 
-1. **Friday Adhan Timing Default (`AT_ZUHR`):** When Mosque Mode's optional adhan toggle is enabled, `fridayAdhanTiming` defaults to `AT_ZUHR` (calling adhan at the calculated Zuhr time), with an option to switch to `AT_JUMUAH` (at the first Jumu'ah sitting). Pending owner confirmation.
+1. **Friday Adhan Timing (`SalatSchedule`):** Because `SalatSign` is strictly silent (D14/D18) and `SalatSchedule` always displays Friday as plain Zuhr (D16), `SalatSchedule` fires Friday's Adhan at the calculated Zuhr time (`AT_ZUHR`).
 2. **Default Calculation Method (`MUSLIM_WORLD_LEAGUE`):** Preselected in the setup wizard and default `AppSettings` pending local Australian timetable comparison (H4).
 3. **English-Only Launch (`en-AU`):** Only `en` resources are packaged in release APKs via `androidResources.localeFilters` until `docs/i18n/review-id.csv` is reviewed and approved by the owner (H5), and Arabic is reviewed by a native speaker.
 4. **Target Hardware Floor (`minSdk 26`):** The primary physical test device is a **Sony KD-55X9300D** running **Android 8.0.0 (API 26)**. All APIs used in production code must exist on API 26 or be safely guarded with `Build.VERSION.SDK_INT` checks.

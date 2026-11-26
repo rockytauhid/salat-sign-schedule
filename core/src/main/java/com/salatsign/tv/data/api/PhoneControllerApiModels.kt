@@ -426,6 +426,27 @@ data class PeerHealthDto(
 )
 
 @Serializable
+data class PeerKeyMismatchDto(
+    val deviceId: String,
+    val candidatePublicKeyBase64: String,
+    val detectedAtEpochMillis: Long = 0L
+)
+
+@Serializable
+data class AcceptPeerKeyRequest(
+    val deviceId: String
+)
+
+@Serializable
+data class PeerRotationStatusDto(
+    val deviceId: String,
+    val state: String, // "pending" or "gave_up"
+    val attempts: Int,
+    val maxAttempts: Int = 6,
+    val updatedAtEpochMillis: Long = 0L
+)
+
+@Serializable
 data class PeerListResponse(
     val self: com.salatsign.tv.security.PeerTvRecord,
     val peers: List<com.salatsign.tv.security.PeerTvRecord>,
@@ -433,7 +454,9 @@ data class PeerListResponse(
     val groupLinked: Boolean,
     val configVersion: Long = 1L,
     val peerHealth: List<PeerHealthDto> = emptyList(),
-    val deliveries: List<PeerDeliveryStatusDto> = emptyList()
+    val deliveries: List<PeerDeliveryStatusDto> = emptyList(),
+    val keyMismatches: List<PeerKeyMismatchDto> = emptyList(),
+    val rotationStatuses: List<PeerRotationStatusDto> = emptyList()
 )
 
 @Serializable

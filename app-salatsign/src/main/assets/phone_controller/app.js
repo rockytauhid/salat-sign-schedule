@@ -221,6 +221,10 @@ async function loadNoticeAndPeers() {
     const listEl = document.getElementById('peersList');
     const healthById = {};
     (p.data.peerHealth || []).forEach(h => { healthById[h.deviceId] = h; });
+    const mismatchById = {};
+    (p.data.keyMismatches || []).forEach(m => { mismatchById[m.deviceId] = m; });
+    const rotationById = {};
+    (p.data.rotationStatuses || []).forEach(r => { rotationById[r.deviceId] = r; });
     const localVer = p.data.configVersion || 1;
     const leaveBtn = document.getElementById('leaveGroupBtn');
     if (leaveBtn) leaveBtn.classList.toggle('hidden', !p.data.groupLinked);
@@ -236,6 +240,8 @@ async function loadNoticeAndPeers() {
 
     peers.forEach(peer => {
       const h = healthById[peer.deviceId];
+      const mismatch = mismatchById[peer.deviceId];
+      const rot = rotationById[peer.deviceId];
       let statusText = '';
       if (h) {
         if (!h.reachable) {
@@ -247,18 +253,38 @@ async function loadNoticeAndPeers() {
           }
         }
       }
+      if (rot) {
+        if (rot.state === 'pending') {
+          statusText += ' • Key rotation pending (' + rot.attempts + '/' + (rot.maxAttempts || 6) + ')';
+        } else if (rot.state === 'gave_up') {
+          statusText += ' • Key rotation failed — re-join this TV manually';
+        }
+      }
+      if (mismatch) {
+        statusText += ' • Key changed (factory reset?)';
+      }
       const box = document.createElement('div');
       box.className = 'slide-item flex-between';
       const info = document.createElement('div');
       info.innerHTML = '<strong>' + escapeHtml(peer.deviceName || peer.deviceId) + '</strong>' +
         '<div class="slide-meta">' + escapeHtml(peer.lastKnownHost + ':' + peer.port) +
         (peer.roomGroup ? ' • ' + escapeHtml(peer.roomGroup) : '') + escapeHtml(statusText) + '</div>';
+      const actions = document.createElement('div');
+      actions.className = 'row gap-sm';
+      if (mismatch) {
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'sm secondary';
+        acceptBtn.textContent = 'Accept New Key';
+        acceptBtn.onclick = () => acceptPeerKey(peer.deviceId, peer.deviceName || peer.deviceId);
+        actions.appendChild(acceptBtn);
+      }
       const rmBtn = document.createElement('button');
       rmBtn.className = 'sm danger';
       rmBtn.textContent = 'Remove';
       rmBtn.onclick = () => removePeerAndRotate(peer.deviceId, peer.deviceName || peer.deviceId);
+      actions.appendChild(rmBtn);
       box.appendChild(info);
-      box.appendChild(rmBtn);
+      box.appendChild(actions);
       listEl.appendChild(box);
     });
   }
@@ -330,6 +356,17 @@ async function joinPeerGroup() {
     document.getElementById('joinCodeInput').value = '';
     await loadAll();
   }
+}
+
+async function acceptPeerKey(deviceId, label) {
+  if (!confirm('Accept the new identity key for "' + label + '"? Only do this if that TV was factory-reset or reinstalled.')) return;
+  const res = await api('/api/v1/peers/accept-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deviceId })
+  });
+  showMsg(res.ok ? 'Accepted new key for ' + label + '.' : (res.data.message || 'Accept key failed.'), res.ok);
+  if (res.ok) await loadNoticeAndPeers();
 }
 
 async function removePeerAndRotate(deviceId, label) {

@@ -142,7 +142,7 @@ object PrayerCalculationEngine {
 
         val isFriday = (date.dayOfWeek == DayOfWeek.FRIDAY)
 
-        // Jumu'ah resolution for Friday in Mosque Mode (D16)
+        // Jumu'ah resolution for Friday in SalatSign (D16)
         val jumuahSittings: List<LocalTime>
         val effectiveZuhurTime: LocalTime?
         val secondaryJumuahNote: String?
@@ -375,7 +375,7 @@ object PrayerCalculationEngine {
     /**
      * Checks if referenceTime is currently within the exact strike window (0 to 5 minutes after prayer)
      * of any prayer today. Handles midnight wrap-around for late-night prayers (e.g. Isya at 23:58 -> 00:01) (F17).
-     * Used by Mosque Mode to trigger silent slideshow interruption.
+     * Used by SalatSign to trigger silent slideshow interruption.
      */
     fun getPrayerAtExactTimeStrike(
         todayPrayerTimes: PrayerTimesDay,
@@ -431,7 +431,7 @@ object PrayerCalculationEngine {
 
     /**
      * Calculates all valid prayer events for a given calendar date as ZonedDateTime instances.
-     * Respects Friday Mosque Mode Adhan timing (AT_ZUHR vs AT_JUMUAH).
+     * Respects Friday Adhan timing (AT_ZUHR vs AT_JUMUAH).
      * Null times are omitted (P4.2).
      */
     fun getDayPrayerEvents(

@@ -1,31 +1,28 @@
 ---
 name: mosque-signage-mode
-description: Implements silent white-label Mosque Mode with configurable prayer schedule and announcement image slideshow rotation.
+description: Implements silent white-label SalatSign mosque signage with configurable prayer schedule and announcement image slideshow rotation.
 ---
 
-# Skill: Mosque Mode White-Label Signage Engine
+# Skill: SalatSign White-Label Signage Engine
 
 ## Implementation Rules
 1. **White-Label Header:**
-   - When `isMosqueMode == true`, NEVER render the application's own name, package title, or default launcher icon.
+   - In **SalatSign** (`:app-salatsign`), NEVER render the application's own name, package title, or default launcher icon on the live display.
    - Read `mosqueName`, `mosqueSubtitle`, and `mosqueLogoUri` from `SettingsRepository`.
    - Render `mosqueLogoUri` via Coil (`AsyncImage`) alongside `mosqueName`. If both are blank/null, render only the live digital clock and Gregorian/Hijriyah dates.
 2. **Keep Screen Awake:**
-   - Attach a `DisposableEffect(isMosqueMode)` in the root TV Activity/Composable that adds `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` when `isMosqueMode == true` and clears it when `false`.
+   - Keep `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` active on the root TV Activity while SalatSign is in the foreground.
 3. **Slideshow State Machine (`MosqueSlideshowViewModel`):**
    - Maintain a sealed state:
      - `SlideState.PrayerSchedule(durationSeconds: Int)` (default `60`)
      - `SlideState.Announcement(slide: SignageSlide)` (rendering title, body, optional image)
-   - Run a coroutine timer loop:
-     - Show `PrayerSchedule` for `scheduleDurationSeconds`.
-     - If `announcementSlides.isNotEmpty()`, iterate through each slide for its configured `durationSeconds` using `Crossfade(animationSpec = tween(800))`.
-     - Loop back to `PrayerSchedule`.
+   - Use pure offline wall-clock scheduling (`WallClockSlideshowScheduler`, Decision D25) so multiple TVs with identical slides transition together within ~1 second.
 4. **Silent Prayer-Time Interruption:**
    - Observe a 1-second ticker flow comparing `LocalTime.now()` against today's 5 prayer times.
    - When the current minute matches any prayer time (`Subuh`, `Zuhur`, `Ashr`, `Magrib`, `Isya`):
      - **Do NOT play any audio or show any toast/notification.**
      - Immediately force `SlideState.PrayerSchedule` (interrupting any active announcement slide) and set `activePrayerHighlight = currentPrayer` for 5 minutes so the congregation sees the active prayer pulsing clearly on screen.
 5. **Hidden Settings Trigger & PIN Protection:**
-   - In Mosque Mode, hide all Settings icons/buttons from the screen.
+   - In SalatSign, hide all Settings icons/buttons from the live display.
    - Intercept `Key.Menu` or a 3-second long-press on `Key.DirectionCenter` to trigger Settings access.
    - Access is gated behind a PBKDF2 PIN dialog with lockout protection (persisted across reboots). Recovery is via Android TV system app data reset.

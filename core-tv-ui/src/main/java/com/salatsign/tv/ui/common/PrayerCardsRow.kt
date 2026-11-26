@@ -236,7 +236,7 @@ fun PrayerCard(
                 }
             )
 
-            // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for Mosque Mode
+            // Jumu'ah secondary note (e.g. "Zuhr begins 12:00 pm") and extra sittings for SalatSign
             if (isMosqueMode && item.prayer == Prayer.ZUHUR && item.isFriday) {
                 val note = item.secondaryTimeNote
                 if (note != null) {

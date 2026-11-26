@@ -334,7 +334,7 @@ fun LiveClockHeader(
                             }
                         }
 
-                        // Islamic Calendar Button in Home Mode
+                        // Islamic Calendar Button in SalatSchedule
                         if (onCalendarClick != null) {
                             val calShape = RoundedCornerShape(8.dp)
                             Surface(
@@ -364,7 +364,7 @@ fun LiveClockHeader(
                             }
                         }
 
-                        // Settings Icon Button in Home Mode
+                        // Settings Icon Button in SalatSchedule
                         Surface(
                             onClick = onSettingsClick,
                             shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),

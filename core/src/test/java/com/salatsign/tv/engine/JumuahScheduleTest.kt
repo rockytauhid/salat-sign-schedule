@@ -92,7 +92,7 @@ class JumuahScheduleTest {
         val friday = LocalDate.of(2026, 11, 20)
         val tuesday = LocalDate.of(2026, 11, 17)
 
-        // 1. Home mode on Friday: Jumu'ah settings are ignored
+        // 1. SalatSchedule on Friday: Jumu'ah settings are ignored
         val homeFriday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
@@ -104,7 +104,7 @@ class JumuahScheduleTest {
         assertTrue(homeZuhr.jumuahSittings.isEmpty())
         assertNull(homeZuhr.secondaryTimeNote)
 
-        // 2. Mosque mode on Tuesday: Non-Friday has no Jumu'ah sittings
+        // 2. SalatSign on Tuesday: Non-Friday has no Jumu'ah sittings
         val mosqueTuesday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = tuesday,
             config = config,
@@ -116,7 +116,7 @@ class JumuahScheduleTest {
         assertTrue(tuesdayZuhr.jumuahSittings.isEmpty())
         assertNull(tuesdayZuhr.secondaryTimeNote)
 
-        // 3. Mosque mode on Friday: Jumu'ah settings are active
+        // 3. SalatSign on Friday: Jumu'ah settings are active
         val mosqueFriday = PrayerCalculationEngine.calculatePrayerTimesDay(
             date = friday,
             config = config,
@@ -254,20 +254,6 @@ class JumuahScheduleTest {
         assertEquals(1, zuhurItem.jumuahSittings.size)
         // Time equals astronomical Zuhr
         assertNull(zuhurItem.secondaryTimeNote)
-    }
-
-    @Test
-    fun mosqueModeWithDefaults_schedulesNothing() {
-        val settings = AppSettings(
-            isMosqueMode = true,
-            mosqueModeAdhanEnabled = false,
-            mosqueModeRemindersEnabled = false
-        )
-        val isAdhanAllowed = if (settings.isMosqueMode) settings.mosqueModeAdhanEnabled else true
-        val isReminderAllowed = if (settings.isMosqueMode) settings.mosqueModeRemindersEnabled else settings.prePrayerReminderEnabled
-
-        assertFalse(isAdhanAllowed)
-        assertFalse(isReminderAllowed)
     }
 
     @Test

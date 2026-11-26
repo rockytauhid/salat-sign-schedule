@@ -91,7 +91,7 @@ class SalatSignApp : Application() {
         )
         nsdHelper = SalatSignNsdHelper(this)
 
-        // Ensure mosque mode, stable TV device ID, any legacy slide migration, and Always-On auto-start
+        // Ensure SalatSign signage flag, stable TV device ID, any legacy slide migration, and Always-On auto-start
         CoroutineScope(Dispatchers.IO).launch {
             LegacySlideMigration.migrateIfNeeded(this@SalatSignApp, contentRepository)
             settingsRepository.setMosqueMode(true)

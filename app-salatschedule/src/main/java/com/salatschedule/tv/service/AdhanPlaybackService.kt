@@ -114,7 +114,7 @@ class AdhanPlaybackService : Service() {
         }.getOrDefault(ZoneId.systemDefault())
 
         val localizedContext = LocaleHelper.wrap(this, language)
-        // SalatSchedule is Home Mode: Friday displays plain Zuhr (D16/D18)
+        // SalatSchedule displays Friday as plain Zuhr (D16/D18)
         val prayerDisplayName = localizedContext.getString(
             prayer.labelRes(isFriday = false)
         )

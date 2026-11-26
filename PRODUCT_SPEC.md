@@ -8,7 +8,7 @@
 - **Five Daily Prayers:** Subuh (Fajr), Zuhur (Dhuhr), Ashr (Asr), Magrib (Maghrib), Isya (Isha), plus Sunrise.
 - **Dual Date Header:** Displays both the **Gregorian date** (e.g., *Monday, 16 November 2026*) and the **Hijriyah date** (e.g., *6 Jumada Al-Akhirah 1448 AH*) with a user-configurable offset (`-2`, `-1`, `0`, `+1`, `+2` days) and Maghrib or midnight rollover.
 - **Date Navigation (SalatSchedule):** Users can press Left/Right on the D-pad (or open a date selector) to view **past** or **future** dates. A "Today" shortcut quickly resets to the current date.
-- **Center Spotlight & Countdown:** When viewing the current date, the hero banner displays the active/next prayer name (with optional Arabic name) alongside a large live ticking countdown (`HH:MM:SS`) and `"Until <Next Prayer>"` indicator.
+- **Center Spotlight & Countdown:** When viewing the current date, the hero banner displays the active/next prayer name (with optional Arabic name) alongside a large live ticking countdown (`HH:MM:SS`) and a lowercase `"until <Next Prayer>"` indicator in normal text color.
 
 ---
 

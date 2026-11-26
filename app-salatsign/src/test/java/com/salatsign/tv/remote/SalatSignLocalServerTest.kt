@@ -95,10 +95,6 @@ class SalatSignLocalServerTest {
                 Prayer.ISYA -> state.value.copy(iqamahIsya = minutesAfter)
             }
         }
-        override suspend fun setMosqueModeAdhan(enabled: Boolean) {}
-        override suspend fun setMosqueModeReminders(enabled: Boolean) {}
-        override suspend fun setMosqueModeAdhanEnabled(enabled: Boolean) {}
-        override suspend fun setMosqueModeRemindersEnabled(enabled: Boolean) {}
         override suspend fun setShowStrikeHighlight(show: Boolean) { state.value = state.value.copy(showStrikeHighlight = show) }
         override suspend fun updateAdhanOption(prayer: Prayer, option: AdhanAudioOption) {}
         override suspend fun updateMosqueBranding(name: String, subtitle: String, logoUri: String?) {
@@ -1223,5 +1219,112 @@ class SalatSignLocalServerTest {
             )
         )
         assertEquals(400, badConfigResp.statusCode)
+    }
+
+    @Test
+    fun review7_peerKeyMismatchFlaggedAndAcceptedByManageAdmin() = runBlocking {
+        val (server, settingsRepo, _) = createServer()
+        val authHeaders = authenticate(server)
+        val selfId = settingsRepo.ensureDeviceId()
+        val peerA = com.salatsign.tv.security.PeerTvRecord(
+            deviceId = "tv-hall-a",
+            deviceName = "Hall A",
+            lastKnownHost = "127.0.0.1",
+            port = 8088,
+            publicKeyBase64 = "ORIGINAL_PINNED_KEY_A"
+        )
+        settingsRepo.setGroupSecretHex(com.salatsign.tv.security.PeerHmacAuth.generateGroupSecretHex())
+        settingsRepo.setPeerTvs(listOf(peerA))
+
+        // Incoming peer list carries a DIFFERENT key for tv-hall-a (e.g. factory reset)
+        val syncPayload = PeerSyncPayload(
+            originDeviceId = "tv-hall-b",
+            configVersion = 2L,
+            settings = SettingsPatchRequest(),
+            slides = emptyList(),
+            peers = listOf(peerA.copy(publicKeyBase64 = "NEW_RESET_KEY_A"))
+        )
+        server.applyIncomingPeerSync(syncPayload, settingsRepo.current)
+
+        // Pinned key MUST still be preserved until admin explicitly accepts
+        assertEquals("ORIGINAL_PINNED_KEY_A", settingsRepo.current.peerTvs.first().publicKeyBase64)
+
+        // GET /api/v1/peers must expose the key mismatch warning
+        val peersResp = server.handleRequest(HttpRequest("GET", "/api/v1/peers", headers = authHeaders))
+        assertEquals(200, peersResp.statusCode)
+        val peersDto = PhoneControllerJson.decode<PeerListResponse>(String(peersResp.body))
+        assertEquals(1, peersDto.keyMismatches.size)
+        assertEquals("tv-hall-a", peersDto.keyMismatches.first().deviceId)
+        assertEquals("NEW_RESET_KEY_A", peersDto.keyMismatches.first().candidatePublicKeyBase64)
+
+        // Explicit MANAGE admin accept replaces the pinned key and clears the mismatch
+        val acceptResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peers/accept-key",
+                headers = authHeaders,
+                body = """{"deviceId":"tv-hall-a"}""".toByteArray()
+            )
+        )
+        assertEquals(200, acceptResp.statusCode)
+        val afterDto = PhoneControllerJson.decode<PeerListResponse>(String(acceptResp.body))
+        assertTrue(afterDto.keyMismatches.isEmpty())
+        assertEquals("NEW_RESET_KEY_A", settingsRepo.current.peerTvs.first().publicKeyBase64)
+        assertTrue(selfId != "tv-hall-a")
+    }
+
+    @Test
+    fun review7_rotationRetryQueueExposesPendingAndGaveUpStates() = runBlocking {
+        val (server, settingsRepo, _) = createServer()
+        val authHeaders = authenticate(server)
+        val selfId = settingsRepo.ensureDeviceId()
+        val oldSecret = com.salatsign.tv.security.PeerHmacAuth.generateGroupSecretHex()
+        val offlineKey = com.salatsign.tv.security.PeerJoinCrypto.encodePublicKey(
+            com.salatsign.tv.security.PeerJoinCrypto.generateEphemeralKeyPair()
+        )
+        val offlinePeer = com.salatsign.tv.security.PeerTvRecord(
+            deviceId = "tv-offline-1",
+            deviceName = "Offline Hall",
+            lastKnownHost = "127.0.0.1",
+            port = 1, // Unreachable port -> rotation fails deterministically
+            publicKeyBase64 = offlineKey
+        )
+        val removedPeer = com.salatsign.tv.security.PeerTvRecord(
+            deviceId = "tv-removed-1",
+            deviceName = "Removed Hall",
+            lastKnownHost = "127.0.0.1",
+            port = 1,
+            publicKeyBase64 = "REMOVED_KEY"
+        )
+        settingsRepo.setGroupSecretHex(oldSecret)
+        settingsRepo.setPeerTvs(listOf(offlinePeer, removedPeer))
+
+        // Removing tv-removed-1 rotates secret; tv-offline-1 is unreachable -> queued as "pending" (attempt 1/6)
+        val removeResp = server.handleRequest(
+            HttpRequest(
+                method = "POST",
+                path = "/api/v1/peers/remove",
+                headers = authHeaders,
+                body = """{"deviceId":"tv-removed-1"}""".toByteArray()
+            )
+        )
+        assertEquals(200, removeResp.statusCode)
+        val pendingDto = PhoneControllerJson.decode<PeerListResponse>(String(removeResp.body))
+        val pendingRot = pendingDto.rotationStatuses.firstOrNull { it.deviceId == "tv-offline-1" }
+        assertNotNull(pendingRot)
+        assertEquals("pending", pendingRot!!.state)
+        assertEquals(1, pendingRot.attempts)
+
+        // Exhaust all 6 retry attempts -> transitions to "gave_up"
+        repeat(SalatSignLocalServer.MAX_ROTATION_RETRY_ATTEMPTS) {
+            server.retryPendingRotations(selfId)
+        }
+        val finalResp = server.handleRequest(HttpRequest("GET", "/api/v1/peers", headers = authHeaders))
+        assertEquals(200, finalResp.statusCode)
+        val finalDto = PhoneControllerJson.decode<PeerListResponse>(String(finalResp.body))
+        val gaveUpRot = finalDto.rotationStatuses.firstOrNull { it.deviceId == "tv-offline-1" }
+        assertNotNull(gaveUpRot)
+        assertEquals("gave_up", gaveUpRot!!.state)
+        assertEquals(SalatSignLocalServer.MAX_ROTATION_RETRY_ATTEMPTS, gaveUpRot.attempts)
     }
 }

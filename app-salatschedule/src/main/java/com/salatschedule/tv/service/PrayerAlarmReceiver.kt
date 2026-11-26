@@ -119,7 +119,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        // SalatSchedule is Home Mode: Friday displays plain Zuhr (D16/D18)
+        // SalatSchedule displays Friday as plain Zuhr (D16/D18)
         val prayerLabel = context.getString(prayer.labelRes(isFriday = false))
 
         val tapIntent = Intent(context, MainActivity::class.java).apply {

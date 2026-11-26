@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Strictly silent Mosque Mode Settings ViewModel for SalatSign.
+ * Strictly silent signage Settings ViewModel for SalatSign.
  * No alarm scheduler, no adhan audio, no notification reminders.
  */
 class MosqueSettingsViewModel(application: Application) : AndroidViewModel(application) {

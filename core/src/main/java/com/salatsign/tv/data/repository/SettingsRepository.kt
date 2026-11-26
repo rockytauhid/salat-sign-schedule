@@ -72,9 +72,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val IQAMAH_MAGRIB = intPreferencesKey("iqamah_magrib")
         val IQAMAH_ISYA = intPreferencesKey("iqamah_isya")
 
-        // Mosque Mode quiet settings & visual strike (P4.7)
-        val MOSQUE_MODE_ADHAN_ENABLED = booleanPreferencesKey("mosque_mode_adhan_enabled")
-        val MOSQUE_MODE_REMINDERS_ENABLED = booleanPreferencesKey("mosque_mode_reminders_enabled")
+        // Visual strike highlight at prayer time
         val SHOW_STRIKE_HIGHLIGHT = booleanPreferencesKey("show_strike_highlight")
 
         // Per-prayer adhan keys
@@ -82,7 +80,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         fun adhanNameKey(prayer: Prayer) = stringPreferencesKey("adhan_name_${prayer.id}")
         fun adhanUriKey(prayer: Prayer) = stringPreferencesKey("adhan_uri_${prayer.id}")
 
-        // Mosque mode settings
+        // SalatSign branding & slideshow settings
         val MOSQUE_NAME = stringPreferencesKey("mosque_name")
         val MOSQUE_SUBTITLE = stringPreferencesKey("mosque_subtitle")
         val MOSQUE_LOGO_URI = stringPreferencesKey("mosque_logo_uri")
@@ -90,7 +88,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val MOSQUE_FONT_PRESET = stringPreferencesKey("mosque_font_preset")
         val SCHEDULE_DURATION_SECONDS = intPreferencesKey("schedule_duration_seconds")
 
-        // Jumu'ah (Friday) settings - Mosque Mode only (D16)
+        // Jumu'ah (Friday) settings - SalatSign only (D16)
         val JUMUAH_MODE = stringPreferencesKey("jumuah_mode")
         val JUMUAH_TIMES = stringPreferencesKey("jumuah_times")
         val FRIDAY_ADHAN_TIMING = stringPreferencesKey("friday_adhan_timing")
@@ -110,7 +108,7 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val IS_24_HOUR_FORMAT = booleanPreferencesKey("is_24_hour_format")
         val SHOW_ARABIC_PRAYER_NAMES = booleanPreferencesKey("show_arabic_prayer_names")
 
-        // Silent Screen keys (SalatSign Mosque Mode only)
+        // Silent Screen keys (SalatSign only)
         val SILENT_JUMUAH_ENABLED = booleanPreferencesKey("silent_jumuah_enabled")
         val SILENT_JUMUAH_LEAD_MINUTES = intPreferencesKey("silent_jumuah_lead_minutes")
         val SILENT_JUMUAH_DURATION_MINUTES = intPreferencesKey("silent_jumuah_duration_minutes")
@@ -126,13 +124,13 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
         val ISLAMIC_CALENDAR_SLIDE_ENABLED = booleanPreferencesKey("islamic_calendar_slide_enabled")
         val ISLAMIC_CALENDAR_SLIDE_DURATION_SECONDS = intPreferencesKey("islamic_calendar_slide_duration_seconds")
 
-        // Offline Quran Verse Slide keys (SalatSign Mosque Mode only)
+        // Offline Quran Verse Slide keys (SalatSign only)
         val QURAN_VERSE_ENABLED = booleanPreferencesKey("quran_verse_enabled")
         val QURAN_SHOW_TRANSLATION = booleanPreferencesKey("quran_show_translation")
         val QURAN_VERSE_DURATION_SECONDS = intPreferencesKey("quran_verse_duration_seconds")
         val QURAN_SHUFFLE_BAG_STATE = stringPreferencesKey("quran_shuffle_bag_state")
 
-        // Android TV Screensaver keys (SalatSchedule Home Mode only)
+        // Android TV Screensaver keys (SalatSchedule only)
         val SCREENSAVER_SCHEDULE_ENABLED = booleanPreferencesKey("screensaver_schedule_enabled")
         val SCREENSAVER_CALENDAR_ENABLED = booleanPreferencesKey("screensaver_calendar_enabled")
         val SCREENSAVER_QURAN_ENABLED = booleanPreferencesKey("screensaver_quran_enabled")
@@ -197,8 +195,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
             val iqamahMagrib = preferences[PreferencesKeys.IQAMAH_MAGRIB] ?: 0
             val iqamahIsya = preferences[PreferencesKeys.IQAMAH_ISYA] ?: 0
 
-            val mosqueModeAdhanEnabled = preferences[PreferencesKeys.MOSQUE_MODE_ADHAN_ENABLED] ?: false
-            val mosqueModeRemindersEnabled = preferences[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] ?: false
             val showStrikeHighlight = preferences[PreferencesKeys.SHOW_STRIKE_HIGHLIGHT] ?: true
 
             val appLanguageStr = preferences[PreferencesKeys.APP_LANGUAGE] ?: AppLanguage.SYSTEM.name
@@ -331,8 +327,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
                 iqamahAshr = iqamahAshr,
                 iqamahMagrib = iqamahMagrib,
                 iqamahIsya = iqamahIsya,
-                mosqueModeAdhanEnabled = mosqueModeAdhanEnabled,
-                mosqueModeRemindersEnabled = mosqueModeRemindersEnabled,
                 showStrikeHighlight = showStrikeHighlight,
                 jumuahMode = jumuahMode,
                 jumuahTimes = jumuahTimes,
@@ -554,20 +548,6 @@ class SettingsRepository(private val context: Context) : ISettingsRepository {
     override suspend fun setPrayerOffset(prayer: Prayer, offsetMinutes: Int) = updatePrayerOffset(prayer, offsetMinutes)
     override suspend fun setSunriseOffset(offsetMinutes: Int) = updateSunriseOffset(offsetMinutes)
     override suspend fun setIqamahOffset(prayer: Prayer, minutesAfter: Int) = updateIqamahOffset(prayer, minutesAfter)
-    override suspend fun setMosqueModeAdhan(enabled: Boolean) = setMosqueModeAdhanEnabled(enabled)
-    override suspend fun setMosqueModeReminders(enabled: Boolean) = setMosqueModeRemindersEnabled(enabled)
-
-    override suspend fun setMosqueModeAdhanEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.MOSQUE_MODE_ADHAN_ENABLED] = enabled
-        }
-    }
-
-    override suspend fun setMosqueModeRemindersEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[PreferencesKeys.MOSQUE_MODE_REMINDERS_ENABLED] = enabled
-        }
-    }
 
     override suspend fun setShowStrikeHighlight(show: Boolean) {
         context.dataStore.edit { prefs ->
